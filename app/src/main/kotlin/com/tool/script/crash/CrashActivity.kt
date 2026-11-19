@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
 import com.tool.script.util.copyToClipboard
 import top.yukonga.miuix.kmp.basic.Card
@@ -46,7 +47,7 @@ class CrashActivity : ComponentActivity() {
         val text = intent.getStringExtra(EXTRA_TEXT) ?: "(không có nội dung)"
         val fatal = intent.getBooleanExtra(EXTRA_FATAL, true)
         setContent {
-            ToolScriptTheme {
+            ToolScriptTheme(ThemePrefs.load(this)) {
                 CrashScreen(
                     title = title,
                     text = text,

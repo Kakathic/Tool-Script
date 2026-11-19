@@ -50,7 +50,7 @@ app/src/main/
 - Hiển thị khi chạy lệnh: `shell = log | hidden | banner | notice`; `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.
-- Thanh trên cùng có 2 icon: Giới thiệu (nhảy tới trang `id = "about"`) và Khởi động lại (khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
+- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở hộp thoại tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối, được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
 
 ## Lưu ý kỹ thuật
 
@@ -80,7 +80,7 @@ Giai đoạn 2: giao diện
 - [x] Màn hình chính: tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`.
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `hidden` / `banner` / `notice`).
-- [x] Icon Giới thiệu và Khởi động lại ở thanh trên cùng.
+- [x] Icon Thông tin (tùy chỉnh chủ đề) và Nguồn (khởi động lại) ở thanh trên cùng.
 - [x] Trang mẫu trong `assets/configs/pages` (thông tin máy, mạng, chế độ, lệnh cần root).
 - [x] Build tự động bằng GitHub Actions.
 

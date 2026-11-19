@@ -64,8 +64,8 @@ lock_mode = "readonly"
 ## 5. Bố cục
 
 - Thanh trên cùng: tiêu đề là tên app (`[app] name`).
-  Bên phải có 2 icon: Giới thiệu (nhảy tới trang có `id = "about"`, không có trang đó thì ẩn icon)
-  và Khởi động lại (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
+  Bên phải có 2 icon riêng biệt: Thông tin (hộp thoại tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối,
+  lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
 - Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp.
 - Thanh tab dưới cùng, mỗi trang một tab (icon + title).
 - Cửa sổ tab trượt: hiện tối đa 4 tab. Từ 5 tab trở lên, vuốt tới tab thứ 4

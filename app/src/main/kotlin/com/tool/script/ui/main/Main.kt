@@ -43,6 +43,7 @@ import com.tool.script.ui.render.ItemRenderer
 import com.tool.script.ui.render.PageErrorCard
 import com.tool.script.ui.render.RenderEnv
 import com.tool.script.ui.render.isShown
+import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,10 +60,16 @@ import kotlin.math.min
 // Thanh tab là cửa sổ trượt rộng 4 ô (tối thiểu 2); chỉ 1 tab thì ẩn thanh tab. Logic cửa sổ: TabWindow.kt.
 
 /**
+ * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
  * @param onShowDetails mở Trung tâm lỗi với (tiêu đề, nội dung).
  */
 @Composable
-fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) -> Unit) {
+fun MainScreen(
+    result: BootResult,
+    themeMode: ThemeMode,
+    onThemeChange: (ThemeMode) -> Unit,
+    onShowDetails: (title: String, text: String) -> Unit,
+) {
     val config = result.config
     val pages = config.pages
     val scope = rememberCoroutineScope()
@@ -71,7 +78,7 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
-    val aboutIndex = pages.indexOfFirst { it.ref.id == ABOUT_PAGE_ID }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     val env = remember(result) {
         RenderEnv(
@@ -114,13 +121,12 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
                 title = config.app.name,
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    // Chỉ hiện icon Giới thiệu khi có trang id "about".
-                    if (aboutIndex >= 0) {
-                        TopBarIcon(icon = "icons/bar_about.svg", description = "Giới thiệu") {
-                            scope.launch { pagerState.animateScrollToPage(aboutIndex) }
-                        }
+                    // Nút thông tin: mở tùy chỉnh chủ đề.
+                    TopBarIcon(icon = "icons/bar_about.svg", description = "Tùy chỉnh chủ đề") {
+                        showThemeDialog = true
                     }
-                    TopBarIcon(icon = "icons/bar_restart.svg", description = "Khởi động lại") {
+                    // Nút nguồn: mở các tùy chọn khởi động lại.
+                    TopBarIcon(icon = "icons/bar_power.svg", description = "Nguồn") {
                         showRestartMenu = true
                     }
                 },
@@ -175,6 +181,15 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
                 )
             }
             // OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện.
+            ThemeDialog(
+                show = showThemeDialog,
+                current = themeMode,
+                onDismiss = { showThemeDialog = false },
+                onSelect = {
+                    showThemeDialog = false
+                    onThemeChange(it)
+                },
+            )
             RestartMenuDialog(
                 show = showRestartMenu,
                 onDismiss = { showRestartMenu = false },
@@ -277,6 +292,3 @@ private fun rebootErrorText(result: ExecResult): String {
 }
 
 private const val BANNER_MILLIS = 4_000L
-
-/** Id trang mà icon Giới thiệu ở thanh trên dẫn tới. */
-private const val ABOUT_PAGE_ID = "about"
