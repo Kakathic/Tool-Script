@@ -12,7 +12,10 @@ kotlinx-coroutines = "1.10.2"
 libsu = "6.0.0"
 coil = "3.4.0"
 androidx-core = "1.17.0"
-androidx-activity = "1.11.0"
+# activity >= 1.12 mới tích hợp NavigationEvent (ComponentActivity là NavigationEventDispatcherOwner).
+# Dưới 1.12, OverlayDialog của Miuix ném IllegalStateException "No NavigationEventDispatcher was provided".
+androidx-activity = "1.13.0"
+androidx-navigationevent = "1.0.1"
 androidx-splashscreen = "1.2.0"
 androidx-lifecycle = "2.9.4"
 
@@ -41,6 +44,7 @@ coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-navigationevent-compose = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "androidx-navigationevent" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
