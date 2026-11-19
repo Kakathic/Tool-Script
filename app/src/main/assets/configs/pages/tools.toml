@@ -1,0 +1,31 @@
+[[item]]
+type    = "button"
+title   = "Xóa cache hệ thống"
+desc    = "Chỉ hiện khi có root hoặc ROM"
+run     = "pm trim-caches 999G"
+confirm = "Bạn có chắc muốn xóa cache hệ thống?"
+shell   = "banner"
+lock      = "ROOT_MODE != root && ROOT_MODE != system"
+lock_mode = "hide"
+
+[[item]]
+type  = "select"
+id    = "governor"
+title = "Governor"
+run   = "echo $governor > /sys/yyy"
+shell = "hidden"
+options = [
+  { label = "Hiệu năng", value = "performance" },
+  { label = "Tiết kiệm", value = "powersave" },
+]
+
+[[item]]
+type    = "slider"
+id      = "brightness"
+title   = "Độ sáng"
+min     = 0
+max     = 255
+step    = 5
+default = 128
+run     = "settings put system screen_brightness $brightness"
+shell   = "notice"

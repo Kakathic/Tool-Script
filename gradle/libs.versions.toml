@@ -1,0 +1,53 @@
+# Các version dưới đây lấy từ README/Maven Central tại thời điểm dựng khung (11/2026).
+# CHƯA build thử: khi mở bằng Android Studio, hãy kiểm tra và nâng version nếu có bản mới.
+
+[versions]
+agp = "9.1.0"                      # AGP 9.1 cần Gradle >= 9.3.1
+kotlin = "2.4.0"
+compose = "1.11.1"                 # Compose Multiplatform runtime mà Miuix 0.9.2 đang dùng
+miuix = "0.9.2"                    # kiểm tra bản mới nhất: https://github.com/compose-miuix-ui/miuix
+tomlkt = "0.6.1"
+kotlinx-serialization = "1.9.0"
+kotlinx-coroutines = "1.10.2"
+libsu = "6.0.0"
+coil = "3.4.0"
+androidx-core = "1.17.0"
+androidx-activity = "1.11.0"
+androidx-splashscreen = "1.2.0"
+androidx-lifecycle = "2.9.4"
+
+[libraries]
+# Compose (Miuix cần các artifact này khai báo rõ)
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+
+# Miuix
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
+miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miuix" }
+
+# TOML
+tomlkt = { module = "dev.eav.tomlkt:tomlkt", version.ref = "tomlkt" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+
+# Root shell (backend su)
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
+
+# Icon tab từ đường dẫn assets / bộ nhớ ngoài (png, svg...)
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
+
+# AndroidX + coroutines
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+
+# TODO (chọn sau): thư viện ADB client cho backend adb (Wireless Debugging)
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
