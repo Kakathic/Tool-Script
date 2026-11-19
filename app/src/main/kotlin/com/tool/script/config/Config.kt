@@ -134,42 +134,81 @@ object TomlParser {
         return info to pages
     }
 
+    /** Dòng mở bảng `[[item]]` / `[[group]]` ở cấp trang (không khớp `[[group.item]]`). */
+    private val BLOCK_HEADER = Regex("""^[ \t]*\[\[[ \t]*(item|group)[ \t]*\]\]""", RegexOption.MULTILINE)
+
     fun parsePage(file: String, text: String, warnings: MutableList<String>): List<Item> {
         val root = parseTable(file, text)
         val ids = HashSet<String>()
-        return parseItems(file, root["item"] as? TomlArray, warnings, ids, file)
-    }
+        val items = (root["item"] as? TomlArray)?.toList().orEmpty()
+        val groups = (root["group"] as? TomlArray)?.toList().orEmpty()
 
-    private fun parseItems(
-        file: String,
-        array: TomlArray?,
-        warnings: MutableList<String>,
-        ids: MutableSet<String>,
-        path: String,
-    ): List<Item> {
-        if (array == null) return emptyList()
+        // TOML không giữ thứ tự giữa hai mảng khác khóa (item / group), nên đọc thứ tự từ các dòng tiêu đề.
+        // Đếm không khớp (vd. chuỗi nhiều dòng có chứa "[[item]]") thì xếp item trước, group sau.
+        val headers = BLOCK_HEADER.findAll(text).map { it.groupValues[1] }.toList()
+        val order = if (headers.count { it == "item" } == items.size && headers.count { it == "group" } == groups.size) {
+            headers
+        } else {
+            List(items.size) { "item" } + List(groups.size) { "group" }
+        }
+
         val out = mutableListOf<Item>()
-        array.forEachIndexed { index, element ->
-            val t = element as? TomlTable
-            val label = "$path: item #${index + 1}"
-            if (t == null) {
-                warnings += "$label không phải bảng, bỏ qua"
-                return@forEachIndexed
-            }
-            parseItem(file, t, warnings, ids, label)?.let { out += it }
+        var itemCount = 0
+        var groupCount = 0
+        for (kind in order) {
+            val isGroup = kind == "group"
+            val number = if (isGroup) ++groupCount else ++itemCount
+            val element = if (isGroup) groups[number - 1] else items[number - 1]
+            parseEntry(element, isGroup, "$file: $kind #$number", warnings, ids)?.let { out += it }
         }
         return out
     }
 
+    private fun parseEntry(
+        element: Any?,
+        isGroup: Boolean,
+        label: String,
+        warnings: MutableList<String>,
+        ids: MutableSet<String>,
+    ): Item? {
+        val t = element as? TomlTable
+        if (t == null) {
+            warnings += "$label không phải bảng, bỏ qua"
+            return null
+        }
+        return parseItem(t, warnings, ids, label, isGroup)
+    }
+
+    /** Item con của một `[[group]]`, khai báo bằng `[[group.item]]`. */
+    private fun parseChildren(
+        group: TomlTable,
+        warnings: MutableList<String>,
+        ids: MutableSet<String>,
+        path: String,
+    ): List<Item> {
+        if (group["group"] != null) warnings += "$path: chưa hỗ trợ group lồng group, bỏ qua [[group.group]]"
+        val array = group["item"] as? TomlArray ?: return emptyList()
+        val out = mutableListOf<Item>()
+        array.forEachIndexed { index, element ->
+            parseEntry(element, false, "$path: item #${index + 1}", warnings, ids)?.let { out += it }
+        }
+        return out
+    }
+
+    /** [isGroup] = true khi bảng đến từ `[[group]]`: type luôn là group, không đọc khóa `type`. */
     private fun parseItem(
-        file: String,
         t: TomlTable,
         warnings: MutableList<String>,
         ids: MutableSet<String>,
         label: String,
+        isGroup: Boolean,
     ): Item? {
         val typeKey = t.str("type")
-        val type = ItemType.from(typeKey)
+        if (!isGroup && typeKey == ItemType.Group.key) {
+            warnings += "$label: type = \"group\" đã đổi thành [[group]], bỏ qua"
+            return null
+        }
+        val type = if (isGroup) ItemType.Group else ItemType.from(typeKey)
         if (type == null) {
             warnings += "$label có type lạ \"${typeKey ?: ""}\", bỏ qua"
             return null
@@ -243,8 +282,8 @@ object TomlParser {
         }
         val step = (t.float("step") ?: 1f).takeIf { it > 0f } ?: 1f
 
-        val children = if (type == ItemType.Group) {
-            parseItems(file, t["item"] as? TomlArray, warnings, ids, "$label \"$title\"")
+        val children = if (isGroup) {
+            parseChildren(t, warnings, ids, "$label \"$title\"")
         } else {
             emptyList()
         }

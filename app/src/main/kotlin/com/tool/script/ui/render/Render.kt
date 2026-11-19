@@ -126,9 +126,12 @@ private fun TextItem(item: Item, modifier: Modifier) {
 
 @Composable
 private fun GroupItem(item: Item, env: RenderEnv) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column {
         SmallTitle(text = item.title)
-        item.children.filter { isShown(it, env.store) }.forEach { ItemRenderer(it, env) }
+        // Tiêu đề dính sát thẻ đầu tiên; 16dp chỉ nằm giữa các thẻ con với nhau.
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item.children.filter { isShown(it, env.store) }.forEach { ItemRenderer(it, env) }
+        }
     }
 }
 

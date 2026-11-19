@@ -91,13 +91,36 @@ lock_mode = "readonly"
 | type | Trường riêng |
 |---|---|
 | `text` | `content` |
-| `group` | `[[item]]` lồng bên trong |
 | `button` | `run` |
 | `switch` | `on`, `off`, `get` |
 | `input` | `hint`, `default`, `run`, `input_type` (`text`/`number`) |
 | `select` | `options`, `default`, `run` |
 | `slider` | `min`, `max`, `step`, `default`, `run` |
 | `link` | `page` (id trang đích) |
+
+`group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
+nằm trong `[[group.item]]`.
+
+```toml
+[[item]]                      # item đứng ngoài nhóm
+type    = "text"
+title   = "Chào mừng"
+content = "Nội dung"
+
+[[group]]
+title = "Công tắc"            # bắt buộc; hiện sát phía trên thẻ đầu tiên
+
+[[group.item]]
+type  = "switch"
+id    = "game_mode"
+title = "Chế độ game"
+```
+
+- `[[group]]` dùng được `title`, `visible_if`, `lock`, `lock_mode`; không có `type`.
+- Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
+- Cú pháp cũ `[[item]]` + `type = "group"` và `[[item.item]]` không còn dùng:
+  `type = "group"` bị bỏ qua kèm cảnh báo.
+- Chưa hỗ trợ group lồng group (`[[group.group]]`).
 
 `select` – cách khai báo `options`:
 
