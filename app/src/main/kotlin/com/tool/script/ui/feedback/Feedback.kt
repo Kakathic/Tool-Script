@@ -37,6 +37,7 @@ import com.tool.script.config.ShellMode
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.copyToClipboard
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -197,7 +198,12 @@ fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(text = "Hủy", onClick = onDismiss, modifier = Modifier.weight(1f))
-            TextButton(text = "Chạy", onClick = onConfirm, modifier = Modifier.weight(1f))
+            TextButton(
+                text = "Chạy",
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
         }
     }
 }
