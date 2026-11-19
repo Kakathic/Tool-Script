@@ -174,37 +174,37 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
                     bottomInset = inner.calculateBottomPadding(),
                 )
             }
+            // OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện.
+            RestartMenuDialog(
+                show = showRestartMenu,
+                onDismiss = { showRestartMenu = false },
+                onRestartApp = {
+                    showRestartMenu = false
+                    env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                },
+                onRebootDevice = {
+                    showRestartMenu = false
+                    env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                        scope.launch {
+                            val result = ExecutorManager.current.exec("reboot", 10)
+                            if (!result.ok) feedback.toast(rebootErrorText(result))
+                        }
+                    }
+                },
+            )
+
+            LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
+            val confirm = env.confirm
+            ConfirmDialog(
+                message = confirm?.message,
+                onConfirm = {
+                    env.confirm = null
+                    confirm?.onConfirm?.invoke()
+                },
+                onDismiss = { env.confirm = null },
+            )
         }
     }
-
-    RestartMenuDialog(
-        show = showRestartMenu,
-        onDismiss = { showRestartMenu = false },
-        onRestartApp = {
-            showRestartMenu = false
-            env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-        },
-        onRebootDevice = {
-            showRestartMenu = false
-            env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                scope.launch {
-                    val result = ExecutorManager.current.exec("reboot", 10)
-                    if (!result.ok) feedback.toast(rebootErrorText(result))
-                }
-            }
-        },
-    )
-
-    LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
-    val confirm = env.confirm
-    ConfirmDialog(
-        message = confirm?.message,
-        onConfirm = {
-            env.confirm = null
-            confirm?.onConfirm?.invoke()
-        },
-        onDismiss = { env.confirm = null },
-    )
 }
 
 @Composable
