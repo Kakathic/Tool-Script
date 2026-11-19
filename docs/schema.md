@@ -1,4 +1,4 @@
-# Tool Script – Schema TOML (bản nháp v0.5)
+# Tool Script – Schema TOML (bản nháp v0.6)
 
 ## 1. Backend thực thi (Executor)
 
@@ -64,7 +64,7 @@ lock_mode = "readonly"
 ## 5. Bố cục
 
 - Thanh trên cùng: tiêu đề là tên app (`[app] name`).
-  Bên phải có 2 icon riêng biệt: Thông tin (hộp thoại tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối,
+  Bên phải có 2 icon riêng biệt: Thông tin (menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix,
   lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
 - Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp.
 - Thanh tab dưới cùng, mỗi trang một tab (icon + title).
@@ -99,6 +99,9 @@ lock_mode = "readonly"
 | `select` | `options`, `default`, `run` |
 | `slider` | `min`, `max`, `step`, `default`, `run` |
 | `link` | `page` (id trang đích) |
+| `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
+| `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
+| `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
 nằm trong `[[group.item]]`.
@@ -145,6 +148,34 @@ options = [
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
 
+`checkbox`, `radio`, `progress` – ghi chú:
+
+- `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `on` / `off` chạy khi đổi trạng thái, chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
+- `radio` khai báo `options` như `select` (mục 7), nhãn hiện trên giao diện, giá trị truyền qua `$id`.
+- `progress` cần `id`. `get` in ra một số trong khoảng `min`..`max` (mặc định 0..100), chỉ đọc khi item xuất hiện. Giá trị nằm ngoài khoảng được cắt về mép. Không có `get` thì dùng `default` (mặc định `min`).
+
+```toml
+[[item]]
+type  = "checkbox"
+id    = "auto_clean"
+title = "Tự dọn dẹp"
+on    = "echo 1 > /sys/xxx"
+off   = "echo 0 > /sys/xxx"
+
+[[item]]
+type    = "radio"
+id      = "profile"
+title   = "Chế độ"
+run     = "echo $profile > /sys/yyy"
+options = ["Cân bằng|balanced", "Hiệu năng|performance"]
+
+[[item]]
+type  = "progress"
+id    = "battery"
+title = "Pin"
+get   = "cat /sys/class/power_supply/battery/capacity"
+```
+
 ## 8. Biến và điều kiện
 
 - Giá trị của item có `id` dùng trong lệnh dưới dạng `$id`.
@@ -175,7 +206,7 @@ lock_mode = "hide"
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `input`, `select`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `radio`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|
@@ -195,6 +226,8 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - Lỗi không lưu ra file, chỉ giữ trong bộ nhớ của phiên chạy.
 
 ## 12. Để lại sau
+
+Lộ trình thành phần Miuix (xếp từ dễ đến khó, mức 1 đã xong) nằm trong `README.md`, mục "Lộ trình thành phần Miuix".
 
 - Nạp config từ thư mục ngoài và reload nóng.
 - Đa ngôn ngữ theo khóa (`title_vi`, `title_en`...).

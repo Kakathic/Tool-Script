@@ -3,15 +3,22 @@ package com.tool.script.ui.theme
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import top.yukonga.miuix.kmp.theme.ThemeController
 
-/** Chế độ chủ đề người dùng chọn. */
-enum class ThemeMode(val key: String, val label: String) {
-    System("system", "Theo hệ thống"),
-    Light("light", "Sáng"),
-    Dark("dark", "Tối"),
+/**
+ * Các chế độ chủ đề Miuix có sẵn ([ColorSchemeMode]).
+ * Nhóm "Màu động" (Monet) lấy màu từ hình nền hệ thống (Android 12+); máy cũ hơn tự dùng màu mặc định.
+ */
+enum class ThemeMode(val key: String, val label: String, val monet: Boolean) {
+    System("system", "Theo hệ thống", false),
+    Light("light", "Sáng", false),
+    Dark("dark", "Tối", false),
+    MonetSystem("monet_system", "Màu động (theo hệ thống)", true),
+    MonetLight("monet_light", "Màu động - Sáng", true),
+    MonetDark("monet_dark", "Màu động - Tối", true),
 }
 
 /** Lưu lựa chọn chủ đề vào SharedPreferences để lần sau mở app vẫn giữ. */
@@ -29,16 +36,26 @@ object ThemePrefs {
     }
 }
 
-/** Chủ đề đang dùng là tối hay sáng (đã tính cả trường hợp "Theo hệ thống"). */
+/** Chủ đề đang dùng là tối hay sáng (đã tính cả các chế độ "theo hệ thống"). */
 @Composable
 fun isDarkTheme(mode: ThemeMode): Boolean = when (mode) {
-    ThemeMode.System -> isSystemInDarkTheme()
-    ThemeMode.Light -> false
-    ThemeMode.Dark -> true
+    ThemeMode.System, ThemeMode.MonetSystem -> isSystemInDarkTheme()
+    ThemeMode.Light, ThemeMode.MonetLight -> false
+    ThemeMode.Dark, ThemeMode.MonetDark -> true
 }
 
 @Composable
 fun ToolScriptTheme(mode: ThemeMode = ThemeMode.System, content: @Composable () -> Unit) {
-    val colors = if (isDarkTheme(mode)) darkColorScheme() else lightColorScheme()
-    MiuixTheme(colors = colors, content = content)
+    val systemDark = isSystemInDarkTheme()
+    val controller = remember(mode, systemDark) {
+        when (mode) {
+            ThemeMode.System -> ThemeController(ColorSchemeMode.System)
+            ThemeMode.Light -> ThemeController(ColorSchemeMode.Light)
+            ThemeMode.Dark -> ThemeController(ColorSchemeMode.Dark)
+            ThemeMode.MonetSystem -> ThemeController(ColorSchemeMode.MonetSystem, isDark = systemDark)
+            ThemeMode.MonetLight -> ThemeController(ColorSchemeMode.MonetLight)
+            ThemeMode.MonetDark -> ThemeController(ColorSchemeMode.MonetDark)
+        }
+    }
+    MiuixTheme(controller = controller, content = content)
 }

@@ -150,11 +150,11 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         for (item in items) {
             val id = item.id
             when (item.type) {
-                ItemType.Switch -> if (id != null) out[id] = "0"
+                ItemType.Switch, ItemType.Checkbox -> if (id != null) out[id] = "0"
                 ItemType.Input -> if (id != null) out[id] = item.default.orEmpty()
-                ItemType.Select ->
+                ItemType.Select, ItemType.Radio ->
                     if (id != null) out[id] = item.default ?: item.options.firstOrNull()?.value.orEmpty()
-                ItemType.Slider ->
+                ItemType.Slider, ItemType.Progress ->
                     if (id != null) out[id] = formatNumber(item.default?.toFloatOrNull() ?: item.min)
                 ItemType.Group -> collectDefaults(item.children, out)
                 else -> Unit

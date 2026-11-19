@@ -50,7 +50,7 @@ app/src/main/
 - Hiển thị khi chạy lệnh: `shell = log | hidden | banner | notice`; `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.
-- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở hộp thoại tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối, được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
+- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
 
 ## Lưu ý kỹ thuật
 
@@ -78,9 +78,10 @@ Giai đoạn 1: khung ứng dụng
 Giai đoạn 2: giao diện
 
 - [x] Màn hình chính: tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
-- [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`.
+- [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`, `checkbox`, `radio`, `progress`.
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `hidden` / `banner` / `notice`).
-- [x] Icon Thông tin (tùy chỉnh chủ đề) và Nguồn (khởi động lại) ở thanh trên cùng.
+- [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
+- [x] Chủ đề: Theo hệ thống / Sáng / Tối và 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại.
 - [x] Trang mẫu trong `assets/configs/pages` (thông tin máy, mạng, chế độ, lệnh cần root).
 - [x] Build tự động bằng GitHub Actions.
 
@@ -111,3 +112,36 @@ Giai đoạn 6: chất lượng
 
 - [ ] Unit test (bộ tính điều kiện, `ShellText.quote`, cửa sổ tab, parser TOML). Logic thuần mới được kiểm tra tay, chưa có thư mục test.
 - [ ] Commit `gradlew` và `gradle-wrapper.jar`, rồi đổi workflow sang `./gradlew` và bỏ `gradle-version`.
+
+### Lộ trình thành phần Miuix (xếp từ dễ đến khó)
+
+Danh sách này lấy từ tài liệu Miuix bản mới nhất, chưa đối chiếu riêng bản 0.9.2: khi làm từng mục cần kiểm tra lại API.
+Làm lần lượt từ trên xuống. Mức 1 đã xong.
+
+Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
+
+- [x] `checkbox`: giống `switch` (`on` / `off` / `get`), hiện ô tick, bấm cả hàng cũng đổi.
+- [x] `radio`: chọn một trong `options`, hiện sẵn mọi lựa chọn (khác `select` là hộp thoại).
+- [x] `progress`: thanh tiến trình chỉ để xem, đọc giá trị từ `get`.
+
+Mức 2: dễ đến vừa, thêm trường mới cho item có sẵn
+
+- [ ] `badge`: nhãn nhỏ cạnh tiêu đề (Miuix `Badge`).
+- [ ] `icon`: icon đầu dòng, dùng cùng cách khai báo đường dẫn icon của tab.
+- [ ] `select` thêm `style = "dropdown"` hoặc `"dialog"` (Miuix `OverlayListPopup`, `OverlayDialog`).
+- [ ] `tip`: chú thích khi nhấn giữ (Miuix `Tooltip`).
+
+Mức 3: vừa, cần thêm logic
+
+- [ ] `refresh = true` ở mức trang: kéo xuống để chạy lại các lệnh `get` (Miuix `PullToRefresh`).
+- [ ] `range`: thanh trượt hai đầu (Miuix `RangeSlider`), truyền `$id_min` và `$id_max` vào lệnh.
+- [ ] `style = "sheet"` cho `input` và `select`: bảng trượt từ dưới lên (Miuix `OverlayBottomSheet`).
+- [ ] `[app] key_color`: chọn màu gốc cho chủ đề Màu động (`ThemeController(keyColor = ...)`).
+
+Mức 4: khó, thay đổi lớn hơn
+
+- [ ] `color`: chọn màu, truyền mã hex vào `$id` (Miuix `ColorPicker`, `ColorPalette`).
+- [ ] `search`: ô tìm kiếm lọc các item trong trang (Miuix `SearchBar`).
+- [ ] `[app] nav_style = "floating"`: thanh tab dưới dạng nổi (Miuix `FloatingNavigationBar`).
+- [ ] `[app] blur` và `squircle`: hiệu ứng mờ và góc bo kiểu HyperOS (module `miuix-blur`, `miuix-squircle`, cần thêm dependency).
+- [ ] Chuyển sang module `miuix-preference` (`SwitchPreference`, `SliderPreference`...) cho giao diện hàng cài đặt chính chủ, phải viết lại một phần `Render.kt`.

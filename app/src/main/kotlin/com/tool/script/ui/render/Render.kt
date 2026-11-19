@@ -36,7 +36,10 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Switch
@@ -116,6 +119,9 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
         ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
         ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
         ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
+        ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
+        ItemType.Radio -> RadioItem(item, env, modifier, enabled, inGroup)
+        ItemType.Progress -> ProgressItem(item, env, modifier, inGroup)
     }
 }
 
@@ -180,6 +186,30 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 
 @Composable
 private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = false) { checked, isEnabled, onChange ->
+        Switch(checked = checked, enabled = isEnabled, onCheckedChange = onChange)
+    }
+}
+
+/** Giống switch (on / off / get) nhưng hiện ô tick; bấm cả hàng cũng đổi trạng thái. */
+@Composable
+private fun CheckboxItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = true) { checked, isEnabled, onChange ->
+        Checkbox(checked = checked, enabled = isEnabled, onCheckedChange = onChange)
+    }
+}
+
+/** Khung chung cho item bật / tắt: đọc `get` lúc xuất hiện, chạy `on` / `off`, chỉ đổi trạng thái khi lệnh thành công. */
+@Composable
+private fun BinaryItem(
+    item: Item,
+    env: RenderEnv,
+    modifier: Modifier,
+    enabled: Boolean,
+    inGroup: Boolean,
+    rowClickable: Boolean,
+    control: @Composable (checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) -> Unit,
+) {
     val id = item.id ?: return
     val checked = env.store[id] == "1"
 
@@ -195,26 +225,84 @@ private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
         }
     }
 
+    val change: (Boolean) -> Unit = { newValue ->
+        val value = if (newValue) "1" else "0"
+        val command = if (newValue) item.on else item.off
+        // Chỉ đổi trạng thái khi lệnh thành công (hoặc item không có lệnh).
+        env.run(item, command, mapOf(id to value)) { result ->
+            if (result.ok) env.store[id] = value
+        }
+    }
+
     ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
             enabled = enabled,
-            endActions = {
-                Switch(
-                    checked = checked,
-                    enabled = enabled,
-                    onCheckedChange = { newValue ->
-                        val value = if (newValue) "1" else "0"
-                        val command = if (newValue) item.on else item.off
-                        // Chỉ đổi trạng thái khi lệnh thành công (hoặc item không có lệnh).
-                        env.run(item, command, mapOf(id to value)) { result ->
-                            if (result.ok) env.store[id] = value
-                        }
-                    },
-                )
-            },
+            endActions = { control(checked, enabled, change) },
+            onClick = if (rowClickable) ({ change(!checked) }) else null,
         )
+    }
+}
+
+/** Chọn một trong nhiều `options` (giống select) nhưng hiện sẵn tất cả lựa chọn, mỗi dòng một nút tròn. */
+@Composable
+private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    val current = env.store[id]
+    ItemSurface(modifier, inGroup) {
+        BasicComponent(title = item.title, summary = item.desc, enabled = enabled)
+        item.options.forEach { option ->
+            val select = {
+                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                    if (result.ok) env.store[id] = option.value
+                }
+            }
+            BasicComponent(
+                title = option.label,
+                enabled = enabled,
+                endActions = {
+                    RadioButton(selected = option.value == current, enabled = enabled, onClick = { select() })
+                },
+                onClick = { select() },
+            )
+        }
+    }
+}
+
+/** Thanh tiến trình chỉ để xem: đọc giá trị (số trong khoảng min..max) từ lệnh `get` khi item xuất hiện. */
+@Composable
+private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup: Boolean) {
+    val id = item.id ?: return
+
+    LaunchedEffect(id) {
+        val get = item.get
+        if (!get.isNullOrBlank()) {
+            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec)
+            val number = result.stdout.trim().toFloatOrNull()
+            if (result.ok && number != null) env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
+        }
+    }
+
+    val value = (env.store[id].toFloatOrNull() ?: item.min).coerceIn(item.min, item.max)
+    val fraction = if (item.max > item.min) (value - item.min) / (item.max - item.min) else 0f
+
+    ItemSurface(modifier, inGroup) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
+                Text(
+                    "${(fraction * 100).roundToInt()}%",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
+            item.desc?.let {
+                Text(it, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
+            }
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(progress = fraction, modifier = Modifier.fillMaxWidth())
+        }
     }
 }
 

@@ -11,7 +11,8 @@ import dev.eav.tomlkt.TomlTable
 
 enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
-    Input("input"), Select("select"), Slider("slider"), Link("link");
+    Input("input"), Select("select"), Slider("slider"), Link("link"),
+    Checkbox("checkbox"), Radio("radio"), Progress("progress");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -39,7 +40,7 @@ data class Item(
     val content: String?,
     // button / input / select / slider
     val run: String?,
-    // switch
+    // switch / checkbox
     val on: String?,
     val off: String?,
     val get: String?,
@@ -47,9 +48,9 @@ data class Item(
     val hint: String?,
     val default: String?,
     val numberInput: Boolean,
-    // select
+    // select / radio
     val options: List<SelectOption>,
-    // slider
+    // slider / progress
     val min: Float,
     val max: Float,
     val step: Float,
@@ -220,7 +221,8 @@ object TomlParser {
         }
         val id = t.str("id")?.takeIf { it.isNotBlank() }
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
-            type == ItemType.Select || type == ItemType.Slider
+            type == ItemType.Select || type == ItemType.Slider ||
+            type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress
         if (needsId) {
             if (id == null) {
                 warnings += "$label \"$title\" (${type.key}) thiếu id, bỏ qua"
@@ -270,8 +272,8 @@ object TomlParser {
                 options += option
             }
         }
-        if (type == ItemType.Select && options.isEmpty()) {
-            warnings += "$label \"$title\" (select) không có options hợp lệ"
+        if ((type == ItemType.Select || type == ItemType.Radio) && options.isEmpty()) {
+            warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
         }
 
         var min = t.float("min") ?: 0f

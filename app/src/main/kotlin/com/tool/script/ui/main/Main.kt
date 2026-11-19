@@ -78,7 +78,7 @@ fun MainScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
-    var showThemeDialog by remember { mutableStateOf(false) }
+    var showThemeMenu by remember { mutableStateOf(false) }
 
     val env = remember(result) {
         RenderEnv(
@@ -121,14 +121,36 @@ fun MainScreen(
                 title = config.app.name,
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    // Nút thông tin: mở tùy chỉnh chủ đề.
-                    TopBarIcon(icon = "icons/bar_about.svg", description = "Tùy chỉnh chủ đề") {
-                        showThemeDialog = true
-                    }
-                    // Nút nguồn: mở các tùy chọn khởi động lại.
-                    TopBarIcon(icon = "icons/bar_power.svg", description = "Nguồn") {
-                        showRestartMenu = true
-                    }
+                    // Nút thông tin: menu tùy chỉnh chủ đề, thả xuống ngay dưới icon.
+                    ThemeMenu(
+                        expanded = showThemeMenu,
+                        current = themeMode,
+                        onOpen = { showThemeMenu = true },
+                        onDismiss = { showThemeMenu = false },
+                        onSelect = {
+                            showThemeMenu = false
+                            onThemeChange(it)
+                        },
+                    )
+                    // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                    PowerMenu(
+                        expanded = showRestartMenu,
+                        onOpen = { showRestartMenu = true },
+                        onDismiss = { showRestartMenu = false },
+                        onRestartApp = {
+                            showRestartMenu = false
+                            env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                        },
+                        onRebootDevice = {
+                            showRestartMenu = false
+                            env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                scope.launch {
+                                    val result = ExecutorManager.current.exec("reboot", 10)
+                                    if (!result.ok) feedback.toast(rebootErrorText(result))
+                                }
+                            }
+                        },
+                    )
                 },
             )
         },
@@ -181,33 +203,6 @@ fun MainScreen(
                 )
             }
             // OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện.
-            ThemeDialog(
-                show = showThemeDialog,
-                current = themeMode,
-                onDismiss = { showThemeDialog = false },
-                onSelect = {
-                    showThemeDialog = false
-                    onThemeChange(it)
-                },
-            )
-            RestartMenuDialog(
-                show = showRestartMenu,
-                onDismiss = { showRestartMenu = false },
-                onRestartApp = {
-                    showRestartMenu = false
-                    env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-                },
-                onRebootDevice = {
-                    showRestartMenu = false
-                    env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                        scope.launch {
-                            val result = ExecutorManager.current.exec("reboot", 10)
-                            if (!result.ok) feedback.toast(rebootErrorText(result))
-                        }
-                    }
-                },
-            )
-
             LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
             val confirm = env.confirm
             ConfirmDialog(

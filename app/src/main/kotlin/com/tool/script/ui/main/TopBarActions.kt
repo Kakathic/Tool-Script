@@ -1,24 +1,39 @@
 package com.tool.script.ui.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Icon ở thanh trên cùng (Thông tin -> tùy chỉnh chủ đề, Nguồn -> khởi động lại) và hai hộp thoại tương ứng.
+// Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
+// Thông tin -> tùy chỉnh chủ đề, Nguồn -> tùy chọn khởi động lại.
 
 /** Icon bấm được ở thanh trên; [icon] tính từ assets/configs/ giống icon tab. */
 @Composable
@@ -38,38 +53,119 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit) {
     }
 }
 
-/** Menu chọn kiểu khởi động lại. Việc xác nhận và thực thi do nơi gọi xử lý. */
+/** Đặt menu ngay dưới icon, căn mép phải với icon và giữ trong màn hình. */
+private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ): IntOffset {
+        val x = (anchorBounds.right - popupContentSize.width)
+            .coerceAtMost(windowSize.width - popupContentSize.width - marginPx)
+            .coerceAtLeast(marginPx)
+        return IntOffset(x, anchorBounds.bottom)
+    }
+}
+
+/** Icon kèm menu thả xuống. Chạm ra ngoài hoặc bấm Back thì đóng. */
 @Composable
-fun RestartMenuDialog(
-    show: Boolean,
+private fun TopBarMenu(
+    icon: String,
+    description: String,
+    expanded: Boolean,
+    onOpen: () -> Unit,
     onDismiss: () -> Unit,
-    onRestartApp: () -> Unit,
-    onRebootDevice: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    OverlayDialog(show = show, title = "Khởi động lại", onDismissRequest = onDismiss) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(text = "Khởi động lại ứng dụng", modifier = Modifier.fillMaxWidth(), onClick = onRestartApp)
-            TextButton(text = "Khởi động lại máy (cần root)", modifier = Modifier.fillMaxWidth(), onClick = onRebootDevice)
-            TextButton(text = "Đóng", modifier = Modifier.fillMaxWidth(), onClick = onDismiss)
+    Box {
+        TopBarIcon(icon = icon, description = description, onClick = onOpen)
+        if (expanded) {
+            Popup(
+                popupPositionProvider = BelowAnchorPositionProvider(marginPx = 24),
+                onDismissRequest = onDismiss,
+                properties = PopupProperties(focusable = true),
+            ) {
+                val shape = RoundedCornerShape(16.dp)
+                Column(
+                    modifier = Modifier
+                        .widthIn(min = 200.dp)
+                        .shadow(elevation = 8.dp, shape = shape)
+                        .background(MiuixTheme.colorScheme.surfaceContainer, shape)
+                        .padding(vertical = 8.dp),
+                    content = content,
+                )
+            }
         }
     }
 }
 
-/** Hộp thoại tùy chỉnh chủ đề: chọn Theo hệ thống / Sáng / Tối. Chọn xong áp dụng ngay và đóng hộp thoại. */
 @Composable
-fun ThemeDialog(
-    show: Boolean,
+private fun MenuItem(label: String, selected: Boolean = false, onClick: () -> Unit) {
+    val color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+    Text(
+        text = if (selected) "✓  $label" else label,
+        color = color,
+        fontSize = 16.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    )
+}
+
+@Composable
+private fun MenuDivider() {
+    Box(
+        Modifier
+            .padding(vertical = 4.dp, horizontal = 16.dp)
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
+    )
+}
+
+/** Nút thông tin: menu chọn chủ đề Theo hệ thống / Sáng / Tối / Màu động. Chọn xong áp dụng ngay và đóng menu. */
+@Composable
+fun ThemeMenu(
+    expanded: Boolean,
     current: ThemeMode,
+    onOpen: () -> Unit,
     onDismiss: () -> Unit,
     onSelect: (ThemeMode) -> Unit,
 ) {
-    OverlayDialog(show = show, title = "Tùy chỉnh chủ đề", onDismissRequest = onDismiss) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (mode in ThemeMode.entries) {
-                val label = if (mode == current) "✓  ${mode.label}" else mode.label
-                TextButton(text = label, modifier = Modifier.fillMaxWidth(), onClick = { onSelect(mode) })
-            }
-            TextButton(text = "Đóng", modifier = Modifier.fillMaxWidth(), onClick = onDismiss)
+    TopBarMenu(
+        icon = "icons/bar_about.svg",
+        description = "Tùy chỉnh chủ đề",
+        expanded = expanded,
+        onOpen = onOpen,
+        onDismiss = onDismiss,
+    ) {
+        for ((index, mode) in ThemeMode.entries.withIndex()) {
+            // Vạch ngăn giữa nhóm cơ bản và nhóm "Màu động".
+            if (index > 0 && mode.monet && !ThemeMode.entries[index - 1].monet) MenuDivider()
+            MenuItem(label = mode.label, selected = mode == current) { onSelect(mode) }
         }
+    }
+}
+
+/** Nút nguồn: menu chọn kiểu khởi động lại. Việc xác nhận và thực thi do nơi gọi xử lý. */
+@Composable
+fun PowerMenu(
+    expanded: Boolean,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+    onRestartApp: () -> Unit,
+    onRebootDevice: () -> Unit,
+) {
+    TopBarMenu(
+        icon = "icons/bar_power.svg",
+        description = "Nguồn",
+        expanded = expanded,
+        onOpen = onOpen,
+        onDismiss = onDismiss,
+    ) {
+        MenuItem(label = "Khởi động lại ứng dụng", onClick = onRestartApp)
+        MenuItem(label = "Khởi động lại máy (cần root)", onClick = onRebootDevice)
     }
 }

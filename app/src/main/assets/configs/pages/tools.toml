@@ -193,3 +193,31 @@ run       = 'mkdir -p /sdcard/Pictures; f=/sdcard/Pictures/shot_$(date +%s).png;
 shell     = "banner"
 lock      = "ROOT_MODE != root && ROOT_MODE != system"
 lock_mode = "hide"
+
+[[group]]
+title = "Thành phần mới"
+
+# checkbox: giống switch, hiện ô tick (không có lệnh thì chỉ lưu trạng thái)
+[[group.item]]
+type  = "checkbox"
+id    = "demo_check"
+title = "Ô tick mẫu"
+desc  = "Bấm cả hàng cũng đổi"
+shell = "hidden"
+
+# radio: chọn một, hiện sẵn mọi lựa chọn
+[[group.item]]
+type    = "radio"
+id      = "demo_radio"
+title   = "Lựa chọn mẫu"
+shell   = "hidden"
+options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
+
+# progress: chỉ để xem, đọc số từ get
+[[group.item]]
+type  = "progress"
+id    = "demo_progress"
+title = "Dung lượng pin"
+desc  = "Đọc từ /sys/class/power_supply/battery/capacity"
+get   = "cat /sys/class/power_supply/battery/capacity"
+
