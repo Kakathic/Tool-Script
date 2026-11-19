@@ -120,6 +120,8 @@ title = "Chế độ game"
 
 - `[[group]]` dùng được `title`, `visible_if`, `lock`, `lock_mode`; không có `type`.
 - Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
+- Các item con trong một `[[group]]` nằm chung trong một thẻ lớn. `[[item]]` đứng ngoài group thì mỗi item một thẻ riêng.
+- Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả tiêu đề.
 - Cú pháp cũ `[[item]]` + `type = "group"` và `[[item.item]]` không còn dùng:
   `type = "group"` bị bỏ qua kèm cảnh báo.
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).

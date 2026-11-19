@@ -2,6 +2,7 @@ package com.tool.script.ui.render
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -99,7 +100,7 @@ fun isShown(item: Item, store: VariableStore): Boolean {
 }
 
 @Composable
-fun ItemRenderer(item: Item, env: RenderEnv) {
+fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     val lock = item.lock
     val locked = lock != null && env.store.evaluate(lock)
     val enabled = !locked
@@ -107,20 +108,33 @@ fun ItemRenderer(item: Item, env: RenderEnv) {
         .fillMaxWidth()
         .alpha(if (enabled) 1f else 0.4f)
     when (item.type) {
-        ItemType.Text -> TextItem(item, modifier)
+        ItemType.Text -> TextItem(item, modifier, inGroup)
         ItemType.Group -> GroupItem(item, env)
-        ItemType.Button -> ButtonItem(item, env, modifier, enabled)
-        ItemType.Switch -> SwitchItem(item, env, modifier, enabled)
-        ItemType.Input -> InputItem(item, env, modifier, enabled)
-        ItemType.Select -> SelectItem(item, env, modifier, enabled)
-        ItemType.Slider -> SliderItem(item, env, modifier, enabled)
-        ItemType.Link -> LinkItem(item, env, modifier, enabled)
+        ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
+        ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
+        ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
+        ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
+        ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
+        ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
+    }
+}
+
+/**
+ * Nền của một item. Item đứng riêng (ngoài group) có thẻ của mình;
+ * item trong group không vẽ thẻ, vì cả group dùng chung một thẻ lớn (xem [GroupItem]).
+ */
+@Composable
+private fun ItemSurface(modifier: Modifier, inGroup: Boolean, content: @Composable ColumnScope.() -> Unit) {
+    if (inGroup) {
+        Column(modifier) { content() }
+    } else {
+        Card(modifier) { content() }
     }
 }
 
 @Composable
-private fun TextItem(item: Item, modifier: Modifier) {
-    Card(modifier) {
+private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
+    ItemSurface(modifier, inGroup) {
         BasicComponent(title = item.title, summary = item.content ?: item.desc)
     }
 }
@@ -133,6 +147,8 @@ private val GroupTitleShiftLeft = 12.dp
 
 @Composable
 private fun GroupItem(item: Item, env: RenderEnv) {
+    val children = item.children.filter { isShown(it, env.store) }
+    if (children.isEmpty()) return // group trống (con bị ẩn hết) thì ẩn luôn cả tiêu đề
     Column {
         SmallTitle(
             text = item.title,
@@ -143,16 +159,16 @@ private fun GroupItem(item: Item, env: RenderEnv) {
                 layout(placeable.width, placeable.height - trim) { placeable.place(-shift, -trim) }
             },
         )
-        // Tiêu đề dính sát thẻ đầu tiên; 16dp chỉ nằm giữa các thẻ con với nhau.
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item.children.filter { isShown(it, env.store) }.forEach { ItemRenderer(it, env) }
+        // Mọi item con gộp chung trong một thẻ lớn, tiêu đề dính sát thẻ.
+        Card(Modifier.fillMaxWidth()) {
+            children.forEach { ItemRenderer(it, env, inGroup = true) }
         }
     }
 }
 
 @Composable
-private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
-    Card(modifier) {
+private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
@@ -163,7 +179,7 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 }
 
 @Composable
-private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
+private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     val checked = env.store[id] == "1"
 
@@ -179,7 +195,7 @@ private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
         }
     }
 
-    Card(modifier) {
+    ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
@@ -203,9 +219,9 @@ private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 }
 
 @Composable
-private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
+private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
-    Card(modifier) {
+    ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
             Text(item.title, style = MiuixTheme.textStyles.headline1)
             item.desc?.let {
@@ -236,13 +252,13 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
 }
 
 @Composable
-private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
+private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     var showDialog by remember { mutableStateOf(false) }
     val current = env.store[id]
     val label = item.options.firstOrNull { it.value == current }?.label ?: current
 
-    Card(modifier) {
+    ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
@@ -272,12 +288,12 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 }
 
 @Composable
-private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
+private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     val value = (env.store[id].toFloatOrNull() ?: item.min).coerceIn(item.min, item.max)
     val steps = (((item.max - item.min) / item.step).roundToInt() - 1).coerceAtLeast(0)
 
-    Card(modifier) {
+    ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
@@ -307,8 +323,8 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 }
 
 @Composable
-private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean) {
-    Card(modifier) {
+private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
