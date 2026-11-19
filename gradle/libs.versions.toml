@@ -3,7 +3,7 @@
 
 [versions]
 agp = "9.5.1"                      # Bản ổn định hỗ trợ API 37 (Android 17)
-kotlin = "2.2.10"
+kotlin = "2.4.0"
 compose = "1.11.1"                 # Compose Multiplatform runtime mà Miuix 0.9.2 đang dùng
 miuix = "0.9.2"                    # kiểm tra bản mới nhất: https://github.com/compose-miuix-ui/miuix
 tomlkt = "0.6.1"
