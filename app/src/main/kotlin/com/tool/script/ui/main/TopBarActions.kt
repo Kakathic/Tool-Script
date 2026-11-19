@@ -1,5 +1,7 @@
 package com.tool.script.ui.main
 
+import android.content.Context
+import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -15,11 +17,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -71,6 +75,33 @@ private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPosi
     }
 }
 
+/** Làm tối cửa sổ phía sau Popup mà không thay đổi kích thước hay vùng nhận chạm. */
+@Composable
+private fun DimMenuBackground() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val popupView = view.rootView
+        val params = popupView.layoutParams as? WindowManager.LayoutParams
+        val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val originalFlags = params?.flags
+        val originalDimAmount = params?.dimAmount
+        if (params != null) {
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND
+            params.dimAmount = 0.32f
+            windowManager.updateViewLayout(popupView, params)
+        }
+        onDispose {
+            if (params != null && originalFlags != null && originalDimAmount != null) {
+                params.flags = originalFlags
+                params.dimAmount = originalDimAmount
+                if (popupView.isAttachedToWindow) {
+                    windowManager.updateViewLayout(popupView, params)
+                }
+            }
+        }
+    }
+}
+
 /** Icon kèm menu thả xuống. Chạm ra ngoài hoặc bấm Back thì đóng. */
 @Composable
 private fun TopBarMenu(
@@ -91,6 +122,7 @@ private fun TopBarMenu(
                 onDismissRequest = onDismiss,
                 properties = PopupProperties(focusable = true),
             ) {
+                DimMenuBackground()
                 val shape = RoundedCornerShape(16.dp)
                 BoxWithConstraints {
                     Column(
