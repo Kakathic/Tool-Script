@@ -19,3 +19,35 @@ page  = "tools"
 type  = "link"
 title = "Về trang chủ"
 page  = "home"
+
+[[group]]
+title = "Các kiểu hiển thị kết quả"
+
+[[group.item]]
+type    = "text"
+title   = "log"
+content = "Mặc định. Hiện bảng log đầy đủ, có nút sao chép."
+
+[[group.item]]
+type    = "text"
+title   = "hidden"
+content = "Chạy ẩn. Lệnh lỗi thì hiện toast."
+
+[[group.item]]
+type    = "text"
+title   = "banner"
+content = "Thông báo ngắn ngay trong app, tự ẩn sau vài giây."
+
+[[group.item]]
+type    = "text"
+title   = "notice"
+content = "Thông báo hệ thống của Android."
+
+[[group]]
+title = "Thử ngay"
+
+[[group.item]]
+type  = "link"
+title = "Thông tin máy và thử nghiệm lệnh"
+desc  = "Tab Trang chủ"
+page  = "home"

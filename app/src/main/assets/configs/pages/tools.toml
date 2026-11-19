@@ -90,3 +90,106 @@ step    = 5
 default = 128
 run     = "settings put system screen_brightness $brightness"
 shell   = "notice"
+
+[[group]]
+title = "Mạng"
+
+# input: giá trị dùng trong lệnh dưới dạng $host (luôn đặt trong nháy kép)
+[[group.item]]
+type    = "input"
+id      = "host"
+title   = "Ping máy chủ"
+hint    = "Tên miền hoặc địa chỉ IP"
+default = "8.8.8.8"
+run     = 'ping -c 3 -W 2 "$host"'
+timeout = 15
+shell   = "log"
+
+[[group.item]]
+type  = "button"
+title = "Địa chỉ IP của máy"
+desc  = "Lọc dòng inet từ ip addr"
+run   = "ip -4 addr show | grep inet"
+
+[[group]]
+title = "Chế độ ví dụ"
+
+# select + visible_if: mục bên dưới chỉ hiện khi chọn "Hiệu năng"
+[[group.item]]
+type    = "select"
+id      = "profile"
+title   = "Hồ sơ hiệu năng"
+desc    = "Chọn xong là chạy lệnh ngay"
+default = "balanced"
+run     = 'echo "Đã chọn hồ sơ: $profile"'
+shell   = "banner"
+options = [
+  "Cân bằng|balanced",
+  "Hiệu năng|performance",
+  "Tiết kiệm|saver",
+]
+
+[[group.item]]
+type       = "text"
+title      = "Đang ở chế độ hiệu năng"
+content    = "Mục này và thanh trượt bên dưới chỉ hiện khi profile == performance"
+visible_if = "profile == performance"
+
+[[group.item]]
+type       = "slider"
+id         = "thermal_limit"
+title      = "Ngưỡng nhiệt (°C)"
+desc       = "Ví dụ: giá trị được truyền vào lệnh qua $thermal_limit"
+min        = 40
+max        = 90
+step       = 5
+default    = 70
+run        = 'echo "Ngưỡng nhiệt: $thermal_limit"'
+shell      = "notice"
+visible_if = "profile == performance"
+
+[[group]]
+title = "Hệ thống (cần root)"
+
+# switch + get: get in ra 1 / 0 để đọc trạng thái hiện tại; không root thì mờ (readonly)
+[[group.item]]
+type      = "switch"
+id        = "stay_awake"
+title     = "Giữ màn hình sáng khi sạc"
+desc      = "svc power stayon - cần root"
+on        = "svc power stayon true"
+off       = "svc power stayon false"
+get       = '[ "$(settings get global stay_on_while_plugged_in)" != "0" ] && echo 1 || echo 0'
+shell     = "hidden"
+lock      = "ROOT_MODE != root"
+lock_mode = "readonly"
+
+# lock + lock_mode = hide + confirm: không root thì ẩn hẳn, có root thì hỏi trước khi chạy
+[[group.item]]
+type      = "button"
+title     = "Giải phóng RAM đệm"
+desc      = "Ghi 3 vào drop_caches"
+run       = "sync; echo 3 > /proc/sys/vm/drop_caches"
+confirm   = "Giải phóng bộ nhớ đệm? Ứng dụng có thể chạy chậm lại trong chốc lát."
+shell     = "banner"
+lock      = "ROOT_MODE != root"
+lock_mode = "hide"
+
+[[group.item]]
+type      = "button"
+title     = "Khởi động lại giao diện hệ thống"
+desc      = "Tắt SystemUI, hệ thống tự mở lại"
+run       = "pkill -f com.android.systemui"
+confirm   = "Khởi động lại SystemUI? Màn hình sẽ nháy trong giây lát."
+shell     = "hidden"
+lock      = "ROOT_MODE != root"
+lock_mode = "hide"
+
+[[group.item]]
+type      = "button"
+title     = "Chụp màn hình"
+desc      = "Lưu vào /sdcard/Pictures"
+run       = 'mkdir -p /sdcard/Pictures; f=/sdcard/Pictures/shot_$(date +%s).png; screencap -p "$f" && echo "Đã lưu: $f"'
+shell     = "banner"
+lock      = "ROOT_MODE != root && ROOT_MODE != system"
+lock_mode = "hide"

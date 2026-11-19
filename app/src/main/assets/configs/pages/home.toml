@@ -57,3 +57,80 @@ type       = "text"
 title      = "Chỉ hiện trên Android 14 trở lên"
 content    = "Biến SDK dùng với ==, !=, &&, || (chưa có so sánh lớn/nhỏ)"
 visible_if = "SDK == 34 || SDK == 35 || SDK == 36 || SDK == 37"
+
+[[group]]
+title = "Thông tin máy"
+
+# shell = log (mặc định): hiện bảng log đầy đủ; lệnh nhiều dòng dùng được `;`
+[[group.item]]
+type  = "button"
+title = "Thông tin thiết bị"
+desc  = "Model, hãng, phiên bản Android (shell = log)"
+run   = 'echo "Model: $(getprop ro.product.model)"; echo "Hãng: $(getprop ro.product.manufacturer)"; echo "Android: $(getprop ro.build.version.release) (SDK $(getprop ro.build.version.sdk))"'
+
+# shell = banner: thông báo ngắn ngay trong app
+[[group.item]]
+type  = "button"
+title = "Phiên bản kernel"
+desc  = "shell = banner"
+run   = "uname -r"
+shell = "banner"
+
+# shell = notice: thông báo hệ thống của Android (xin quyền thông báo lần đầu)
+[[group.item]]
+type  = "button"
+title = "Thời gian bật máy"
+desc  = "shell = notice"
+run   = "uptime"
+shell = "notice"
+
+[[group.item]]
+type  = "button"
+title = "Dung lượng bộ nhớ trong"
+desc  = "df -h trên /data"
+run   = "df -h /data"
+
+[[group.item]]
+type  = "button"
+title = "RAM"
+desc  = "5 dòng đầu của /proc/meminfo"
+run   = "head -n 5 /proc/meminfo"
+
+# visible_if với biến dựng sẵn ABI / ROOT_MODE
+[[group.item]]
+type       = "text"
+title      = "Máy 64-bit ARM"
+content    = "Chỉ hiện khi ABI == arm64-v8a"
+visible_if = "ABI == arm64-v8a"
+
+[[group.item]]
+type       = "text"
+title      = "Đang chạy không root"
+content    = "Chỉ hiện khi ROOT_MODE == any. Một số mục ở tab Công cụ sẽ bị khóa hoặc ẩn."
+visible_if = "ROOT_MODE == any"
+
+[[group]]
+title = "Thử nghiệm kết quả lệnh"
+
+# shell = hidden: chạy ẩn, chỉ khi lỗi mới hiện toast
+[[group.item]]
+type  = "button"
+title = "Chạy ẩn (thành công)"
+desc  = "shell = hidden, không hiện gì"
+run   = "true"
+shell = "hidden"
+
+[[group.item]]
+type  = "button"
+title = "Chạy ẩn (lỗi)"
+desc  = "shell = hidden, lệnh lỗi nên hiện toast"
+run   = "ls /thu_muc_khong_ton_tai"
+shell = "hidden"
+
+# timeout (giây): quá giờ thì dừng lệnh và báo hết thời gian chờ
+[[group.item]]
+type    = "button"
+title   = "Lệnh chạy quá giờ"
+desc    = "sleep 5 nhưng timeout = 2"
+run     = "sleep 5"
+timeout = 2
