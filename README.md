@@ -9,7 +9,7 @@
 ## Cách mở
 
 1. Mở thư mục này bằng Android Studio (cần SDK 37 và JDK 17+).
-2. Thư mục `gradle/wrapper/` mới có `gradle-wrapper.properties` (Gradle 9.3.1), chưa có `gradlew` và `gradle-wrapper.jar`.
+2. Thư mục `gradle/wrapper/` mới có `gradle-wrapper.properties` (Gradle 9.7.0), chưa có `gradlew` và `gradle-wrapper.jar`.
    Android Studio dùng Gradle theo cài đặt, hoặc chạy `gradle wrapper` để sinh wrapper.
 3. Kiểm tra version trong `gradle/libs.versions.toml` (Miuix, AGP, Kotlin, Compose...) trước lần sync đầu.
 

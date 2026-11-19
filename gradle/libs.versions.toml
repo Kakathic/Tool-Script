@@ -3,21 +3,21 @@
 
 [versions]
 agp = "9.5.1"                      # Bản ổn định hỗ trợ API 37 (Android 17)
-kotlin = "2.4.0"
+kotlin = "2.4.20"
 compose = "1.11.1"                 # Compose Multiplatform runtime mà Miuix 0.9.2 đang dùng
 miuix = "0.9.2"                    # kiểm tra bản mới nhất: https://github.com/compose-miuix-ui/miuix
 tomlkt = "0.6.1"
-kotlinx-serialization = "1.9.0"
-kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.11.0"
+kotlinx-coroutines = "1.11.0"
 libsu = "6.0.0"
-coil = "3.4.0"
-androidx-core = "1.17.0"
+coil = "3.6.3"
+androidx-core = "1.19.1"
 # activity >= 1.12 mới tích hợp NavigationEvent (ComponentActivity là NavigationEventDispatcherOwner).
 # Dưới 1.12, OverlayDialog của Miuix ném IllegalStateException "No NavigationEventDispatcher was provided".
 androidx-activity = "1.13.0"
-androidx-navigationevent = "1.0.1"
+androidx-navigationevent = "1.1.2"
 androidx-splashscreen = "1.2.0"
-androidx-lifecycle = "2.9.4"
+androidx-lifecycle = "2.11.0"
 
 [libraries]
 # Compose (Miuix cần các artifact này khai báo rõ)

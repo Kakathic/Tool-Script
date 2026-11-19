@@ -7,7 +7,6 @@ plugins {
 android {
     namespace = "com.tool.script"
     compileSdk = 37
-    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "com.tool.script"

@@ -16,10 +16,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -27,9 +27,9 @@ jobs:
       # Repo chưa có gradlew nên dùng Gradle do action cài (cùng version với gradle-wrapper.properties).
       # Khi đã commit gradlew, đổi bước build bên dưới thành ./gradlew và bỏ gradle-version.
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: 9.6.0
+          gradle-version: 9.7.0
 
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
@@ -38,7 +38,7 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace --warning-mode none
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ToolScript-debug-apk
           path: app/build/outputs/apk/debug/*.apk
