@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
@@ -195,7 +196,11 @@ private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 @Composable
 private fun CheckboxItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = true) { checked, isEnabled, onChange ->
-        Checkbox(checked = checked, enabled = isEnabled, onCheckedChange = onChange)
+        Checkbox(
+            state = if (checked) ToggleableState.On else ToggleableState.Off,
+            enabled = isEnabled,
+            onClick = { onChange(!checked) },
+        )
     }
 }
 
