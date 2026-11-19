@@ -2,7 +2,12 @@ package com.tool.script.ui.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,8 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,16 +52,13 @@ import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.min
 
-// Màn hình chính: tiêu đề = tên app, HorizontalPager + thanh tab dưới.
+// Màn hình chính: tiêu đề = tên app (căn trái, cỡ cố định), HorizontalPager + thanh tab dưới.
 // Thanh tab là cửa sổ trượt rộng 4 ô (tối thiểu 2); chỉ 1 tab thì ẩn thanh tab. Logic cửa sổ: TabWindow.kt.
 
 /**
@@ -75,7 +77,6 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val feedback = rememberFeedbackHost()
     val pagerState = rememberPagerState { pages.size }
-    val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
     var showThemeMenu by remember { mutableStateOf(false) }
@@ -117,11 +118,10 @@ fun MainScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            AppTopBar(
                 title = config.app.name,
-                scrollBehavior = scrollBehavior,
                 actions = {
-                    // Nút thông tin: menu tùy chỉnh chủ đề, thả xuống ngay dưới icon.
+                    // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
                     ThemeMenu(
                         expanded = showThemeMenu,
                         current = themeMode,
@@ -198,7 +198,6 @@ fun MainScreen(
                     list = page.items.filter { isShown(it, env.store) },
                     error = page.error,
                     env = env,
-                    scrollBehavior = scrollBehavior,
                     bottomInset = inner.calculateBottomPadding(),
                 )
             }
@@ -217,18 +216,40 @@ fun MainScreen(
     }
 }
 
+/** Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn. */
+@Composable
+private fun AppTopBar(title: String, actions: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MiuixTheme.colorScheme.surface)
+            .statusBarsPadding()
+            .height(56.dp)
+            .padding(start = 16.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        actions()
+    }
+}
+
 @Composable
 private fun PageList(
     list: List<com.tool.script.config.Item>,
     error: String?,
     env: RenderEnv,
-    scrollBehavior: ScrollBehavior,
     bottomInset: androidx.compose.ui.unit.Dp,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

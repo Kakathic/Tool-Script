@@ -20,3 +20,9 @@ id    = "about"
 title = "Giới thiệu"
 icon  = "icons/about.svg"
 file  = "pages/about.toml"
+
+[[page]]
+id    = "demo"
+title = "Demo"
+icon  = "icons/demo.svg"
+file  = "pages/demo.toml"

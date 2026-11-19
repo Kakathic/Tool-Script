@@ -1,0 +1,59 @@
+# Trang demo (tab thứ 4): text, button, switch, checkbox, radio, slider, progress, link.
+
+[[item]]
+type    = "text"
+title   = "Tab demo"
+content = "Trang này là tab thứ 4, dùng để thử nhanh các thành phần."
+
+[[group]]
+title = "Nút và công tắc"
+
+[[group.item]]
+type  = "button"
+title = "Nút thử"
+desc  = "Chạy echo và hiện thông báo ngắn trong app"
+run   = "echo xin chào từ tab demo"
+shell = "banner"
+
+[[group.item]]
+type  = "switch"
+id    = "demo_switch"
+title = "Công tắc thử"
+desc  = "Không có lệnh, chỉ lưu trạng thái"
+shell = "hidden"
+
+[[group.item]]
+type  = "checkbox"
+id    = "demo_tab_check"
+title = "Ô tick thử"
+shell = "hidden"
+
+[[group]]
+title = "Lựa chọn"
+
+[[group.item]]
+type    = "radio"
+id      = "demo_tab_radio"
+title   = "Chọn một"
+default = "b"
+shell   = "hidden"
+options = ["Tùy chọn A|a", "Tùy chọn B|b", "Tùy chọn C|c"]
+
+[[group.item]]
+type    = "slider"
+id      = "demo_slider"
+title   = "Thanh trượt"
+min     = 0
+max     = 100
+step    = 10
+default = 50
+run     = 'echo "Giá trị: $demo_slider"'
+shell   = "banner"
+
+[[group]]
+title = "Điều hướng"
+
+[[group.item]]
+type  = "link"
+title = "Về trang chủ"
+page  = "home"

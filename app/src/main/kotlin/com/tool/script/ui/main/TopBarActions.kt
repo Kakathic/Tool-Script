@@ -40,7 +40,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
-// Thông tin -> tùy chỉnh chủ đề, Nguồn -> tùy chọn khởi động lại.
+// Chủ đề -> tùy chỉnh giao diện, Nguồn -> tùy chọn khởi động lại.
 
 /** Icon bấm được ở thanh trên; [icon] tính từ assets/configs/ giống icon tab. */
 @Composable
@@ -165,7 +165,7 @@ private fun MenuDivider() {
     )
 }
 
-/** Nút thông tin: menu chọn chủ đề Theo hệ thống / Sáng / Tối / Màu động. Chọn xong áp dụng ngay và đóng menu. */
+/** Nút chủ đề: menu chọn chủ đề Theo hệ thống / Sáng / Tối / Màu động. Chọn xong áp dụng ngay và đóng menu. */
 @Composable
 fun ThemeMenu(
     expanded: Boolean,
@@ -175,7 +175,7 @@ fun ThemeMenu(
     onSelect: (ThemeMode) -> Unit,
 ) {
     TopBarMenu(
-        icon = "icons/bar_about.svg",
+        icon = "icons/bar_theme.svg",
         description = "Tùy chỉnh chủ đề",
         expanded = expanded,
         onOpen = onOpen,
