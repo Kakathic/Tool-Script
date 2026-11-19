@@ -108,10 +108,15 @@ id    = "governor"
 title = "Governor"
 run   = "echo $governor > /sys/yyy"
 options = [
-  { label = "Hiệu năng", value = "performance" },
-  { label = "Tiết kiệm", value = "powersave" },
+  "Hiệu năng|performance",   # "nhãn|giá trị"
+  "Tiết kiệm|powersave",
+  "schedutil",               # không có | thì nhãn = giá trị
 ]
 ```
+
+- Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
+- Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
+- Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
 
 ## 8. Biến và điều kiện
 

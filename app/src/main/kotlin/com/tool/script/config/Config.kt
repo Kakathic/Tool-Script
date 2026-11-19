@@ -95,6 +95,15 @@ object TomlParser {
 
     private fun TomlTable.float(key: String): Float? = str(key)?.toFloatOrNull()
 
+    /** "Hiệu năng|performance" -> SelectOption; chỉ tách ở dấu | đầu tiên. Giá trị rỗng thì không hợp lệ. */
+    internal fun parseOption(raw: String): SelectOption? {
+        val idx = raw.indexOf('|')
+        val label = (if (idx >= 0) raw.substring(0, idx) else raw).trim()
+        val value = (if (idx >= 0) raw.substring(idx + 1) else raw).trim()
+        if (value.isEmpty()) return null
+        return SelectOption(label.ifEmpty { value }, value)
+    }
+
     fun parseMain(file: String, text: String, warnings: MutableList<String>): Pair<AppInfo, List<PageRef>> {
         val root = parseTable(file, text)
         val app = root["app"] as? TomlTable
@@ -211,10 +220,16 @@ object TomlParser {
             }
         }
 
-        val options = (t["options"] as? TomlArray).orEmpty().mapNotNull { o ->
-            val ot = o as? TomlTable
-            val value = ot?.str("value")
-            if (ot == null || value == null) null else SelectOption(ot.str("label") ?: value, value)
+        // options = ["Nhãn|giá trị", ...]; không có dấu | thì nhãn = giá trị.
+        val options = mutableListOf<SelectOption>()
+        (t["options"] as? TomlArray)?.forEachIndexed { i, o ->
+            val raw = (o as? TomlLiteral)?.content
+            val option = raw?.let(::parseOption)
+            if (option == null) {
+                warnings += "$label \"$title\": options #${i + 1} không hợp lệ (cần dạng \"nhãn|giá trị\"), bỏ qua"
+            } else {
+                options += option
+            }
         }
         if (type == ItemType.Select && options.isEmpty()) {
             warnings += "$label \"$title\" (select) không có options hợp lệ"

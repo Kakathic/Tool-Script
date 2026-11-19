@@ -14,3 +14,9 @@ id    = "tools"
 title = "Công cụ"
 icon  = "icons/tools.svg"
 file  = "pages/tools.toml"
+
+[[page]]
+id    = "about"
+title = "Giới thiệu"
+icon  = "icons/about.svg"
+file  = "pages/about.toml"

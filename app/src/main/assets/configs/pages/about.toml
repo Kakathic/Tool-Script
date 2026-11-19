@@ -1,0 +1,22 @@
+# Trang mẫu: link (chuyển sang tab khác), text.
+
+[[item]]
+type    = "text"
+title   = "Tool Script"
+content = "Giao diện được nạp từ file TOML trong assets/configs."
+
+[[item]]
+type  = "group"
+title = "Liên kết"
+
+# link: page = id của một [[page]] trong main.toml
+[[item.item]]
+type  = "link"
+title = "Đến trang Công cụ"
+desc  = "page = \"tools\""
+page  = "tools"
+
+[[item.item]]
+type  = "link"
+title = "Về trang chủ"
+page  = "home"

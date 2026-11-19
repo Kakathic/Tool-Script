@@ -1,22 +1,61 @@
-# Trang mẫu. Item nằm trong group viết bằng [[item.item]] (cú pháp TOML cho bảng lồng nhau).
+# Trang mẫu: text, group, switch, visible_if, lock.
+# Item nằm trong group viết bằng [[item.item]] (cú pháp TOML cho bảng lồng nhau).
+# Mọi item chạy lệnh đều có thể dùng shell = log | hidden | banner | notice.
 
 [[item]]
 type    = "text"
 title   = "Chào mừng"
-content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml"
+content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml."
 
 [[item]]
 type  = "group"
-title = "Hiệu năng"
+title = "Công tắc"
 
+# switch + get: đọc trạng thái hiện tại; khóa dạng readonly (mờ) khi không có root
 [[item.item]]
 type      = "switch"
 id        = "game_mode"
 title     = "Chế độ game"
-desc      = "Tăng xung CPU/GPU (ví dụ)"
+desc      = "Tăng xung CPU/GPU (ví dụ) - cần root"
 on        = "echo 1 > /sys/xxx"
 off       = "echo 0 > /sys/xxx"
 get       = "cat /sys/xxx"
 shell     = "log"
 lock      = "ROOT_MODE != root"
 lock_mode = "readonly"
+
+# switch không có lệnh get, chỉ lưu trạng thái; shell = hidden (lỗi mới báo toast)
+[[item.item]]
+type  = "switch"
+id    = "show_more"
+title = "Hiện thêm tùy chọn"
+desc  = "Bật để hiện mục bên dưới (visible_if)"
+shell = "hidden"
+
+# visible_if: chỉ hiện khi công tắc bên trên bật
+[[item.item]]
+type       = "text"
+title      = "Mục ẩn"
+content    = "Mục này chỉ hiện khi bật \"Hiện thêm tùy chọn\""
+visible_if = "show_more == 1"
+
+[[item]]
+type  = "group"
+title = "Điều kiện"
+
+# lock + lock_mode = "hide": không đủ điều kiện thì ẩn hẳn
+[[item.item]]
+type      = "button"
+title     = "Chỉ hiện khi root hoặc ROM"
+desc      = "Dùng lock + lock_mode = hide"
+run       = "id"
+shell     = "banner"
+lock      = "ROOT_MODE != root && ROOT_MODE != system"
+lock_mode = "hide"
+
+# Biến dựng sẵn SDK, ABI, ROOT_MODE; toán tử &&, ||
+[[item.item]]
+type       = "text"
+title      = "Chỉ hiện trên Android 14 trở lên"
+content    = "Biến SDK dùng với ==, !=, &&, || (chưa có so sánh lớn/nhỏ)"
+visible_if = "SDK == 34 || SDK == 35 || SDK == 36 || SDK == 37"
