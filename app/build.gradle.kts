@@ -36,6 +36,13 @@ android {
     }
 }
 
+// Tắt các dòng "w: ..." (cảnh báo trình biên dịch Kotlin) khi build. Lỗi (e:) vẫn hiện.
+kotlin {
+    compilerOptions {
+        suppressWarnings.set(true)
+    }
+}
+
 dependencies {
     // AndroidX
     implementation(libs.androidx.core.ktx)
