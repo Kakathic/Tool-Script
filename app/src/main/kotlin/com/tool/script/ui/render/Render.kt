@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
@@ -124,10 +125,24 @@ private fun TextItem(item: Item, modifier: Modifier) {
     }
 }
 
+/** Cắt bớt phần hở phía trên tiêu đề group (hở với thẻ ở trên). Tăng số này để hở nhỏ hơn nữa. */
+private val GroupTitleTrimTop = 8.dp
+
+/** Dời tiêu đề group sang trái, để thẳng hàng với chữ trong thẻ. */
+private val GroupTitleShiftLeft = 12.dp
+
 @Composable
 private fun GroupItem(item: Item, env: RenderEnv) {
     Column {
-        SmallTitle(text = item.title)
+        SmallTitle(
+            text = item.title,
+            modifier = Modifier.layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                val trim = GroupTitleTrimTop.roundToPx().coerceAtMost(placeable.height)
+                val shift = GroupTitleShiftLeft.roundToPx()
+                layout(placeable.width, placeable.height - trim) { placeable.place(-shift, -trim) }
+            },
+        )
         // Tiêu đề dính sát thẻ đầu tiên; 16dp chỉ nằm giữa các thẻ con với nhau.
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item.children.filter { isShown(it, env.store) }.forEach { ItemRenderer(it, env) }
