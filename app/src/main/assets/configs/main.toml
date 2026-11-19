@@ -1,0 +1,16 @@
+[app]
+name    = "Tool Script"
+version = 1
+lang    = "vi"
+
+[[page]]
+id    = "home"
+title = "Trang chủ"
+icon  = "icons/home.svg"
+file  = "pages/home.toml"
+
+[[page]]
+id    = "tools"
+title = "Công cụ"
+icon  = "icons/tools.svg"
+file  = "pages/tools.toml"

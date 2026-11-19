@@ -1,0 +1,22 @@
+# Trang mẫu. Item nằm trong group viết bằng [[item.item]] (cú pháp TOML cho bảng lồng nhau).
+
+[[item]]
+type    = "text"
+title   = "Chào mừng"
+content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml"
+
+[[item]]
+type  = "group"
+title = "Hiệu năng"
+
+[[item.item]]
+type      = "switch"
+id        = "game_mode"
+title     = "Chế độ game"
+desc      = "Tăng xung CPU/GPU (ví dụ)"
+on        = "echo 1 > /sys/xxx"
+off       = "echo 0 > /sys/xxx"
+get       = "cat /sys/xxx"
+shell     = "log"
+lock      = "ROOT_MODE != root"
+lock_mode = "readonly"

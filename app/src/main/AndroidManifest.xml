@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Quyền bộ nhớ: xin lúc khởi động, từ chối thì thoát app -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- Thông báo hệ thống (shell = "notice"): chỉ xin khi dùng tới, Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Backend adb kết nối về chính máy qua localhost -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 17 (targetSdk 37): quyền truy cập mạng cục bộ. Chỉ xin lúc runtime khi dùng backend adb.
+         Chưa rõ loopback (127.0.0.1) có bị ảnh hưởng không, cần thử trên máy thật. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ToolScript.Starting">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Trung tâm lỗi: chạy ở tiến trình riêng để vẫn hiện được khi app chính văng -->
+        <activity
+            android:name=".crash.CrashActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:process=":crash"
+            android:theme="@style/Theme.ToolScript" />
+    </application>
+</manifest>
