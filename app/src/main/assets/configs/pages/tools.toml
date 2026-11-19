@@ -1,19 +1,10 @@
 # Trang mẫu: button, input, select (options = "nhãn|giá trị"), slider.
 
-<<<<<<< HEAD
-[[item]]
-type  = "group"
-title = "Nút bấm"
-
-# confirm: hỏi xác nhận trước khi chạy; shell = banner: thông báo ngắn trong app
-[[item.item]]
-=======
 [[group]]
 title = "Nút bấm"
 
 # confirm: hỏi xác nhận trước khi chạy; shell = banner: thông báo ngắn trong app
 [[group.item]]
->>>>>>> e320bec (Update)
 type      = "button"
 title     = "Xóa cache hệ thống"
 desc      = "Chỉ hiện khi có root hoặc ROM"
@@ -24,66 +15,12 @@ lock      = "ROOT_MODE != root && ROOT_MODE != system"
 lock_mode = "hide"
 
 # shell mặc định = log: hiện log đầy đủ; timeout tính bằng giây
-<<<<<<< HEAD
-[[item.item]]
-=======
 [[group.item]]
->>>>>>> e320bec (Update)
 type    = "button"
 title   = "Xem thông tin thiết bị"
 desc    = "Chạy được cả khi không root"
 run     = "getprop ro.product.model; getprop ro.build.version.release"
 timeout = 10
-<<<<<<< HEAD
-
-[[item]]
-type  = "group"
-title = "Nhập liệu"
-
-# input kiểu chữ: giá trị dùng trong lệnh dưới dạng $ten
-[[item.item]]
-type    = "input"
-id      = "note"
-title   = "Ghi chú"
-hint    = "Nhập nội dung"
-default = "xin chào"
-run     = "echo \"$note\""
-shell   = "banner"
-
-# input kiểu số
-[[item.item]]
-type       = "input"
-id         = "port"
-title      = "Cổng"
-desc       = "input_type = number"
-hint       = "Ví dụ 5555"
-default    = "5555"
-input_type = "number"
-run        = "echo \"port=$port\""
-shell      = "log"
-
-[[item]]
-type  = "group"
-title = "Lựa chọn"
-
-# select: options là chuỗi "nhãn|giá trị"; không có | thì nhãn = giá trị
-[[item.item]]
-type    = "select"
-id      = "governor"
-title   = "Governor"
-desc    = "Giá trị chọn được truyền vào $governor"
-default = "performance"
-run     = "echo $governor > /sys/yyy"
-shell   = "hidden"
-options = [
-  "Hiệu năng|performance",
-  "Tiết kiệm|powersave",
-  "Cân bằng|schedutil",
-]
-
-# select dạng rút gọn (nhãn = giá trị) + khóa readonly khi không root
-[[item.item]]
-=======
 
 [[group]]
 title = "Nhập liệu"
@@ -130,7 +67,6 @@ options = [
 
 # select dạng rút gọn (nhãn = giá trị) + khóa readonly khi không root
 [[group.item]]
->>>>>>> e320bec (Update)
 type      = "select"
 id        = "scheduler"
 title     = "I/O scheduler"
@@ -140,20 +76,11 @@ shell     = "banner"
 lock      = "ROOT_MODE != root"
 options   = ["mq-deadline", "none", "kyber"]
 
-<<<<<<< HEAD
-[[item]]
-type  = "group"
-title = "Thanh trượt"
-
-# slider: gửi lệnh khi thả tay; shell = notice: thông báo hệ thống của Android
-[[item.item]]
-=======
 [[group]]
 title = "Thanh trượt"
 
 # slider: gửi lệnh khi thả tay; shell = notice: thông báo hệ thống của Android
 [[group.item]]
->>>>>>> e320bec (Update)
 type    = "slider"
 id      = "brightness"
 title   = "Độ sáng"

@@ -1,9 +1,5 @@
 # Trang mẫu: text, group, switch, visible_if, lock.
-<<<<<<< HEAD
-# Item nằm trong group viết bằng [[item.item]] (cú pháp TOML cho bảng lồng nhau).
-=======
 # Item nằm trong group viết bằng [[group.item]] (cú pháp TOML cho bảng lồng nhau).
->>>>>>> e320bec (Update)
 # Mọi item chạy lệnh đều có thể dùng shell = log | hidden | banner | notice.
 
 [[item]]
@@ -11,20 +7,11 @@ type    = "text"
 title   = "Chào mừng"
 content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml."
 
-<<<<<<< HEAD
-[[item]]
-type  = "group"
-title = "Công tắc"
-
-# switch + get: đọc trạng thái hiện tại; khóa dạng readonly (mờ) khi không có root
-[[item.item]]
-=======
 [[group]]
 title = "Công tắc"
 
 # switch + get: đọc trạng thái hiện tại; khóa dạng readonly (mờ) khi không có root
 [[group.item]]
->>>>>>> e320bec (Update)
 type      = "switch"
 id        = "game_mode"
 title     = "Chế độ game"
@@ -37,11 +24,7 @@ lock      = "ROOT_MODE != root"
 lock_mode = "readonly"
 
 # switch không có lệnh get, chỉ lưu trạng thái; shell = hidden (lỗi mới báo toast)
-<<<<<<< HEAD
-[[item.item]]
-=======
 [[group.item]]
->>>>>>> e320bec (Update)
 type  = "switch"
 id    = "show_more"
 title = "Hiện thêm tùy chọn"
@@ -49,30 +32,17 @@ desc  = "Bật để hiện mục bên dưới (visible_if)"
 shell = "hidden"
 
 # visible_if: chỉ hiện khi công tắc bên trên bật
-<<<<<<< HEAD
-[[item.item]]
-=======
 [[group.item]]
->>>>>>> e320bec (Update)
 type       = "text"
 title      = "Mục ẩn"
 content    = "Mục này chỉ hiện khi bật \"Hiện thêm tùy chọn\""
 visible_if = "show_more == 1"
 
-<<<<<<< HEAD
-[[item]]
-type  = "group"
-title = "Điều kiện"
-
-# lock + lock_mode = "hide": không đủ điều kiện thì ẩn hẳn
-[[item.item]]
-=======
 [[group]]
 title = "Điều kiện"
 
 # lock + lock_mode = "hide": không đủ điều kiện thì ẩn hẳn
 [[group.item]]
->>>>>>> e320bec (Update)
 type      = "button"
 title     = "Chỉ hiện khi root hoặc ROM"
 desc      = "Dùng lock + lock_mode = hide"
@@ -82,11 +52,7 @@ lock      = "ROOT_MODE != root && ROOT_MODE != system"
 lock_mode = "hide"
 
 # Biến dựng sẵn SDK, ABI, ROOT_MODE; toán tử &&, ||
-<<<<<<< HEAD
-[[item.item]]
-=======
 [[group.item]]
->>>>>>> e320bec (Update)
 type       = "text"
 title      = "Chỉ hiện trên Android 14 trở lên"
 content    = "Biến SDK dùng với ==, !=, &&, || (chưa có so sánh lớn/nhỏ)"

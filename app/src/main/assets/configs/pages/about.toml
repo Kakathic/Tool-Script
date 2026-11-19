@@ -5,30 +5,17 @@ type    = "text"
 title   = "Tool Script"
 content = "Giao diện được nạp từ file TOML trong assets/configs."
 
-<<<<<<< HEAD
-[[item]]
-type  = "group"
-title = "Liên kết"
-
-# link: page = id của một [[page]] trong main.toml
-[[item.item]]
-=======
 [[group]]
 title = "Liên kết"
 
 # link: page = id của một [[page]] trong main.toml
 [[group.item]]
->>>>>>> e320bec (Update)
 type  = "link"
 title = "Đến trang Công cụ"
 desc  = "page = \"tools\""
 page  = "tools"
 
-<<<<<<< HEAD
-[[item.item]]
-=======
 [[group.item]]
->>>>>>> e320bec (Update)
 type  = "link"
 title = "Về trang chủ"
 page  = "home"
