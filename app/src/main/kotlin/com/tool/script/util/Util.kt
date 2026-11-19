@@ -1,10 +1,12 @@
 package com.tool.script.util
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.Settings
+import com.tool.script.MainActivity
 import java.io.File
 
 // Tiện ích dùng chung: quyền bộ nhớ, đường dẫn icon assets / ngoài, chép file từ assets.
@@ -24,6 +26,12 @@ object Util {
      */
     fun iconModel(icon: String): Any =
         if (icon.startsWith("/")) File(icon) else "file:///android_asset/configs/$icon"
+
+    /** Mở lại app từ đầu (chạy lại cả khâu khởi động) rồi thoát tiến trình hiện tại. */
+    fun restartApp(context: Context) {
+        context.startActivity(Intent.makeRestartActivityTask(ComponentName(context, MainActivity::class.java)))
+        Runtime.getRuntime().exit(0)
+    }
 
     /** Chép một file trong assets ra [dest], tạo thư mục cha nếu cần. */
     fun copyAsset(context: Context, assetPath: String, dest: File): File {

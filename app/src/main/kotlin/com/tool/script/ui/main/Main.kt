@@ -25,16 +25,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.tool.script.boot.BootResult
 import com.tool.script.config.PageRef
+import com.tool.script.executor.ExecResult
+import com.tool.script.executor.ExecutorManager
 import com.tool.script.ui.feedback.Banner
 import com.tool.script.ui.feedback.ConfirmDialog
 import com.tool.script.ui.feedback.LogDialog
 import com.tool.script.ui.feedback.rememberFeedbackHost
+import com.tool.script.ui.render.ConfirmRequest
 import com.tool.script.ui.render.ItemRenderer
 import com.tool.script.ui.render.PageErrorCard
 import com.tool.script.ui.render.RenderEnv
@@ -65,6 +69,9 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
     val feedback = rememberFeedbackHost()
     val pagerState = rememberPagerState { pages.size }
     val scrollBehavior = MiuixScrollBehavior()
+    val context = LocalContext.current
+    var showRestartMenu by remember { mutableStateOf(false) }
+    val aboutIndex = pages.indexOfFirst { it.ref.id == ABOUT_PAGE_ID }
 
     val env = remember(result) {
         RenderEnv(
@@ -102,7 +109,23 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = config.app.name, scrollBehavior = scrollBehavior) },
+        topBar = {
+            TopAppBar(
+                title = config.app.name,
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    // Chỉ hiện icon Giới thiệu khi có trang id "about".
+                    if (aboutIndex >= 0) {
+                        TopBarIcon(icon = "icons/bar_about.svg", description = "Giới thiệu") {
+                            scope.launch { pagerState.animateScrollToPage(aboutIndex) }
+                        }
+                    }
+                    TopBarIcon(icon = "icons/bar_restart.svg", description = "Khởi động lại") {
+                        showRestartMenu = true
+                    }
+                },
+            )
+        },
         bottomBar = {
             if (pages.size >= 2) {
                 NavigationBar {
@@ -153,6 +176,24 @@ fun MainScreen(result: BootResult, onShowDetails: (title: String, text: String) 
             }
         }
     }
+
+    RestartMenuDialog(
+        show = showRestartMenu,
+        onDismiss = { showRestartMenu = false },
+        onRestartApp = {
+            showRestartMenu = false
+            env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+        },
+        onRebootDevice = {
+            showRestartMenu = false
+            env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                scope.launch {
+                    val result = ExecutorManager.current.exec("reboot", 10)
+                    if (!result.ok) feedback.toast(rebootErrorText(result))
+                }
+            }
+        },
+    )
 
     LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
     val confirm = env.confirm
@@ -229,4 +270,13 @@ private fun buildDetails(result: BootResult): String = buildString {
     result.bootLog.forEach { appendLine(it) }
 }
 
+private fun rebootErrorText(result: ExecResult): String {
+    if (result.timedOut) return "Khởi động lại máy: hết thời gian chờ"
+    val firstLine = result.stderr.lineSequence().firstOrNull { it.isNotBlank() }
+    return "Không khởi động lại được máy (cần root)" + (firstLine?.let { ": $it" } ?: "")
+}
+
 private const val BANNER_MILLIS = 4_000L
+
+/** Id trang mà icon Giới thiệu ở thanh trên dẫn tới. */
+private const val ABOUT_PAGE_ID = "about"
