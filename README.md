@@ -4,7 +4,7 @@
 
 Ứng dụng Android nạp giao diện từ file TOML, dùng thư viện [Miuix](https://github.com/compose-miuix-ui/miuix) (Compose).
 
-> Đây mới là **khung project**, chưa viết logic và **chưa build thử**.
+> Đã có luồng chạy đầy đủ từ splash tới màn hình chính (xem "Trạng thái" bên dưới). Code mới viết, **chưa build thử trên máy**: build bằng GitHub Actions hoặc Android Studio rồi báo lỗi nếu có.
 
 ## Cách mở
 
@@ -59,11 +59,20 @@ app/src/main/
 - Android 17 thêm quyền `ACCESS_LOCAL_NETWORK` cho app target 37 (đã khai báo trong Manifest, chỉ xin lúc runtime khi dùng backend adb). Chưa rõ kết nối loopback tới adbd có cần quyền này không, cần thử trên máy thật.
 - Package / applicationId: `com.tool.script`.
 
-## Bước tiếp theo
+## Trạng thái
 
-1. Model + parser TOML, test bằng file mẫu trong `assets/configs/`.
-2. Executor (local trước, rồi su, rồi adb/ROM).
-3. Splash + script khởi động.
-4. Màn hình chính + thanh tab trượt.
-5. Renderer các loại item, rồi `shell` / `lock`.
-6. Trung tâm lỗi.
+Đã viết:
+
+- `config/`: model + parser TOML theo `docs/schema.md` (cảnh báo khi thiếu trường / `type` lạ, báo file + dòng khi sai cú pháp). `main.toml` sai thì sang Trung tâm lỗi; file trang sai thì chỉ trang đó hiện thẻ lỗi.
+- `state/`: kho biến (`VariableStore`) và bộ tính điều kiện `visible_if` / `lock` (`==`, `!=`, `&&`, `||`, chưa có ngoặc).
+- `executor/`: `su` (libsu) và shell thường; ROM / adb **chưa làm**, tạm hạ xuống shell thường. Hết giờ dò quyền root: 5 giây.
+- `boot/`: splash (logo, thanh tiến trình, 5 dòng log) -> xin quyền bộ nhớ -> dò backend -> chạy `init.sh` -> nạp TOML -> vào màn hình chính.
+- `ui/`: màn hình chính (tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt), renderer cho `text`, `group`, `button`, `switch`, `input`, `select`, `slider`, `link`, hộp thoại `confirm`, log, banner, thông báo hệ thống.
+- `crash/`: Trung tâm lỗi (tiến trình `:crash`) + bộ bắt crash trong `App`.
+
+Còn lại:
+
+1. Backend ROM và adb.
+2. Chạy thử trên máy thật (nhất là chế độ không root, `ACCESS_LOCAL_NETWORK`).
+3. Đọc cấu hình từ thư mục ngoài + reload nóng, đa ngôn ngữ (schema mục 12).
+4. Thêm unit test (logic thuần đã được kiểm tra tay: điều kiện, quote shell, cửa sổ tab).

@@ -2,17 +2,23 @@ package com.tool.script
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tool.script.boot.BootViewModel
+import com.tool.script.boot.SplashScreen
+import com.tool.script.crash.CrashActivity
+import com.tool.script.ui.main.MainScreen
 import com.tool.script.ui.theme.ToolScriptTheme
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.tool.script.util.Util
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,16 +27,55 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ToolScriptTheme {
-                // TODO: thay bằng luồng boot/ (Splash -> quyền bộ nhớ -> script -> nạp TOML) rồi tới ui/main/
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MiuixTheme.colorScheme.background),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("Tool Script")
-                }
+                AppRoot(onExit = { finish() })
             }
         }
+    }
+}
+
+/**
+ * Luồng: Splash -> xin quyền bộ nhớ (từ chối thì thoát) -> dò backend, chạy script -> nạp TOML -> màn hình chính.
+ */
+@Composable
+private fun AppRoot(onExit: () -> Unit) {
+    val context = LocalContext.current
+    val vm: BootViewModel = viewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (Util.hasAllFilesAccess()) vm.start() else onExit()
+    }
+    LaunchedEffect(Unit) {
+        if (Util.hasAllFilesAccess()) {
+            vm.start()
+        } else {
+            try {
+                permissionLauncher.launch(Util.allFilesAccessIntent(context))
+            } catch (_: Exception) {
+                // Máy không mở được màn hình cấp quyền riêng cho app: mở màn hình chung.
+                permissionLauncher.launch(
+                    android.content.Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                )
+            }
+        }
+    }
+
+    // Lỗi nghiêm trọng (vd main.toml sai cú pháp): sang Trung tâm lỗi rồi đóng màn hình này.
+    val fatal = state.fatal
+    LaunchedEffect(fatal) {
+        if (fatal != null) {
+            CrashActivity.launch(context, "Lỗi cấu hình", fatal, fatal = true)
+            onExit()
+        }
+    }
+
+    val result = state.result
+    if (result != null) {
+        MainScreen(
+            result = result,
+            onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },
+        )
+    } else {
+        SplashScreen(state)
     }
 }
