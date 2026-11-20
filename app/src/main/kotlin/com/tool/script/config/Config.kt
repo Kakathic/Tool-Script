@@ -33,6 +33,9 @@ data class Item(
     val desc: String?,
     // icon bên trái (mọi type trừ text): đường dẫn trong assets/configs hoặc file ngoài bắt đầu bằng /
     val icon: String?,
+    // icon_size (dp, mặc định 24) và icon_tint (true = tô màu theme, false = giữ màu ảnh gốc)
+    val iconSize: Float,
+    val iconTint: Boolean,
     val visibleIf: String?,
     val lock: String?,
     val lockMode: LockMode,
@@ -305,6 +308,21 @@ object TomlParser {
                 1
             }
         }
+        val iconSize = when (val raw = t.str("icon_size")) {
+            null -> 24f
+            else -> raw.toFloatOrNull()?.takeIf { it > 0f } ?: run {
+                warnings += "$label \"$title\": icon_size = \"$raw\" không hợp lệ (số dương), dùng 24"
+                24f
+            }
+        }
+        val iconTint = when (t.str("icon_tint")?.lowercase()) {
+            null, "true" -> true
+            "false" -> false
+            else -> {
+                warnings += "$label \"$title\": icon_tint = \"${t.str("icon_tint")}\" không hợp lệ (true hoặc false), dùng true"
+                true
+            }
+        }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: ","
         val lockMode = when (t.str("lock_mode")?.lowercase()) {
             null, "readonly" -> LockMode.Readonly
@@ -356,6 +374,8 @@ object TomlParser {
             title = title,
             desc = t.str("desc"),
             icon = t.str("icon")?.takeIf { it.isNotBlank() && type != ItemType.Text },
+            iconSize = iconSize,
+            iconTint = iconTint,
             visibleIf = t.str("visible_if")?.takeIf { it.isNotBlank() },
             lock = t.str("lock")?.takeIf { it.isNotBlank() },
             lockMode = lockMode,

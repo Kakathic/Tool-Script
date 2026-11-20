@@ -649,25 +649,25 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
     }
 }
 
-/** Icon bên trái của item (`icon` trong TOML), tô màu theo theme; null nếu item không khai báo `icon`. */
+/** Icon bên trái của item (`icon` trong TOML): cỡ `icon_size`, tô màu theme nếu `icon_tint` bật, tắt thì giữ màu ảnh. */
 @Composable
-private fun ItemIconImage(icon: String) {
+private fun ItemIconImage(item: Item, icon: String) {
     AsyncImage(
         model = Util.iconModel(icon),
         contentDescription = null,
-        modifier = Modifier.size(24.dp),
-        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+        modifier = Modifier.size(item.iconSize.dp),
+        colorFilter = if (item.iconTint) ColorFilter.tint(MiuixTheme.colorScheme.onSurface) else null,
     )
 }
 
 private fun itemIcon(item: Item): (@Composable () -> Unit)? =
-    item.icon?.let { icon -> { ItemIconImage(icon) } }
+    item.icon?.let { icon -> { ItemIconImage(item, icon) } }
 
 /** Icon đứng trước tiêu đề cho các item tự dựng bố cục (input, slider, progress). */
 @Composable
 private fun ItemIconInline(item: Item) {
     val icon = item.icon ?: return
-    ItemIconImage(icon)
+    ItemIconImage(item, icon)
     Spacer(Modifier.width(12.dp))
 }
 

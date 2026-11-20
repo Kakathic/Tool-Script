@@ -136,7 +136,9 @@ lock_mode = "readonly"
 | `id` | tùy loại | Định danh, dùng làm tên biến |
 | `title` | có | Tiêu đề hiển thị |
 | `desc` | không | Mô tả phụ |
-| `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Icon tô màu theo theme. Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
+| `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Mặc định tô màu theo theme (xem `icon_tint`). Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
+| `icon_size` | không | Kích thước icon (dp), số dương, mặc định `24` |
+| `icon_tint` | không | `true` (mặc định): tô icon theo màu theme; `false`: giữ nguyên màu của ảnh (PNG / SVG nhiều màu) |
 | `visible_if` | không | Điều kiện hiển thị (mục 8) |
 | `lock` | không | Điều kiện khóa item (mục 9) |
 | `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
