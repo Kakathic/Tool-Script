@@ -9,6 +9,7 @@ import com.tool.script.config.ConfigRepository
 import com.tool.script.config.Item
 import com.tool.script.config.ItemType
 import com.tool.script.config.LoadedConfig
+import com.tool.script.config.normalizeMulti
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.StateFiles
 import com.tool.script.state.VariableStore

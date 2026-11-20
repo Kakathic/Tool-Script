@@ -304,9 +304,6 @@ object TomlParser {
             }
         }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: ","
-        if (type == ItemType.MultiSelect && options.any { separator in it.value }) {
-            warnings += "$label \"$title\": có giá trị trong options chứa dấu phân tách \"$separator\", kết quả sẽ sai"
-        }
         val lockMode = when (t.str("lock_mode")?.lowercase()) {
             null, "readonly" -> LockMode.Readonly
             "hide" -> LockMode.Hide
@@ -331,6 +328,9 @@ object TomlParser {
             options.isEmpty()
         ) {
             warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
+        }
+        if (type == ItemType.MultiSelect && options.any { separator in it.value }) {
+            warnings += "$label \"$title\": có giá trị trong options chứa dấu phân tách \"$separator\", kết quả sẽ sai"
         }
 
         var min = t.float("min") ?: 0f
