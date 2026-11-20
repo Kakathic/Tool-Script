@@ -13,7 +13,7 @@ enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Select("select"), Slider("slider"), Link("link"),
     Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
-    MultiSelect("multiselect");
+    MultiSelect("multiselect"), SingleSelect("singleselect");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -31,6 +31,8 @@ data class Item(
     val id: String?,
     val title: String,
     val desc: String?,
+    // icon bên trái (mọi type trừ text): đường dẫn trong assets/configs hoặc file ngoài bắt đầu bằng /
+    val icon: String?,
     val visibleIf: String?,
     val lock: String?,
     val lockMode: LockMode,
@@ -51,7 +53,7 @@ data class Item(
     val numberInput: Boolean,
     // select / radio / dropdown
     val options: List<SelectOption>,
-    // select / multiselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
+    // select / multiselect / singleselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
     val columns: Int,
     // multiselect: dấu phân tách các giá trị đã chọn trong $id
     val separator: String,
@@ -246,7 +248,7 @@ object TomlParser {
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Select || type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
-            type == ItemType.Dropdown || type == ItemType.MultiSelect
+            type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect
         if (needsId) {
             if (id == null) {
                 warnings += "$label \"$title\" (${type.key}) thiếu id, bỏ qua"
@@ -324,7 +326,8 @@ object TomlParser {
                 options += option
             }
         }
-        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect) &&
+        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect ||
+            type == ItemType.SingleSelect) &&
             options.isEmpty()
         ) {
             warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
@@ -352,6 +355,7 @@ object TomlParser {
             id = id,
             title = title,
             desc = t.str("desc"),
+            icon = t.str("icon")?.takeIf { it.isNotBlank() && type != ItemType.Text },
             visibleIf = t.str("visible_if")?.takeIf { it.isNotBlank() },
             lock = t.str("lock")?.takeIf { it.isNotBlank() },
             lockMode = lockMode,

@@ -136,6 +136,7 @@ lock_mode = "readonly"
 | `id` | tùy loại | Định danh, dùng làm tên biến |
 | `title` | có | Tiêu đề hiển thị |
 | `desc` | không | Mô tả phụ |
+| `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Icon tô màu theo theme. Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
 | `visible_if` | không | Điều kiện hiển thị (mục 8) |
 | `lock` | không | Điều kiện khóa item (mục 9) |
 | `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
@@ -158,6 +159,7 @@ lock_mode = "readonly"
 | `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
 | `dropdown` | `options`, `default`, `run` (giống `select`, nhưng chọn bằng menu thả xuống) |
 | `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
+| `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục có Xác nhận, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
@@ -188,7 +190,7 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `multiselect`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `multiselect`, `singleselect`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
@@ -277,6 +279,23 @@ run       = 'echo "Đã chọn: $features"'
 - `$id` là các **giá trị** đã chọn nối bằng `separator`, theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
+`singleselect` – chọn một mục, có Xác nhận:
+
+```toml
+[[item]]
+type    = "singleselect"
+id      = "mode"
+title   = "Chế độ"
+options = ["Hiệu năng|performance", "Tiết kiệm|powersave"]
+default = "performance"      # tùy chọn: mặc định là lựa chọn đầu
+columns = 2                  # tùy chọn: 1 (mặc định) hoặc 2 cột trong hộp thoại
+run     = 'echo "Đã chọn: $mode"'
+```
+
+- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại có nút tròn cho từng mục.
+- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
+- `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
+
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
 - `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `on` / `off` chạy khi đổi trạng thái, chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
@@ -336,7 +355,7 @@ lock_mode = "hide"
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `multiselect`, `radio`, `dropdown`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `multiselect`, `singleselect`, `radio`, `dropdown`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|

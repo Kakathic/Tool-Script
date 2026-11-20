@@ -165,6 +165,7 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
         ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
         ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
         ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
+        ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
         ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
         ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
         ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
@@ -227,6 +228,7 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
         BasicComponent(
             title = item.title,
             summary = item.desc,
+            startAction = itemIcon(item),
             enabled = enabled,
             onClick = withTapHaptic { env.run(item, item.run) },
         )
@@ -302,6 +304,7 @@ private fun BinaryItem(
         BasicComponent(
             title = item.title,
             summary = item.desc,
+            startAction = itemIcon(item),
             enabled = enabled,
             endActions = { control(checked, enabled, if (hapticOnControl) change else apply) },
             onClick = if (rowClickable) ({ change(!checked) }) else null,
@@ -316,7 +319,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val current = env.store[id]
     val haptic = LocalHapticFeedback.current
     ItemSurface(modifier, inGroup) {
-        BasicComponent(title = item.title, summary = item.desc, enabled = enabled)
+        BasicComponent(title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
         if (item.options.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -360,6 +363,7 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
     ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                ItemIconInline(item)
                 Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
                 Text(
                     "${(fraction * 100).roundToInt()}%",
@@ -381,7 +385,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val id = item.id ?: return
     ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
-            Text(item.title, style = MiuixTheme.textStyles.headline1)
+            TitleRow(item) { Text(item.title, style = MiuixTheme.textStyles.headline1) }
             item.desc?.let {
                 Text(it, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
             }
@@ -427,6 +431,7 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
         BasicComponent(
             title = item.title,
             summary = item.desc,
+            startAction = itemIcon(item),
             enabled = enabled,
             endActions = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -487,6 +492,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
         BasicComponent(
             title = item.title,
             summary = item.desc,
+            startAction = itemIcon(item),
             enabled = enabled,
             endActions = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -559,7 +565,121 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     }
 }
 
-/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `select`, `multiselect` và `dropdown`. */
+// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại có nút tròn, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+@Composable
+private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    var showDialog by remember { mutableStateOf(false) }
+    var draft by remember { mutableStateOf("") }
+    val haptic = LocalHapticFeedback.current
+    val current = env.store[id]
+    val label = item.options.firstOrNull { it.value == current }?.label ?: current
+
+    ItemSurface(modifier, inGroup) {
+        BasicComponent(
+            title = item.title,
+            summary = item.desc,
+            startAction = itemIcon(item),
+            enabled = enabled,
+            endActions = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        label,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        style = MiuixTheme.textStyles.body2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 160.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    UpDownIcon()
+                }
+            },
+            onClick = withTapHaptic {
+                draft = current
+                showDialog = true
+            },
+        )
+    }
+    OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item.options.chunked(item.columns).forEach { rowOptions ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    rowOptions.forEach { option ->
+                        val selected = option.value == draft
+                        val pick = {
+                            if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            draft = option.value
+                        }
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(onClick = pick)
+                                .padding(horizontal = 8.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = selected, onClick = pick)
+                            Spacer(Modifier.width(8.dp))
+                            Text(option.label, modifier = Modifier.weight(1f))
+                        }
+                    }
+                    repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(text = "Hủy", onClick = { showDialog = false }, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = "Xác nhận",
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = {
+                        showDialog = false
+                        val newValue = draft
+                        if (newValue != current) {
+                            env.run(item, item.run, mapOf(id to newValue)) { result ->
+                                if (result.ok) env.store[id] = newValue
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Icon bên trái của item (`icon` trong TOML), tô màu theo theme; null nếu item không khai báo `icon`. */
+@Composable
+private fun ItemIconImage(icon: String) {
+    AsyncImage(
+        model = Util.iconModel(icon),
+        contentDescription = null,
+        modifier = Modifier.size(24.dp),
+        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+    )
+}
+
+private fun itemIcon(item: Item): (@Composable () -> Unit)? =
+    item.icon?.let { icon -> { ItemIconImage(icon) } }
+
+/** Icon đứng trước tiêu đề cho các item tự dựng bố cục (input, slider, progress). */
+@Composable
+private fun ItemIconInline(item: Item) {
+    val icon = item.icon ?: return
+    ItemIconImage(icon)
+    Spacer(Modifier.width(12.dp))
+}
+
+@Composable
+private fun TitleRow(item: Item, title: @Composable () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ItemIconInline(item)
+        title()
+    }
+}
+
+/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `select`, `multiselect`, `singleselect` và `dropdown`. */
 @Composable
 private fun UpDownIcon() {
     AsyncImage(
@@ -588,6 +708,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
             BasicComponent(
                 title = item.title,
                 summary = item.desc,
+                startAction = itemIcon(item),
                 enabled = enabled,
                 endActions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -625,6 +746,7 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
     ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                ItemIconInline(item)
                 Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
                 Text(
                     formatNumber(value),
@@ -665,6 +787,7 @@ private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Bo
         BasicComponent(
             title = item.title,
             summary = item.desc,
+            startAction = itemIcon(item),
             enabled = enabled,
             endActions = {
                 Icon(

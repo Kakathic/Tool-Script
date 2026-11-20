@@ -15,6 +15,7 @@ title = "Nhập liệu"
 type    = "input"
 id      = "tools_note"
 title   = "Ghi chú"
+icon    = "icons/about.svg"
 hint    = "Nhập nội dung"
 default = "xin chào"
 run     = 'echo "Ghi chú: $tools_note"'
@@ -96,6 +97,19 @@ separator = "|"
 run       = 'echo "Đã chọn: $inputs_multi_sep"'
 shell     = "banner"
 options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
+
+# singleselect: chọn một, bấm Xác nhận mới lưu và chạy lệnh; $tools_single = giá trị đã chọn
+[[group.item]]
+type    = "singleselect"
+id      = "tools_single"
+title   = "Chọn một, có xác nhận"
+icon    = "icons/tools.svg"
+desc    = "Giá trị chọn được truyền vào $tools_single"
+default = "b"
+columns = 2
+run     = 'echo "Đã chọn: $tools_single"'
+shell   = "banner"
+options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
 # radio: hiện sẵn mọi lựa chọn
 [[group.item]]
