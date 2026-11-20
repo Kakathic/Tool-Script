@@ -313,7 +313,7 @@ fun MainScreen(
                                     Row(
                                         Modifier
                                             .requiredWidth(itemWidth * pages.size)
-                                            .offset(x = -(slide * itemWidth)),
+                                            .offset(x = -(itemWidth * slide)),
                                     ) {
                                         pages.forEachIndexed { index, page ->
                                             TabItem(
