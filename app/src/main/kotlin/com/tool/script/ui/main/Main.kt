@@ -59,6 +59,7 @@ import com.tool.script.ui.feedback.BannerOverlay
 import com.tool.script.ui.feedback.FeedbackHost
 import com.tool.script.ui.feedback.ConfirmDialog
 import com.tool.script.ui.feedback.LogDialog
+import com.tool.script.ui.feedback.LogFullScreen
 import com.tool.script.ui.feedback.rememberFeedbackHost
 import com.tool.script.ui.render.ConfirmRequest
 import com.tool.script.ui.render.ItemRenderer
@@ -88,6 +89,8 @@ fun MainScreen(
     result: BootResult,
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
+    hapticEnabled: Boolean,
+    onHapticChange: (Boolean) -> Unit,
     onShowDetails: (title: String, text: String) -> Unit,
 ) {
     val config = result.config
@@ -219,6 +222,8 @@ fun MainScreen(
                                         showThemeMenu = false
                                         onThemeChange(it)
                                     },
+                                    haptic = hapticEnabled,
+                                    onHapticChange = onHapticChange,
                                 )
                                 // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
                                 PowerMenu(
@@ -402,6 +407,7 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
 @Composable
 private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
     LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
+    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null })
     val confirm = env.confirm
     ConfirmDialog(
         message = confirm?.message,

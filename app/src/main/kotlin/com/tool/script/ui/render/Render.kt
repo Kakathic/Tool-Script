@@ -36,6 +36,7 @@ import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
+import com.tool.script.ui.theme.LocalHapticEnabled
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.util.Util
@@ -54,6 +55,7 @@ import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -102,8 +104,8 @@ class RenderEnv(
             scope.launch {
                 val vars = store.snapshot() + extra
                 val full = ShellText.withEnv(command, vars)
-                val result = if (item.shell == ShellMode.Live) {
-                    val entry = feedback.startLive(item.title, command)
+                val result = if (item.shell == ShellMode.Live || item.shell == ShellMode.Full) {
+                    val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
                     ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
                         .also { entry.finish(it) }
                 } else {
@@ -496,6 +498,11 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
                 valueRange = item.min..item.max,
                 steps = steps,
                 onValueChangeFinished = { env.run(item, item.run) },
+                hapticEffect = if (LocalHapticEnabled.current) {
+                    SliderDefaults.DefaultHapticEffect
+                } else {
+                    SliderDefaults.SliderHapticEffect.None
+                },
             )
         }
     }

@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -56,37 +58,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.tool.script.R
 import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.copyToClipboard
+import com.tool.script.util.ShellText
 import com.tool.script.util.Util
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Hiển thị kết quả chạy lệnh theo `shell`:
-//   live (mặc định) = bảng log hiện từng dòng ngay khi lệnh in ra | hidden = ẩn, lỗi thì toast
-//   banner = thông báo ngắn trong app | notice = thông báo hệ thống (xin POST_NOTIFICATIONS khi dùng tới)
 
-/** Trạng thái của một lần chạy lệnh, hiện thành nhãn trên bảng log. */
 enum class LogStatus { Running, Done, Failed, TimedOut }
 
-/**
- * Một lần chạy lệnh để hiện trong bảng log. [initialResult] null = đang chạy (live): các dòng được thêm dần
- * bằng [append], xong thì gọi [finish]. Có sẵn kết quả thì là log tĩnh.
- * [output] chỉ gồm phần lệnh in ra; trạng thái và mã thoát nằm riêng ([status], [exitCode]).
- */
-class LogEntry(val title: String, val command: String, initialResult: ExecResult? = null) {
+class LogEntry(
+    val title: String,
+    val command: String,
+    initialResult: ExecResult? = null,
+    startFull: Boolean = false,
+) {
     private val lines = mutableStateListOf<String>()
     var result by mutableStateOf(initialResult)
         private set
+
+    var progress by mutableStateOf<Float?>(null)
+        private set
+
+    var full by mutableStateOf(startFull)
 
     val running: Boolean get() = result == null
 
@@ -100,21 +108,30 @@ class LogEntry(val title: String, val command: String, initialResult: ExecResult
             }
         }
 
-    /** Mã thoát của lệnh; null khi đang chạy hoặc hết thời gian chờ. */
     val exitCode: Int? get() = result?.takeIf { !it.timedOut }?.code
 
     val output: String
         get() {
             val r = result
-            return if (r == null) lines.joinToString("\n") else r.combined.trimEnd('\n', '\r')
+            if (r == null) return lines.joinToString("\n")
+            return r.combined.lineSequence()
+                .filter { ShellText.parseProgress(it) == null }
+                .joinToString("\n")
+                .trimEnd('\n', '\r')
         }
 
     fun append(line: String) {
+        val p = ShellText.parseProgress(line)
+        if (p != null) {
+            progress = p / 100f
+            return
+        }
         lines += line
         while (lines.size > MAX_LIVE_LINES) lines.removeAt(0)
     }
 
     fun finish(result: ExecResult) {
+        if (result.ok) progress = 1f
         this.result = result
     }
 
@@ -127,7 +144,6 @@ class FeedbackHost(private val context: Context) {
     var log by mutableStateOf<LogEntry?>(null)
     var banner by mutableStateOf<String?>(null)
 
-    /** Tăng mỗi lần hiện banner, để cùng một nội dung hiện lại vẫn tính lại thời gian. */
     var bannerToken by mutableIntStateOf(0)
         private set
 
@@ -136,7 +152,6 @@ class FeedbackHost(private val context: Context) {
         bannerToken++
     }
 
-    /** Gắn bởi [rememberFeedbackHost]: mở hộp thoại xin quyền thông báo. */
     internal var requestNoticePermission: (() -> Unit)? = null
     private var pendingNotice: Pair<String, String>? = null
 
@@ -144,13 +159,13 @@ class FeedbackHost(private val context: Context) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
-    /** Chế độ live: mở bảng log ngay, nơi gọi thêm dòng bằng [LogEntry.append] rồi [LogEntry.finish]. */
-    fun startLive(title: String, command: String): LogEntry = LogEntry(title, command).also { log = it }
+    fun startLive(title: String, command: String, full: Boolean = false): LogEntry =
+        LogEntry(title, command, startFull = full).also { log = it }
 
     fun report(item: Item, command: String, result: ExecResult) {
         val summary = summaryOf(item.title, result)
         when (item.shell) {
-            ShellMode.Live -> Unit // đã hiện từng dòng qua startLive
+            ShellMode.Live, ShellMode.Full -> Unit
             ShellMode.Hidden -> if (!result.ok) toast(summary)
             ShellMode.Banner -> showBanner(summary)
             ShellMode.Notice -> notice(item.title, summary)
@@ -219,55 +234,86 @@ fun rememberFeedbackHost(): FeedbackHost {
     return host
 }
 
-/** Bảng log của lệnh vừa chạy: nhãn trạng thái + mã thoát ở trên, phần lệnh in ra trong khung riêng, nút ở dưới. */
 @Composable
 fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    // Giữ nội dung cuối cùng để hộp thoại không rỗng trong lúc đóng.
     var last by remember { mutableStateOf(entry) }
     if (entry != null) last = entry
     OverlayDialog(
-        show = entry != null,
+        show = entry != null && !entry.full,
         title = last?.title,
         onDismissRequest = onDismiss,
     ) {
-        val scroll = rememberScrollState()
         val output = last?.output.orEmpty()
-        // Đang chạy live: tự cuộn xuống dòng mới nhất.
-        LaunchedEffect(output) {
-            if (last?.running == true) scroll.scrollTo(scroll.maxValue)
-        }
         Column {
             LogStatusRow(last)
+            LogProgress(last)
             Spacer(Modifier.height(12.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-                    .heightIn(max = 320.dp)
-                    .verticalScroll(scroll)
-                    .padding(12.dp),
-            ) {
-                if (output.isBlank()) {
-                    Text(
-                        text = if (last?.running == false) "Không có đầu ra" else "Đang chờ đầu ra...",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 12.sp,
-                    )
-                } else {
-                    Text(
-                        text = output,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                    )
-                }
-            }
+            LogBody(last, output, Modifier.heightIn(max = 320.dp))
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     text = "Sao chép",
                     onClick = { copyToClipboard(context, "log", output) },
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = "Toàn màn hình",
+                    onClick = { last?.full = true },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            TextButton(
+                text = "Đóng",
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+        }
+    }
+}
+
+// Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình"; Back của máy hoặc "Đóng" thì đóng hẳn.
+@Composable
+fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit) {
+    if (entry == null || !entry.full) return
+    val context = LocalContext.current
+    val output = entry.output
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.background)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(16.dp),
+        ) {
+            Text(
+                text = entry.title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(12.dp))
+            LogStatusRow(entry)
+            LogProgress(entry)
+            Spacer(Modifier.height(12.dp))
+            LogBody(entry, output, Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(
+                    text = "Sao chép",
+                    onClick = { copyToClipboard(context, "log", output) },
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = "Thu nhỏ",
+                    onClick = { entry.full = false },
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
@@ -281,7 +327,47 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
     }
 }
 
-/** Hàng trạng thái trên bảng log: nhãn bo tròn (đang chạy / xong / lỗi / hết giờ) bên trái, mã thoát bên phải. */
+// Khung chứa phần lệnh in ra, tự cuộn xuống dòng mới nhất khi đang chạy.
+@Composable
+private fun LogBody(entry: LogEntry?, output: String, modifier: Modifier) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(output) {
+        if (entry?.running == true) scroll.scrollTo(scroll.maxValue)
+    }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .verticalScroll(scroll)
+            .padding(12.dp),
+    ) {
+        if (output.isBlank()) {
+            Text(
+                text = if (entry?.running == false) "Không có đầu ra" else "Đang chờ đầu ra...",
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
+        } else {
+            Text(
+                text = output,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+            )
+        }
+    }
+}
+
+// Thanh tiến trình: đang chạy chưa có "@progress N" thì chạy vô định, có thì hiện đúng %; xong không lỗi thì đầy.
+@Composable
+private fun LogProgress(entry: LogEntry?) {
+    if (entry == null) return
+    val value = entry.progress
+    if (!entry.running && value == null) return
+    Spacer(Modifier.height(10.dp))
+    LinearProgressIndicator(progress = value, modifier = Modifier.fillMaxWidth())
+}
+
 @Composable
 private fun LogStatusRow(entry: LogEntry?) {
     val status = entry?.status ?: LogStatus.Running
@@ -322,9 +408,11 @@ private fun LogStatusRow(entry: LogEntry?) {
                 .padding(horizontal = 10.dp, vertical = 4.dp),
         )
         Spacer(Modifier.weight(1f))
-        entry?.exitCode?.let { code ->
+        val rightText = entry?.exitCode?.let { "Mã thoát $it" }
+            ?: entry?.takeIf { it.running }?.progress?.let { "${(it * 100).roundToInt()}%" }
+        rightText?.let { text ->
             Text(
-                text = "Mã thoát $code",
+                text = text,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 12.sp,
             )
@@ -332,7 +420,6 @@ private fun LogStatusRow(entry: LogEntry?) {
     }
 }
 
-/** Hộp thoại xác nhận trước khi chạy lệnh (trường `confirm`). */
 @Composable
 fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     var last by remember { mutableStateOf(message) }
@@ -355,10 +442,6 @@ fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit
     }
 }
 
-/**
- * Thông báo ngắn trong app (banner): ô icon tròn bên trái (info / cảnh báo), nội dung ở giữa, nút bên phải.
- * [progress] khác null thì có thanh đếm ngược mảnh ở cuối. [onDismiss] null = không có nút "Ẩn".
- */
 @Composable
 fun Banner(
     message: String,
@@ -366,9 +449,7 @@ fun Banner(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: () -> Unit = {},
-    /** Khác null: hiện thanh tiến trình thời gian còn lại (1 → 0) ở cuối banner. */
     progress: Float? = null,
-    /** null = không có nút "Ẩn" (banner tự ẩn khi hết giờ). */
     onDismiss: (() -> Unit)? = null,
 ) {
     val colors = if (warning) {
@@ -382,7 +463,6 @@ fun Banner(
             contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
         )
     }
-    // Có nút bên phải thì lề phải 8dp (nút tự có đệm), không có nút thì 14dp cho cân với lề trái.
     val hasButtons = actionLabel != null || onDismiss != null
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -418,7 +498,6 @@ fun Banner(
         }
         if (progress != null) {
             Spacer(Modifier.height(10.dp))
-            // Thanh đếm ngược mảnh: nền sáng, phần còn lại màu chủ đạo; lề phải bù để hai bên cùng cách mép 14dp.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -438,17 +517,11 @@ fun Banner(
     }
 }
 
-/** Thời gian hiện mặc định của banner shell (ms). */
 const val BANNER_MILLIS = 5_000
 
-/**
- * Banner shell = "banner": hiện đè lên cả thanh trên, trượt xuống khi hiện và trượt lên khi ẩn,
- * có thanh tiến trình đếm ngược [BANNER_MILLIS] rồi tự ẩn. Đặt trong Box phủ toàn màn hình.
- */
 @Composable
 fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
     val message = feedback.banner
-    // Giữ nội dung cuối để banner không rỗng trong lúc trượt lên.
     var last by remember { mutableStateOf(message.orEmpty()) }
     if (message != null) last = message
 
@@ -470,7 +543,6 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
         Banner(
             message = last,
             warning = false,
-            // statusBarsPadding nằm trong phần trượt để banner trượt hẳn ra khỏi mép trên màn hình.
             modifier = Modifier
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp)

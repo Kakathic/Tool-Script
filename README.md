@@ -47,10 +47,10 @@ app/src/main/
 - Khởi động: Splash (logo, thanh tiến trình, 5 dòng log; căn giữa, lề 16dp) -> xin quyền bộ nhớ (từ chối thì thoát) -> chạy script -> nạp TOML -> màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
 - Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
 - Backend: su -> ROM -> adb -> không root, biến `ROOT_MODE`; `lock` thay cho `require`.
-- Hiển thị khi chạy lệnh: `shell = live | hidden | banner | notice` (mặc định `live`); `hidden` mà lỗi thì hiện toast.
+- Hiển thị khi chạy lệnh: `shell = live | full | hidden | banner | notice` (mặc định `live`); `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.
-- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
+- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix, và công tắc "Rung khi chạm" tắt rung của mọi component; đều được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
 
 ## Lưu ý kỹ thuật
 

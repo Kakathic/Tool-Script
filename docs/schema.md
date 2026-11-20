@@ -321,9 +321,14 @@ lock_mode = "hide"
 | `shell` | Hành vi |
 |---|---|
 | `live` (mặc định) | Bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống). Nhãn trạng thái (Đang chạy / Xong / Lỗi / Hết thời gian chờ) và mã thoát nằm riêng phía trên khung log, khung log chỉ chứa phần lệnh in ra; nút Sao chép chép phần đó |
+| `full` | Như `live` nhưng log mở **toàn màn hình** ngay khi bắt đầu chạy. Có nút Thu nhỏ (về bảng log thường), Sao chép, Đóng; Back của máy cũng đóng |
 | `hidden` | Chạy ẩn, không hiện gì |
 | `banner` | Hiện thông báo ngắn trong app (banner) |
 | `notice` | Gửi thông báo hệ thống của Android (chỉ xin quyền thông báo khi dùng tới, Android 13+) |
+
+Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng.
+
+Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
 
 `shell = "log"` (kiểu cũ) đã bỏ: gặp thì dùng `live` kèm cảnh báo.
 

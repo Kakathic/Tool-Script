@@ -240,6 +240,8 @@ fun ThemeMenu(
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
     onSelect: (ThemeMode) -> Unit,
+    haptic: Boolean,
+    onHapticChange: (Boolean) -> Unit,
 ) {
     TopBarMenu(
         icon = "icons/bar_theme.svg",
@@ -253,6 +255,8 @@ fun ThemeMenu(
             if (index > 0 && mode.monet && !ThemeMode.entries[index - 1].monet) MenuDivider()
             MenuItem(label = mode.label, selected = mode == current) { onSelect(mode) }
         }
+        MenuDivider()
+        MenuItem(label = "Rung khi chạm", selected = haptic) { onHapticChange(!haptic) }
     }
 }
 

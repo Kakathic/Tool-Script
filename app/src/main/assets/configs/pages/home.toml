@@ -1,7 +1,7 @@
 # Trang mẫu: text, group, switch (get / on / off), visible_if, lock, các kiểu hiển thị kết quả.
 # Chỉ để làm mẫu tính năng: mọi lệnh đều vô hại (echo, true, ...), không đổi thông số thiết bị.
 # Item nằm trong group viết bằng [[group.item]] (cú pháp TOML cho bảng lồng nhau).
-# Mọi item chạy lệnh đều có thể dùng shell = live | hidden | banner | notice (mặc định live).
+# Mọi item chạy lệnh đều có thể dùng shell = live | full | hidden | banner | notice (mặc định live).
 
 [[item]]
 type    = "text"
@@ -90,6 +90,24 @@ desc    = "Bảng log hiện từng dòng khi đang chạy (shell = live)"
 run     = 'for i in 1 2 3 4 5; do echo "Dòng $i"; sleep 1; done'
 shell   = "live"
 timeout = 15
+
+# live có thanh tiến trình: in "@progress N" (0-100) để thanh hiện đúng %; dòng này không hiện trong log
+[[group.item]]
+type    = "button"
+title   = "live + tiến trình"
+desc    = "Thanh tiến trình chạy theo @progress"
+run     = 'for i in 0 25 50 75 100; do echo "@progress $i"; echo "Đã xong $i%"; sleep 1; done'
+shell   = "live"
+timeout = 15
+
+# shell = full: như live nhưng log mở toàn màn hình
+[[group.item]]
+type    = "button"
+title   = "full"
+desc    = "Log toàn màn hình (shell = full)"
+run     = 'for i in 1 2 3 4 5 6 7 8; do echo "Dòng $i"; sleep 1; done'
+shell   = "full"
+timeout = 20
 
 # shell = banner: thông báo ngắn ngay trong app, tự ẩn sau vài giây
 [[group.item]]

@@ -3,7 +3,12 @@ package com.tool.script.ui.theme
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -25,6 +30,7 @@ enum class ThemeMode(val key: String, val label: String, val monet: Boolean) {
 object ThemePrefs {
     private const val FILE = "theme_prefs"
     private const val KEY_MODE = "mode"
+    private const val KEY_HAPTIC = "haptic"
 
     fun load(context: Context): ThemeMode {
         val key = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_MODE, null)
@@ -33,6 +39,13 @@ object ThemePrefs {
 
     fun save(context: Context, mode: ThemeMode) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putString(KEY_MODE, mode.key).apply()
+    }
+
+    fun loadHaptic(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_HAPTIC, true)
+
+    fun saveHaptic(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_HAPTIC, enabled).apply()
     }
 }
 
@@ -45,7 +58,7 @@ fun isDarkTheme(mode: ThemeMode): Boolean = when (mode) {
 }
 
 @Composable
-fun ToolScriptTheme(mode: ThemeMode = ThemeMode.System, content: @Composable () -> Unit) {
+fun ToolScriptTheme(mode: ThemeMode = ThemeMode.System, haptic: Boolean = true, content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
     val controller = remember(mode, systemDark) {
         when (mode) {
@@ -57,5 +70,15 @@ fun ToolScriptTheme(mode: ThemeMode = ThemeMode.System, content: @Composable () 
             ThemeMode.MonetDark -> ThemeController(ColorSchemeMode.MonetDark)
         }
     }
-    MiuixTheme(controller = controller, content = content)
+    val feedback = if (haptic) LocalHapticFeedback.current else NoHapticFeedback
+    CompositionLocalProvider(LocalHapticFeedback provides feedback, LocalHapticEnabled provides haptic) {
+        MiuixTheme(controller = controller, content = content)
+    }
 }
+
+// Tắt rung: các component Miuix lấy rung từ LocalHapticFeedback nên thay bằng bản không làm gì.
+private object NoHapticFeedback : HapticFeedback {
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
+}
+
+val LocalHapticEnabled = staticCompositionLocalOf { true }

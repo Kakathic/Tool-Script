@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             var themeMode by remember { mutableStateOf(ThemePrefs.load(context)) }
+            var hapticEnabled by remember { mutableStateOf(ThemePrefs.loadHaptic(context)) }
             val dark = isDarkTheme(themeMode)
             // Thanh trạng thái / thanh điều hướng đổi màu icon theo chủ đề app (có thể khác chủ đề hệ thống).
             DisposableEffect(dark) {
@@ -52,9 +53,14 @@ class MainActivity : ComponentActivity() {
             // Miuix (OverlayDialog) cần NavigationEventDispatcher để bắt nút Back. ComponentActivity (activity >= 1.12)
             // chính là NavigationEventDispatcherOwner; cung cấp rõ ràng để không phụ thuộc việc tìm qua view tree.
             CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides this@MainActivity) {
-                ToolScriptTheme(themeMode) {
+                ToolScriptTheme(themeMode, hapticEnabled) {
                     AppRoot(
                         themeMode = themeMode,
+                        hapticEnabled = hapticEnabled,
+                        onHapticChange = {
+                            hapticEnabled = it
+                            ThemePrefs.saveHaptic(context, it)
+                        },
                         onThemeChange = {
                             themeMode = it
                             ThemePrefs.save(context, it)
@@ -71,7 +77,13 @@ class MainActivity : ComponentActivity() {
  * Luồng: Splash -> xin quyền bộ nhớ (từ chối thì thoát) -> dò backend, chạy script -> nạp TOML -> màn hình chính.
  */
 @Composable
-private fun AppRoot(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit, onExit: () -> Unit) {
+private fun AppRoot(
+    themeMode: ThemeMode,
+    hapticEnabled: Boolean,
+    onHapticChange: (Boolean) -> Unit,
+    onThemeChange: (ThemeMode) -> Unit,
+    onExit: () -> Unit,
+) {
     val context = LocalContext.current
     val vm: BootViewModel = viewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -109,6 +121,8 @@ private fun AppRoot(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit, on
             result = result,
             themeMode = themeMode,
             onThemeChange = onThemeChange,
+            hapticEnabled = hapticEnabled,
+            onHapticChange = onHapticChange,
             onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },
         )
     } else {

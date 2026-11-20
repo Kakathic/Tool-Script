@@ -47,7 +47,7 @@ class CrashActivity : ComponentActivity() {
         val text = intent.getStringExtra(EXTRA_TEXT) ?: "(không có nội dung)"
         val fatal = intent.getBooleanExtra(EXTRA_FATAL, true)
         setContent {
-            ToolScriptTheme(ThemePrefs.load(this)) {
+            ToolScriptTheme(ThemePrefs.load(this), ThemePrefs.loadHaptic(this)) {
                 CrashScreen(
                     title = title,
                     text = text,
