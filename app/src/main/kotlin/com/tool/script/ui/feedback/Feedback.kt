@@ -459,8 +459,9 @@ fun Banner(
         )
     } else {
         CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.primaryContainer,
-            contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
+            // Banner thông tin: nền trung tính (không xanh), chữ theo màu chữ chính.
+            color = MiuixTheme.colorScheme.surfaceContainer,
+            contentColor = MiuixTheme.colorScheme.onSurface,
         )
     }
     val hasButtons = actionLabel != null || onDismiss != null
@@ -504,7 +505,7 @@ fun Banner(
                     .padding(end = if (hasButtons) 6.dp else 0.dp)
                     .height(3.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.6f)),
+                    .background(colors.contentColor.copy(alpha = 0.15f)),
             ) {
                 Box(
                     Modifier

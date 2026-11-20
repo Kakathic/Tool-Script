@@ -112,7 +112,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import kotlin.math.min
@@ -307,7 +308,10 @@ fun MainScreen(
                                     val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
                                     Row(
                                         Modifier
-                                            .requiredWidth(itemWidth * pages.size)
+                                            // Không dùng requiredWidth: khi rộng hơn khung cha nó tự căn GIỮA, làm cả hàng tab lệch nửa ô.
+                                            // Căn từ mép trái (unbounded) để windowStart = 0 khớp đúng ô đầu tiên.
+                                            .wrapContentWidth(Alignment.Start, unbounded = true)
+                                            .width(itemWidth * pages.size)
                                             .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
                                     ) {
                                         pages.forEachIndexed { index, page ->
