@@ -18,6 +18,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,9 +42,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tool.script.R
@@ -61,12 +65,16 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Hiển thị kết quả chạy lệnh theo `shell`:
-//   log (mặc định) = bảng log đầy đủ | live = bảng log hiện từng dòng ngay khi lệnh in ra | hidden = ẩn, lỗi thì toast
+//   live (mặc định) = bảng log hiện từng dòng ngay khi lệnh in ra | hidden = ẩn, lỗi thì toast
 //   banner = thông báo ngắn trong app | notice = thông báo hệ thống (xin POST_NOTIFICATIONS khi dùng tới)
+
+/** Trạng thái của một lần chạy lệnh, hiện thành nhãn trên bảng log. */
+enum class LogStatus { Running, Done, Failed, TimedOut }
 
 /**
  * Một lần chạy lệnh để hiện trong bảng log. [initialResult] null = đang chạy (live): các dòng được thêm dần
  * bằng [append], xong thì gọi [finish]. Có sẵn kết quả thì là log tĩnh.
+ * [output] chỉ gồm phần lệnh in ra; trạng thái và mã thoát nằm riêng ([status], [exitCode]).
  */
 class LogEntry(val title: String, val command: String, initialResult: ExecResult? = null) {
     private val lines = mutableStateListOf<String>()
@@ -75,22 +83,23 @@ class LogEntry(val title: String, val command: String, initialResult: ExecResult
 
     val running: Boolean get() = result == null
 
-    val text: String
-        get() = buildString {
-            val r = result
-            if (r == null) {
-                lines.forEach { appendLine(it) }
-                append("[đang chạy...]")
-            } else {
-                if (r.combined.isNotBlank()) appendLine(r.combined)
-                append(
-                    when {
-                        r.timedOut -> "[hết thời gian chờ]"
-                        r.ok -> "[xong, mã 0]"
-                        else -> "[lỗi, mã ${r.code}]"
-                    },
-                )
+    val status: LogStatus
+        get() {
+            val r = result ?: return LogStatus.Running
+            return when {
+                r.timedOut -> LogStatus.TimedOut
+                r.ok -> LogStatus.Done
+                else -> LogStatus.Failed
             }
+        }
+
+    /** Mã thoát của lệnh; null khi đang chạy hoặc hết thời gian chờ. */
+    val exitCode: Int? get() = result?.takeIf { !it.timedOut }?.code
+
+    val output: String
+        get() {
+            val r = result
+            return if (r == null) lines.joinToString("\n") else r.combined.trimEnd('\n', '\r')
         }
 
     fun append(line: String) {
@@ -134,7 +143,6 @@ class FeedbackHost(private val context: Context) {
     fun report(item: Item, command: String, result: ExecResult) {
         val summary = summaryOf(item.title, result)
         when (item.shell) {
-            ShellMode.Log -> log = LogEntry(item.title, command, result)
             ShellMode.Live -> Unit // đã hiện từng dòng qua startLive
             ShellMode.Hidden -> if (!result.ok) toast(summary)
             ShellMode.Banner -> showBanner(summary)
@@ -204,7 +212,7 @@ fun rememberFeedbackHost(): FeedbackHost {
     return host
 }
 
-/** Bảng log đầy đủ của lệnh vừa chạy. */
+/** Bảng log của lệnh vừa chạy: nhãn trạng thái + mã thoát ở trên, phần lệnh in ra trong khung riêng, nút ở dưới. */
 @Composable
 fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
     val context = LocalContext.current
@@ -217,29 +225,42 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
     ) {
         val scroll = rememberScrollState()
-        val text = last?.text.orEmpty()
+        val output = last?.output.orEmpty()
         // Đang chạy live: tự cuộn xuống dòng mới nhất.
-        LaunchedEffect(text) {
+        LaunchedEffect(output) {
             if (last?.running == true) scroll.scrollTo(scroll.maxValue)
         }
         Column {
+            LogStatusRow(last)
+            Spacer(Modifier.height(12.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
                     .heightIn(max = 320.dp)
-                    .verticalScroll(scroll),
+                    .verticalScroll(scroll)
+                    .padding(12.dp),
             ) {
-                Text(
-                    text = text,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                )
+                if (output.isBlank()) {
+                    Text(
+                        text = if (last?.running == false) "Không có đầu ra" else "Đang chờ đầu ra...",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                } else {
+                    Text(
+                        text = output,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                    )
+                }
             }
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     text = "Sao chép",
-                    onClick = { copyToClipboard(context, "log", text) },
+                    onClick = { copyToClipboard(context, "log", output) },
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
@@ -249,6 +270,57 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                 )
             }
+        }
+    }
+}
+
+/** Hàng trạng thái trên bảng log: nhãn bo tròn (đang chạy / xong / lỗi / hết giờ) bên trái, mã thoát bên phải. */
+@Composable
+private fun LogStatusRow(entry: LogEntry?) {
+    val status = entry?.status ?: LogStatus.Running
+    val label: String
+    val container: Color
+    val content: Color
+    when (status) {
+        LogStatus.Running -> {
+            label = "Đang chạy..."
+            container = MiuixTheme.colorScheme.primaryContainer
+            content = MiuixTheme.colorScheme.onPrimaryContainer
+        }
+        LogStatus.Done -> {
+            label = "Xong"
+            container = MiuixTheme.colorScheme.primaryContainer
+            content = MiuixTheme.colorScheme.onPrimaryContainer
+        }
+        LogStatus.Failed -> {
+            label = "Lỗi"
+            container = MiuixTheme.colorScheme.errorContainer
+            content = MiuixTheme.colorScheme.onErrorContainer
+        }
+        LogStatus.TimedOut -> {
+            label = "Hết thời gian chờ"
+            container = MiuixTheme.colorScheme.errorContainer
+            content = MiuixTheme.colorScheme.onErrorContainer
+        }
+    }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            color = content,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(container)
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        entry?.exitCode?.let { code ->
+            Text(
+                text = "Mã thoát $code",
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
         }
     }
 }

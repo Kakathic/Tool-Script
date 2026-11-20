@@ -34,7 +34,7 @@ hint       = "Ví dụ 5555"
 default    = "5555"
 input_type = "number"
 run        = 'echo "Số đã nhập: $tools_number"'
-shell      = "log"
+shell      = "live"
 
 [[group]]
 title = "Lựa chọn"

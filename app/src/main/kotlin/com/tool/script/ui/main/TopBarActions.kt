@@ -88,11 +88,16 @@ private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPosi
     }
 }
 
-/** Làm tối cửa sổ phía sau Popup mà không thay đổi kích thước hay vùng nhận chạm. */
+/**
+ * Làm tối cửa sổ phía sau Popup mà không thay đổi kích thước hay vùng nhận chạm.
+ * Độ tối lấy từ màu nền mờ của chủ đề Miuix (`windowDimming`), cùng nguồn với hộp thoại nên hai bên luôn đồng nhất
+ * (tự đổi theo sáng / tối).
+ */
 @Composable
 private fun DimMenuBackground() {
     val view = LocalView.current
-    DisposableEffect(view) {
+    val dimAmount = MiuixTheme.colorScheme.windowDimming.alpha
+    DisposableEffect(view, dimAmount) {
         val popupView = view.rootView
         val params = popupView.layoutParams as? WindowManager.LayoutParams
         val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -100,7 +105,7 @@ private fun DimMenuBackground() {
         val originalDimAmount = params?.dimAmount
         if (params != null) {
             params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND
-            params.dimAmount = 0.32f
+            params.dimAmount = dimAmount
             windowManager.updateViewLayout(popupView, params)
         }
         onDispose {
@@ -171,6 +176,9 @@ internal fun MenuPopup(
     }
 }
 
+/** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
+private const val MenuSelectedAlpha = 0.24f
+
 /**
  * Mục menu. [selected] = null: menu không có lựa chọn (không chừa chỗ cho dấu tích);
  * khác null: luôn chừa ô tích bên phải để các mục thẳng hàng, true thì hiện dấu tích.
@@ -180,7 +188,7 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     val color = if (selected == true) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
     // Mục đang chọn: nền màu chủ đạo nhạt bo tròn, chữ màu chủ đạo, dấu tích bên phải.
     val itemShape = RoundedCornerShape(12.dp)
-    val itemBackground = if (selected == true) MiuixTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent
+    val itemBackground = if (selected == true) MiuixTheme.colorScheme.primary.copy(alpha = MenuSelectedAlpha) else Color.Transparent
     Row(
         modifier = Modifier
             .fillMaxWidth()

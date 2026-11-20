@@ -115,7 +115,7 @@ desc  = "Tăng xung CPU/GPU"
 on    = "echo 1 > /sys/xxx"
 off   = "echo 0 > /sys/xxx"
 get   = "cat /sys/xxx"       # tùy chọn: đọc trạng thái thật bằng shell lúc item xuất hiện
-shell = "log"                # chế độ hiển thị khi chạy (mặc định log)
+shell = "live"               # chế độ hiển thị khi chạy (mặc định live)
 lock  = "ROOT_MODE != root"
 lock_mode = "readonly"
 ```
@@ -143,7 +143,7 @@ lock_mode = "readonly"
 | `visible_if` | không | Điều kiện hiển thị (mục 8) |
 | `lock` | không | Điều kiện khóa item (mục 9) |
 | `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
-| `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `log` |
+| `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `live` |
 | `confirm` | không | Nội dung hộp thoại xác nhận trước khi chạy |
 | `timeout` | không | Giây, mặc định 30 |
 
@@ -245,6 +245,7 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 ```
 
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
+  Mở trang con: trang mới trượt vào từ bên phải, trang bên dưới lùi nhẹ sang trái; đóng thì ngược lại (dialog vẫn trượt từ dưới lên).
 - `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên che kín màn hình, thanh trên có nút đóng (X) thay vì mũi tên.
 - Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
   - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
@@ -319,11 +320,12 @@ lock_mode = "hide"
 
 | `shell` | Hành vi |
 |---|---|
-| `log` (mặc định) | Hiện log đầy đủ của lệnh vừa chạy |
-| `live` | Như `log` nhưng bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống, xong thì ghi mã thoát) |
+| `live` (mặc định) | Bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống). Nhãn trạng thái (Đang chạy / Xong / Lỗi / Hết thời gian chờ) và mã thoát nằm riêng phía trên khung log, khung log chỉ chứa phần lệnh in ra; nút Sao chép chép phần đó |
 | `hidden` | Chạy ẩn, không hiện gì |
 | `banner` | Hiện thông báo ngắn trong app (banner) |
 | `notice` | Gửi thông báo hệ thống của Android (chỉ xin quyền thông báo khi dùng tới, Android 13+) |
+
+`shell = "log"` (kiểu cũ) đã bỏ: gặp thì dùng `live` kèm cảnh báo.
 
 Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toast** báo lỗi.
 

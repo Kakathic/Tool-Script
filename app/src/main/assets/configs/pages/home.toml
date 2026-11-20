@@ -1,7 +1,7 @@
 # Trang mẫu: text, group, switch (get / on / off), visible_if, lock, các kiểu hiển thị kết quả.
 # Chỉ để làm mẫu tính năng: mọi lệnh đều vô hại (echo, true, ...), không đổi thông số thiết bị.
 # Item nằm trong group viết bằng [[group.item]] (cú pháp TOML cho bảng lồng nhau).
-# Mọi item chạy lệnh đều có thể dùng shell = log | hidden | banner | notice.
+# Mọi item chạy lệnh đều có thể dùng shell = live | hidden | banner | notice (mặc định live).
 
 [[item]]
 type    = "text"
@@ -74,18 +74,19 @@ visible_if = "ROOT_MODE == any"
 [[group]]
 title = "Các kiểu hiển thị kết quả (shell)"
 
-# shell = log (mặc định): hiện bảng log đầy đủ; lệnh nhiều dòng dùng được `;`
+# shell = live (mặc định): bảng log mở ngay khi chạy, hiện từng dòng khi lệnh in ra (tự cuộn xuống);
+# nhãn trạng thái (Đang chạy / Xong / Lỗi) và mã thoát nằm riêng phía trên. Lệnh nhiều dòng dùng được `;`
 [[group.item]]
 type  = "button"
-title = "log"
-desc  = "Mặc định: bảng log đầy đủ, có nút sao chép"
+title = "Mặc định (live)"
+desc  = "Không khai báo shell: bảng log live, có nút sao chép"
 run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
 
-# shell = live: như log nhưng hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống)
+# shell = live khai báo rõ (giống mặc định); lệnh chạy lâu thấy log chạy từng dòng
 [[group.item]]
 type    = "button"
 title   = "live"
-desc    = "Bảng log hiện từng dòng khi đang chạy"
+desc    = "Bảng log hiện từng dòng khi đang chạy (shell = live)"
 run     = 'for i in 1 2 3 4 5; do echo "Dòng $i"; sleep 1; done'
 shell   = "live"
 timeout = 15

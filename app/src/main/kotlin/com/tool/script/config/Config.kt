@@ -19,7 +19,7 @@ enum class ItemType(val key: String) {
     }
 }
 
-enum class ShellMode { Log, Live, Hidden, Banner, Notice }
+enum class ShellMode { Live, Hidden, Banner, Notice }
 
 enum class LockMode { Readonly, Hide }
 
@@ -276,14 +276,17 @@ object TomlParser {
         }
 
         val shell = when (t.str("shell")?.lowercase()) {
-            null, "log" -> ShellMode.Log
-            "live" -> ShellMode.Live
+            null, "live" -> ShellMode.Live
+            "log" -> {
+                warnings += "$label \"$title\": shell = \"log\" đã bỏ, dùng live"
+                ShellMode.Live
+            }
             "hidden" -> ShellMode.Hidden
             "banner" -> ShellMode.Banner
             "notice" -> ShellMode.Notice
             else -> {
-                warnings += "$label \"$title\": shell = \"${t.str("shell")}\" không hợp lệ, dùng log"
-                ShellMode.Log
+                warnings += "$label \"$title\": shell = \"${t.str("shell")}\" không hợp lệ, dùng live"
+                ShellMode.Live
             }
         }
         val lockMode = when (t.str("lock_mode")?.lowercase()) {

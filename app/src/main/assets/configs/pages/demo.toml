@@ -25,7 +25,7 @@ desc  = "style = \"dialog\", Xác nhận mới chạy run"
 page  = "pages/demo_dialog.toml"
 style = "dialog"
 run   = 'echo "note=$demo_dialog_note mode=$demo_dialog_mode level=$demo_dialog_level flag=$demo_dialog_flag"'
-shell = "log"
+shell = "live"
 
 [[group.item]]
 type  = "link"

@@ -4,8 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
@@ -179,6 +182,19 @@ fun MainScreen(
                     opening -> (slideInVertically(tween(DIALOG_MILLIS)) { it } togetherWith ExitTransition.KeepUntilTransitionsFinished)
                         .also { it.targetContentZIndex = 1f }
                     closing -> EnterTransition.None togetherWith slideOutVertically(tween(DIALOG_MILLIS)) { it }
+                    // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
+                    // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
+                    // Trang bị gỡ khỏi stack = đang đóng (kể cả khi bấm link về tab và đóng hết một lượt).
+                    to != null && (from == null || from in stack) ->
+                        (
+                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
+                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
+                            ).also { it.targetContentZIndex = 1f }
+                    from != null && from !in stack ->
+                        (
+                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
+                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
+                            ).also { it.targetContentZIndex = -1f }
                     else -> EnterTransition.None togetherWith ExitTransition.None
                 }
             },
@@ -275,6 +291,9 @@ fun MainScreen(
     }
 }
 
+/** Cỡ chữ tiêu đề thanh trên (tên app, tên trang con). */
+private val TopBarTitleSize = 22.sp
+
 /**
  * Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn.
  * Có [onBack] thì thêm nút ở đầu thanh: mũi tên quay lại (trang con) hoặc dấu X khi [closeStyle] (dialog).
@@ -307,7 +326,7 @@ private fun AppTopBar(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = if (onBack != null) 4.dp else 0.dp),
-            fontSize = 20.sp,
+            fontSize = TopBarTitleSize,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurface,
             maxLines = 1,
@@ -461,3 +480,7 @@ private fun rebootErrorText(result: ExecResult): String {
 }
 
 private const val DIALOG_MILLIS = 280
+
+/** Thời gian trượt khi mở / đóng trang con (ms) và độ lùi của trang bên dưới (1/N chiều rộng). */
+private const val PAGE_MILLIS = 320
+private const val PAGE_PARALLAX = 4
