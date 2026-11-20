@@ -1,5 +1,6 @@
 package com.tool.script.executor
 
+import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,7 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
 // Backend thực thi, thứ tự ưu tiên: su -> ROM -> adb -> thường.
@@ -80,7 +82,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
         }
 }
 
-/** Shell root qua libsu. Chưa stream từng dòng: [onLine] được gọi sau khi lệnh chạy xong. */
+/** Shell root qua libsu. [onLine] nhận từng dòng stdout ngay khi lệnh in ra. */
 class SuExecutor : ShellExecutor {
     override val rootMode: String = "root"
 
@@ -90,8 +92,13 @@ class SuExecutor : ShellExecutor {
             val err = mutableListOf<String>()
             // `timeout` của toybox (Android 6+) giữ giới hạn thời gian cho từng lệnh; mã 124 = hết giờ.
             val wrapped = "timeout $timeoutSec sh -c " + com.tool.script.util.ShellText.quote(command)
-            val result = Shell.cmd(wrapped).to(out, err).exec()
-            out.forEach { onLine?.invoke(it) }
+            val outLines = object : CallbackList<String>(Executor { it.run() }) {
+                override fun onAddElement(e: String) {
+                    out += e
+                    onLine?.invoke(e)
+                }
+            }
+            val result = Shell.cmd(wrapped).to(outLines, err).exec()
             ExecResult(
                 code = result.code,
                 stdout = out.joinToString("\n"),

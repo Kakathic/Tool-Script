@@ -87,6 +87,15 @@ title = "log"
 desc  = "Mặc định: bảng log đầy đủ, có nút sao chép"
 run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
 
+# shell = live: như log nhưng hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống)
+[[group.item]]
+type    = "button"
+title   = "live"
+desc    = "Bảng log hiện từng dòng khi đang chạy"
+run     = 'for i in 1 2 3 4 5; do echo "Dòng $i"; sleep 1; done'
+shell   = "live"
+timeout = 15
+
 # shell = banner: thông báo ngắn ngay trong app, tự ẩn sau vài giây
 [[group.item]]
 type  = "button"

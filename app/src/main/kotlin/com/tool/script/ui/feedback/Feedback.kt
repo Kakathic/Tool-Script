@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,22 +47,51 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Hiển thị kết quả chạy lệnh theo `shell`:
-//   log (mặc định) = bảng log đầy đủ | hidden = ẩn, lỗi thì toast
+//   log (mặc định) = bảng log đầy đủ | live = bảng log hiện từng dòng ngay khi lệnh in ra | hidden = ẩn, lỗi thì toast
 //   banner = thông báo ngắn trong app | notice = thông báo hệ thống (xin POST_NOTIFICATIONS khi dùng tới)
 
-data class LogEntry(val title: String, val command: String, val result: ExecResult) {
+/**
+ * Một lần chạy lệnh để hiện trong bảng log. [initialResult] null = đang chạy (live): các dòng được thêm dần
+ * bằng [append], xong thì gọi [finish]. Có sẵn kết quả thì là log tĩnh.
+ */
+class LogEntry(val title: String, val command: String, initialResult: ExecResult? = null) {
+    private val lines = mutableStateListOf<String>()
+    var result by mutableStateOf(initialResult)
+        private set
+
+    val running: Boolean get() = result == null
+
     val text: String
         get() = buildString {
             appendLine("$ $command")
-            if (result.combined.isNotBlank()) appendLine(result.combined)
-            append(
-                when {
-                    result.timedOut -> "[hết thời gian chờ]"
-                    result.ok -> "[xong, mã 0]"
-                    else -> "[lỗi, mã ${result.code}]"
-                },
-            )
+            val r = result
+            if (r == null) {
+                lines.forEach { appendLine(it) }
+                append("[đang chạy...]")
+            } else {
+                if (r.combined.isNotBlank()) appendLine(r.combined)
+                append(
+                    when {
+                        r.timedOut -> "[hết thời gian chờ]"
+                        r.ok -> "[xong, mã 0]"
+                        else -> "[lỗi, mã ${r.code}]"
+                    },
+                )
+            }
         }
+
+    fun append(line: String) {
+        lines += line
+        while (lines.size > MAX_LIVE_LINES) lines.removeAt(0)
+    }
+
+    fun finish(result: ExecResult) {
+        this.result = result
+    }
+
+    private companion object {
+        const val MAX_LIVE_LINES = 2000
+    }
 }
 
 class FeedbackHost(private val context: Context) {
@@ -75,10 +106,14 @@ class FeedbackHost(private val context: Context) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
+    /** Chế độ live: mở bảng log ngay, nơi gọi thêm dòng bằng [LogEntry.append] rồi [LogEntry.finish]. */
+    fun startLive(title: String, command: String): LogEntry = LogEntry(title, command).also { log = it }
+
     fun report(item: Item, command: String, result: ExecResult) {
         val summary = summaryOf(item.title, result)
         when (item.shell) {
             ShellMode.Log -> log = LogEntry(item.title, command, result)
+            ShellMode.Live -> Unit // đã hiện từng dòng qua startLive
             ShellMode.Hidden -> if (!result.ok) toast(summary)
             ShellMode.Banner -> banner = summary
             ShellMode.Notice -> notice(item.title, summary)
@@ -159,15 +194,21 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
         title = last?.title,
         onDismissRequest = onDismiss,
     ) {
+        val scroll = rememberScrollState()
+        val text = last?.text.orEmpty()
+        // Đang chạy live: tự cuộn xuống dòng mới nhất.
+        LaunchedEffect(text) {
+            if (last?.running == true) scroll.scrollTo(scroll.maxValue)
+        }
         Column {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 320.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scroll),
             ) {
                 Text(
-                    text = last?.text.orEmpty(),
+                    text = text,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,
                 )
@@ -176,7 +217,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     text = "Sao chép",
-                    onClick = { copyToClipboard(context, "log", last?.text.orEmpty()) },
+                    onClick = { copyToClipboard(context, "log", text) },
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(text = "Đóng", onClick = onDismiss, modifier = Modifier.weight(1f))

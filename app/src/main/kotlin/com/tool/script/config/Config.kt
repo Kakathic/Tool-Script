@@ -19,7 +19,7 @@ enum class ItemType(val key: String) {
     }
 }
 
-enum class ShellMode { Log, Hidden, Banner, Notice }
+enum class ShellMode { Log, Live, Hidden, Banner, Notice }
 
 enum class LockMode { Readonly, Hide }
 
@@ -276,6 +276,7 @@ object TomlParser {
 
         val shell = when (t.str("shell")?.lowercase()) {
             null, "log" -> ShellMode.Log
+            "live" -> ShellMode.Live
             "hidden" -> ShellMode.Hidden
             "banner" -> ShellMode.Banner
             "notice" -> ShellMode.Notice

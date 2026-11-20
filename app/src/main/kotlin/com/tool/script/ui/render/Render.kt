@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
 import com.tool.script.config.ItemType
 import com.tool.script.config.LockMode
+import com.tool.script.config.ShellMode
 import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
@@ -90,7 +91,14 @@ class RenderEnv(
         val action: () -> Unit = {
             scope.launch {
                 val vars = store.snapshot() + extra
-                val result = ExecutorManager.current.exec(ShellText.withEnv(command, vars), item.timeoutSec)
+                val full = ShellText.withEnv(command, vars)
+                val result = if (item.shell == ShellMode.Live) {
+                    val entry = feedback.startLive(item.title, command)
+                    ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
+                        .also { entry.finish(it) }
+                } else {
+                    ExecutorManager.current.exec(full, item.timeoutSec)
+                }
                 feedback.report(item, command, result)
                 onDone(result)
             }

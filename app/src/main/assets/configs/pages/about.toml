@@ -47,6 +47,11 @@ content = "Mặc định. Hiện bảng log đầy đủ, có nút sao chép."
 
 [[group.item]]
 type    = "text"
+title   = "live"
+content = "Như log nhưng hiện từng dòng ngay khi lệnh in ra."
+
+[[group.item]]
+type    = "text"
 title   = "hidden"
 content = "Chạy ẩn. Lệnh lỗi thì hiện toast."
 

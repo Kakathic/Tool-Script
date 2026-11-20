@@ -47,7 +47,7 @@ app/src/main/
 - Khởi động: Splash (logo, thanh tiến trình, 5 dòng log; căn giữa, lề 16dp) -> xin quyền bộ nhớ (từ chối thì thoát) -> chạy script -> nạp TOML -> màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
 - Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
 - Backend: su -> ROM -> adb -> không root, biến `ROOT_MODE`; `lock` thay cho `require`.
-- Hiển thị khi chạy lệnh: `shell = log | hidden | banner | notice`; `hidden` mà lỗi thì hiện toast.
+- Hiển thị khi chạy lệnh: `shell = log | live | hidden | banner | notice`; `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.
 - Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
@@ -79,7 +79,7 @@ Giai đoạn 2: giao diện
 
 - [x] Màn hình chính: tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`, `checkbox`, `radio`, `progress`.
-- [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `hidden` / `banner` / `notice`).
+- [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `live` / `hidden` / `banner` / `notice`).
 - [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
 - [x] Chủ đề: Theo hệ thống / Sáng / Tối và 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại.
 - [x] Trang mẫu trong `assets/configs/pages`: chỉ minh họa tính năng (nút, nhập liệu, lựa chọn, điều kiện, khóa, trang con, dialog, biến env.sh), lệnh chỉ là `echo`, không đổi thông số thiết bị.

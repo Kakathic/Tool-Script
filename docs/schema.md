@@ -293,6 +293,7 @@ lock_mode = "hide"
 | `shell` | Hành vi |
 |---|---|
 | `log` (mặc định) | Hiện log đầy đủ của lệnh vừa chạy |
+| `live` | Như `log` nhưng bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống, xong thì ghi mã thoát) |
 | `hidden` | Chạy ẩn, không hiện gì |
 | `banner` | Hiện thông báo ngắn trong app (banner) |
 | `notice` | Gửi thông báo hệ thống của Android (chỉ xin quyền thông báo khi dùng tới, Android 13+) |
