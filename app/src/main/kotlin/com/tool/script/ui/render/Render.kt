@@ -78,6 +78,16 @@ import kotlin.math.roundToInt
 
 private const val SELECTED_ALPHA = 0.16f
 
+// Bọc onClick của item: rung nhẹ khi chạm rồi mới chạy hành động.
+@Composable
+private fun withTapHaptic(onClick: () -> Unit): () -> Unit {
+    val haptic = LocalHapticFeedback.current
+    return {
+        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+        onClick()
+    }
+}
+
 class ConfirmRequest(val message: String, val onConfirm: () -> Unit)
 
 /** Mọi thứ item cần để chạy lệnh, đọc/ghi biến và hiện kết quả. */
@@ -217,7 +227,7 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
             title = item.title,
             summary = item.desc,
             enabled = enabled,
-            onClick = { env.run(item, item.run) },
+            onClick = withTapHaptic { env.run(item, item.run) },
         )
     }
 }
@@ -385,7 +395,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
             if (!env.varsOnly) {
                 Spacer(Modifier.height(12.dp))
                 Button(
-                    onClick = { env.run(item, item.run) },
+                    onClick = withTapHaptic { env.run(item, item.run) },
                     enabled = enabled && !item.run.isNullOrBlank(),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColorsPrimary(),
@@ -411,9 +421,16 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
             summary = item.desc,
             enabled = enabled,
             endActions = {
-                Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
+                    Icon(
+                        imageVector = MiuixIcons.Basic.ArrowRight,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                }
             },
-            onClick = { showDialog = true },
+            onClick = withTapHaptic { showDialog = true },
         )
     }
     OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
@@ -467,16 +484,23 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             summary = item.desc,
             enabled = enabled,
             endActions = {
-                Text(
-                    summary,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    style = MiuixTheme.textStyles.body2,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(max = 160.dp),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        summary,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        style = MiuixTheme.textStyles.body2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 160.dp),
+                    )
+                    Icon(
+                        imageVector = MiuixIcons.Basic.ArrowRight,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                }
             },
-            onClick = {
+            onClick = withTapHaptic {
                 draft = currentSet
                 showDialog = true
             },
@@ -564,7 +588,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                         )
                     }
                 },
-                onClick = { expanded = true },
+                onClick = withTapHaptic { expanded = true },
             )
             if (expanded) {
                 MenuPopup(onDismiss = { expanded = false }, minWidth = 180.dp) {
@@ -637,7 +661,7 @@ private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Bo
                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
             },
-            onClick = {
+            onClick = withTapHaptic {
                 val tab = item.tab
                 val page = item.page
                 if (tab != null) env.openTab(tab) else if (page != null) env.openPage(page)
