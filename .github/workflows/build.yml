@@ -38,7 +38,7 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace --warning-mode none
 
       - name: Upload APK
-        uses: actions/upload-artifact
+        uses: actions/upload-artifact@v6
         with:
           name: ToolScript-debug-apk
           path: app/build/outputs/apk/debug/*.apk
