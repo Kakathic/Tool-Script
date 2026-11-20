@@ -28,7 +28,7 @@ title = "Kết quả"
 icon  = "icons/output.svg"
 file  = "pages/output.toml"
 
-# Tab 4: trang con, dialog, biến env.sh, lệnh trong bin
+# Tab 4: trang con, dialog, icon của item, biến env.sh, busybox
 [[tab]]
 id    = "pages"
 title = "Trang con"

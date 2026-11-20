@@ -45,23 +45,54 @@ shell   = "full"
 timeout = 20
 
 [[group]]
-title = "Thông báo (banner, notice, hidden)"
+title = "Banner và thông báo (banner, notice)"
 
-# banner: thông báo ngắn ngay trong app, tự ẩn sau vài giây
+# banner: hiện ngay "Đang chạy script…" kèm thanh chạy vô hạn, có nút Hủy.
+# Xong thì đổi sang đầu ra thật của lệnh, thanh đếm ngược 5 giây, có nút Ẩn.
+# Vuốt banner sang trái / phải: đang chạy thì hủy, đã xong thì ẩn.
+# Khi banner đang chạy hoặc còn hiện, mọi item banner / notice bị khóa (mờ).
 [[group.item]]
 type  = "button"
 title = "banner"
-desc  = "Thông báo ngắn trong app"
+desc  = "Hiện đầu ra thật của lệnh"
 run   = 'echo "Xin chào từ banner"'
 shell = "banner"
 
-# notice: thông báo hệ thống của Android (xin quyền thông báo lần đầu)
+# lệnh chạy lâu để thử nút Hủy và vuốt hủy
+[[group.item]]
+type    = "button"
+title   = "banner chạy lâu"
+desc    = "sleep 6: bấm Hủy hoặc vuốt banner để dừng"
+run     = 'echo "Bắt đầu"; sleep 6; echo "Xong sau 6 giây"'
+shell   = "banner"
+timeout = 15
+
+# banner hiện tối đa 8 dòng
+[[group.item]]
+type  = "button"
+title = "banner nhiều dòng"
+desc  = "Mỗi dòng in ra là một dòng trong banner"
+run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"; echo "Dòng 4"'
+shell = "banner"
+
+# lệnh lỗi: banner nền đỏ nhạt, dòng đầu là mã lỗi, kèm phần lệnh in ra
+[[group.item]]
+type  = "button"
+title = "banner (lỗi)"
+desc  = "Lệnh lỗi nên banner nền đỏ nhạt"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "banner"
+
+# notice: chạy như banner, xong gửi thông báo hệ thống của Android (xin quyền thông báo lần đầu)
 [[group.item]]
 type  = "button"
 title = "notice"
 desc  = "Thông báo hệ thống của Android"
 run   = 'echo "Xin chào từ notice"'
 shell = "notice"
+
+[[group]]
+title = "Chạy ẩn (hidden)"
 
 # hidden: chạy ẩn, chỉ khi lỗi mới hiện toast
 [[group.item]]
@@ -97,6 +128,7 @@ title   = "Lệnh chạy quá giờ"
 desc    = "sleep 5 nhưng timeout = 2"
 run     = "sleep 5"
 timeout = 2
+shell   = "banner"
 
 [[group]]
 title = "Thanh tiến trình (progress)"
@@ -104,7 +136,7 @@ title = "Thanh tiến trình (progress)"
 # progress: chỉ để xem, đọc số từ get (trong khoảng min..max)
 [[group.item]]
 type  = "progress"
-id    = "tools_progress"
+id    = "output_progress"
 title = "Thanh tiến trình"
 desc  = "get = echo 65"
 get   = "echo 65"

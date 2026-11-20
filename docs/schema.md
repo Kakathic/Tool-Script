@@ -12,7 +12,7 @@ Thứ tự ưu tiên khi app chọn backend:
 | 4 | Không root | `any` |
 
 Backend hiện tại có sẵn dưới dạng biến `ROOT_MODE`, dùng trong `lock` và
-`visible_if` (xem mục 8, 9). Không còn trường `require`.
+`visible_if` (xem mục 8, 9).
 
 ## 2. Cấu trúc file
 
@@ -46,7 +46,6 @@ file  = "pages/home.toml"
   - Thứ tự: `env.sh` → `[app] env` → các biến `export` của item → lệnh.
   - `env` lỗi cú pháp sẽ làm mọi lệnh lỗi theo; viết nhiều dòng bằng chuỗi ba nháy `"""..."""`.
 - Mỗi `[[tab]]` là một tab ở thanh dưới. `title` và `icon` bắt buộc.
-- Cú pháp cũ `[[page]]` đã bỏ: gặp thì bỏ qua kèm cảnh báo.
 - Thiếu `title` hoặc `icon`: bỏ tab đó và ghi cảnh báo vào log.
 - `icon` là đường dẫn tới file icon:
   - Trong assets: `icons/home.svg` (tính từ thư mục configs).
@@ -85,16 +84,14 @@ export PATH="$FILES_DIR/bin:$PATH"
 Các file chạy được nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/lib_<tên>.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
 Android cài đúng ABI của máy và giải nén ra `$LIB_DIR` (`useLegacyPackaging = true` trong `app/build.gradle.kts`), nơi app thường không root cũng được chạy file.
 Mỗi lần mở app, app tạo symlink `files/bin/<tên>` (`$BIN_DIR`) trỏ tới `lib_<tên>.so` tương ứng. `$BIN_DIR` đứng đầu `PATH` trong `env.sh`,
-nên mọi lệnh của app gọi thẳng được `7z`, `toybox`, `busybox`. Thêm lệnh mới: bỏ file `lib_<tên>.so` vào đủ các thư mục ABI.
+nên mọi lệnh của app gọi thẳng được `busybox`. Thêm lệnh mới: bỏ file `lib_<tên>.so` vào đủ các thư mục ABI.
 
 | Lệnh | Nội dung |
 |---|---|
 | `busybox` | BusyBox 1.36.1 (bản NDK của osm0sis, qua Magisk-Modules-Repo/busybox-ndk), biên dịch tĩnh. Gọi applet: `busybox ls`, `busybox wget`... (chưa tạo symlink applet để không đè lệnh hệ thống) |
-  nằm sẵn trong `jniLibs`; trang `pages.toml` có nhóm nút "Thử script trong bin" để kiểm tra. Tên `state-set` dùng dấu gạch ngang để không trùng
-  hàm `state_set` của `env.sh` (hàm shell luôn được ưu tiên hơn file trong `PATH`).
-- Toybox biên dịch bằng glibc tĩnh nên tra cứu tên (DNS, `getpwnam`...) có thể khác bản của Android; các lệnh thông thường không bị ảnh hưởng.
-- Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.
 
+- Trang `pages.toml` có nhóm nút "Busybox dựng sẵn (bin)" để kiểm tra.
+- Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.
 - Key lạ (không có trong bảng) giữ nguyên và ghi một dòng vào log khởi động.
 - Giữ nháy kép quanh `@KEY@` để đường dẫn có khoảng trắng vẫn đúng.
 - Không có `env.sh` trong assets thì bỏ qua. File lỗi cú pháp không chặn lệnh, nhưng các biến sau chỗ lỗi sẽ thiếu.
@@ -186,8 +183,6 @@ title = "Chế độ game"
 - Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
 - Các item con trong một `[[group]]` nằm chung trong một thẻ lớn. `[[item]]` đứng ngoài group thì mỗi item một thẻ riêng.
 - Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả tiêu đề.
-- Cú pháp cũ `[[item]]` + `type = "group"` và `[[item.item]]` không còn dùng:
-  `type = "group"` bị bỏ qua kèm cảnh báo.
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).
 
 ### Lưu giá trị theo id
@@ -270,15 +265,15 @@ type      = "multiselect"
 id        = "features"
 title     = "Tính năng bật"
 options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
-default   = "audio,net"      # tùy chọn: các giá trị chọn sẵn, cách nhau bằng separator
+default   = "audio\nnet"     # tùy chọn: các giá trị chọn sẵn, cách nhau bằng separator (kiểu cũ "audio,net" vẫn đọc được khi separator là xuống dòng)
 columns   = 2                # tùy chọn: 1 (mặc định) hoặc 2 cột trong hộp thoại
-separator = ","              # tùy chọn: dấu phân tách trong $id, mặc định ","
+separator = ","              # tùy chọn: dấu phân tách trong $id, mặc định là xuống dòng (mỗi giá trị một dòng)
 run       = 'echo "Đã chọn: $features"'
 ```
 
 - `options` khai báo như `select` (mục 7). Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại có ô tích cho từng mục.
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
-- `$id` là các **giá trị** đã chọn nối bằng `separator`, theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
+- `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
 `singleselect` – chọn một mục, có Xác nhận:
@@ -372,8 +367,6 @@ Khi một lệnh `banner` / `notice` đang chạy, mọi item dùng hai kiểu n
 Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng.
 
 Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
-
-`shell = "log"` (kiểu cũ) đã bỏ: gặp thì dùng `live` kèm cảnh báo.
 
 Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toast** báo lỗi.
 

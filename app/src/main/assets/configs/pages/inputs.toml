@@ -1,35 +1,34 @@
 # Tab 2 - Demo: nhập liệu và các kiểu lựa chọn.
-# input, select, multiselect, radio, dropdown, slider.
+# input, select, multiselect, singleselect, radio, dropdown, slider.
 # Giá trị của item có id dùng trong lệnh dưới dạng $id (luôn đặt trong nháy kép).
 # Mọi lệnh chỉ là echo, không đổi thông số thiết bị.
 
 [[item]]
 type    = "text"
 title   = "Nhập liệu và lựa chọn"
-content = "Tab này demo input, select, multiselect, radio, dropdown và slider. Giá trị chọn được truyền vào lệnh qua $id."
+content = "Tab này demo input, select, multiselect, singleselect, radio, dropdown và slider. Giá trị chọn được truyền vào lệnh qua $id."
 
 [[group]]
 title = "Nhập liệu"
 
 [[group.item]]
 type    = "input"
-id      = "tools_note"
+id      = "inputs_note"
 title   = "Ghi chú"
-icon    = "icons/about.svg"
 hint    = "Nhập nội dung"
 default = "xin chào"
-run     = 'echo "Ghi chú: $tools_note"'
+run     = 'echo "Ghi chú: $inputs_note"'
 shell   = "banner"
 
 [[group.item]]
 type       = "input"
-id         = "tools_number"
+id         = "inputs_number"
 title      = "Số"
 desc       = "input_type = number"
 hint       = "Ví dụ 5555"
 default    = "5555"
 input_type = "number"
-run        = 'echo "Số đã nhập: $tools_number"'
+run        = 'echo "Số đã nhập: $inputs_number"'
 shell      = "live"
 
 [[group]]
@@ -38,11 +37,11 @@ title = "Select (hộp thoại)"
 # options là chuỗi "nhãn|giá trị"; chọn xong chạy lệnh ngay
 [[group.item]]
 type    = "select"
-id      = "tools_choice"
+id      = "inputs_choice"
 title   = "Chọn một mục"
-desc    = "Giá trị chọn được truyền vào $tools_choice"
+desc    = "Giá trị chọn được truyền vào $inputs_choice"
 default = "b"
-run     = 'echo "Đã chọn: $tools_choice"'
+run     = 'echo "Đã chọn: $inputs_choice"'
 shell   = "banner"
 options = [
   "Mục A|a",
@@ -53,40 +52,40 @@ options = [
 # columns = 2: các lựa chọn xếp hai mỗi hàng trong hộp thoại
 [[group.item]]
 type    = "select"
-id      = "tools_cols"
+id      = "inputs_cols"
 title   = "Select 2 cột"
 default = "x"
 columns = 2
-run     = 'echo "Đã chọn: $tools_cols"'
+run     = 'echo "Đã chọn: $inputs_cols"'
 shell   = "banner"
 options = ["Lựa chọn 1|x", "Lựa chọn 2|y", "Lựa chọn 3|z", "Lựa chọn 4|w"]
 
 # không có | thì nhãn = giá trị
 [[group.item]]
 type    = "select"
-id      = "tools_short"
+id      = "inputs_short"
 title   = "Select rút gọn"
 default = "một"
-run     = 'echo "Đã chọn: $tools_short"'
+run     = 'echo "Đã chọn: $inputs_short"'
 shell   = "banner"
 options = ["một", "hai", "ba"]
 
 [[group]]
 title = "Chọn nhiều, chọn sẵn, thả xuống"
 
-# multiselect: bấm Xác nhận mới lưu và chạy lệnh; $tools_multi = các giá trị cách nhau bằng dấu phẩy
+# multiselect: bấm Xác nhận mới lưu và chạy lệnh; $inputs_multi = các giá trị, mỗi giá trị một dòng (separator mặc định là xuống dòng)
 [[group.item]]
 type    = "multiselect"
-id      = "tools_multi"
+id      = "inputs_multi"
 title   = "Chọn nhiều mục"
-desc    = "Giá trị chọn được truyền vào $tools_multi"
-default = "a,c"
+desc    = "Mỗi giá trị đã chọn một dòng trong $inputs_multi"
+default = "a\nc"
 columns = 2
-run     = 'echo "Đã chọn: $tools_multi"'
+run     = 'echo "Đã chọn: $inputs_multi"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
-# separator đổi dấu phân tách trong $id
+# separator: đổi dấu phân tách trong $id
 [[group.item]]
 type      = "multiselect"
 id        = "inputs_multi_sep"
@@ -98,39 +97,36 @@ run       = 'echo "Đã chọn: $inputs_multi_sep"'
 shell     = "banner"
 options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
 
-# singleselect: chọn một, bấm Xác nhận mới lưu và chạy lệnh; $tools_single = giá trị đã chọn
+# singleselect: chọn một, bấm Xác nhận mới lưu và chạy lệnh; $inputs_single = giá trị đã chọn
 [[group.item]]
 type    = "singleselect"
-id      = "tools_single"
+id      = "inputs_single"
 title   = "Chọn một, có xác nhận"
-icon    = "icons/tools.svg"
-icon_size = 28
-icon_tint = true
-desc    = "Giá trị chọn được truyền vào $tools_single"
+desc    = "Giá trị chọn được truyền vào $inputs_single"
 default = "b"
 columns = 2
-run     = 'echo "Đã chọn: $tools_single"'
+run     = 'echo "Đã chọn: $inputs_single"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
 # radio: hiện sẵn mọi lựa chọn
 [[group.item]]
 type    = "radio"
-id      = "tools_radio"
+id      = "inputs_radio"
 title   = "Radio"
 default = "x"
-run     = 'echo "Radio: $tools_radio"'
+run     = 'echo "Radio: $inputs_radio"'
 shell   = "banner"
 options = ["Lựa chọn X|x", "Lựa chọn Y|y", "Lựa chọn Z|z"]
 
 # dropdown: menu thả xuống ngay dưới hàng
 [[group.item]]
 type    = "dropdown"
-id      = "tools_dropdown"
+id      = "inputs_dropdown"
 title   = "Giới hạn thiết bị"
-desc    = "Giá trị chọn được truyền vào $tools_dropdown"
+desc    = "Giá trị chọn được truyền vào $inputs_dropdown"
 default = "0"
-run     = 'echo "Đã chọn: $tools_dropdown"'
+run     = 'echo "Đã chọn: $inputs_dropdown"'
 shell   = "banner"
 options = ["Không giới hạn|0", "1", "2", "3", "4", "5", "6"]
 
@@ -140,13 +136,13 @@ title = "Thanh trượt"
 # slider: gửi lệnh khi thả tay
 [[group.item]]
 type    = "slider"
-id      = "tools_slider"
+id      = "inputs_slider"
 title   = "Thanh trượt"
 min     = 0
 max     = 100
 step    = 5
 default = 40
-run     = 'echo "Giá trị: $tools_slider"'
+run     = 'echo "Giá trị: $inputs_slider"'
 shell   = "banner"
 
 [[group]]
@@ -154,7 +150,7 @@ title = "Hiện theo lựa chọn (visible_if)"
 
 [[group.item]]
 type    = "select"
-id      = "tools_toggle"
+id      = "inputs_toggle"
 title   = "Hiện mục phụ"
 default = "hide"
 shell   = "hidden"
@@ -163,18 +159,18 @@ options = ["Ẩn|hide", "Hiện|show"]
 [[group.item]]
 type       = "text"
 title      = "Mục phụ"
-content    = "Mục này chỉ hiện khi chọn \"Hiện\" (tools_toggle == show)"
-visible_if = "tools_toggle == show"
+content    = "Mục này chỉ hiện khi chọn \"Hiện\" (inputs_toggle == show)"
+visible_if = "inputs_toggle == show"
 
 [[group.item]]
 type       = "slider"
-id         = "tools_sub_slider"
+id         = "inputs_sub_slider"
 title      = "Thanh trượt phụ"
 desc       = "Cũng chỉ hiện khi chọn \"Hiện\""
 min        = 0
 max        = 10
 step       = 1
 default    = 5
-run        = 'echo "Giá trị phụ: $tools_sub_slider"'
+run        = 'echo "Giá trị phụ: $inputs_sub_slider"'
 shell      = "banner"
-visible_if = "tools_toggle == show"
+visible_if = "inputs_toggle == show"

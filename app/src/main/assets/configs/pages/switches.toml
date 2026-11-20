@@ -13,9 +13,9 @@ title = "Công tắc"
 # switch có on / off: chạy lệnh khi đổi trạng thái, chỉ đổi khi lệnh thành công
 [[group.item]]
 type  = "switch"
-id    = "home_switch"
+id    = "switches_switch"
 title = "Công tắc có lưu trạng thái"
-desc  = "Tự lưu vào file home_switch, chạy on / off khi đổi"
+desc  = "Tự lưu vào file switches_switch, chạy on / off khi đổi"
 on    = "echo bật"
 off   = "echo tắt"
 shell = "banner"
@@ -34,22 +34,22 @@ shell = "banner"
 # switch không có on / off: chỉ đổi và lưu giá trị
 [[group.item]]
 type  = "switch"
-id    = "home_show_more"
+id    = "switches_show_more"
 title = "Hiện thêm tùy chọn"
 desc  = "Bật để hiện các mục bên dưới (visible_if)"
 
 [[group.item]]
 type       = "text"
 title      = "Mục ẩn"
-content    = "Mục này chỉ hiện khi bật \"Hiện thêm tùy chọn\" (home_show_more == 1)"
-visible_if = "home_show_more == 1"
+content    = "Mục này chỉ hiện khi bật \"Hiện thêm tùy chọn\" (switches_show_more == 1)"
+visible_if = "switches_show_more == 1"
 
 [[group.item]]
 type       = "checkbox"
 id         = "switches_sub_check"
 title      = "Ô tick phụ"
 desc       = "Cũng chỉ hiện khi bật \"Hiện thêm tùy chọn\""
-visible_if = "home_show_more == 1"
+visible_if = "switches_show_more == 1"
 
 [[group]]
 title = "Ô tick"

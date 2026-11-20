@@ -8,7 +8,7 @@
 #   @CACHE_DIR@    thư mục cache của app
 #   @SCRIPTS_DIR@  thư mục chứa script chép từ assets (cùng nơi có file này)
 #   @STATE_DIR@    thư mục lưu trạng thái các tính năng (app tạo sẵn)
-#   @BIN_DIR@      thư mục lệnh dựng sẵn (busybox, toybox, 7z): symlink tới thư viện native của app ($LIB_DIR)
+#   @BIN_DIR@      thư mục lệnh dựng sẵn (busybox): symlink tới thư viện native của app ($LIB_DIR)
 #   @LIB_DIR@      thư mục thư viện native của app
 #   @EXT_ROOT@     gốc bộ nhớ trong (thường /storage/emulated/0)
 #   @EXT_DIR@      thư mục làm việc ngoài của app (@EXT_ROOT@/ToolScript)
@@ -25,7 +25,7 @@ export LIB_DIR="@LIB_DIR@"
 export EXT_ROOT="@EXT_ROOT@"
 export EXT_DIR="@EXT_DIR@"
 
-# $BIN_DIR đứng đầu: `toybox`, `busybox`, `7z` gọi thẳng bản của app (applet của busybox chưa tạo symlink: dùng `busybox ls`...).
+# $BIN_DIR đứng đầu: `busybox` gọi thẳng bản của app (applet của busybox chưa tạo symlink: dùng `busybox ls`...).
 export PATH="$BIN_DIR:$SCRIPTS_DIR:$PATH"
 
 # Lưu / đọc trạng thái của một tính năng, tên file = tên (id) tính năng trong $STATE_DIR.

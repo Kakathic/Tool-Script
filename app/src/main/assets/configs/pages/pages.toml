@@ -1,10 +1,10 @@
-# Tab 4 - Demo: trang con, dialog toàn màn hình, biến env.sh, lệnh dựng sẵn trong bin.
+# Tab 4 - Demo: trang con, dialog toàn màn hình, icon của item, biến env.sh, busybox.
 # Mọi lệnh chỉ là echo / ls, không đổi thông số thiết bị.
 
 [[item]]
 type    = "text"
 title   = "Trang con và công cụ hệ thống"
-content = "Tab này demo trang con, dialog toàn màn hình, biến từ env.sh và lệnh dựng sẵn trong bin."
+content = "Tab này demo trang con, dialog toàn màn hình, icon bên trái của item, biến từ env.sh và busybox dựng sẵn."
 
 [[group]]
 title = "Trang con và dialog"
@@ -28,6 +28,46 @@ run   = 'echo "note=$demo_dialog_note mode=$demo_dialog_mode level=$demo_dialog_
 shell = "live"
 
 [[group]]
+title = "Icon bên trái của item"
+
+# icon: đường dẫn như icon tab; mặc định cỡ 24dp và tô màu theo theme
+[[group.item]]
+type  = "button"
+title = "Icon mặc định"
+desc  = "icon = \"icons/about.svg\""
+icon  = "icons/about.svg"
+run   = 'echo "Icon mặc định"'
+shell = "banner"
+
+# icon_size (dp): đổi kích thước icon
+[[group.item]]
+type      = "button"
+title     = "Icon lớn"
+desc      = "icon_size = 36"
+icon      = "icons/tools.svg"
+icon_size = 36
+run       = 'echo "Icon lớn"'
+shell     = "banner"
+
+# icon_tint = false: giữ nguyên màu của ảnh thay vì tô theo theme
+[[group.item]]
+type      = "button"
+title     = "Icon giữ màu gốc"
+desc      = "icon_tint = false"
+icon      = "icons/home.svg"
+icon_tint = false
+run       = 'echo "Icon giữ màu gốc"'
+shell     = "banner"
+
+# icon dùng được cho mọi type trừ text, ví dụ switch
+[[group.item]]
+type  = "switch"
+id    = "pages_icon_switch"
+title = "Công tắc có icon"
+desc  = "icon = \"icons/demo.svg\""
+icon  = "icons/demo.svg"
+
+[[group]]
 title = "Biến từ env.sh"
 
 # Biến trong assets/scripts/env.sh được nạp trước mọi lệnh
@@ -49,34 +89,14 @@ title = "Hàm state_get / state_set"
 desc  = "Ghi rồi đọc lại pages_demo_key bằng hàm trong env.sh"
 run   = 'state_set pages_demo_key "xin chào"; echo "pages_demo_key=$(state_get pages_demo_key)"'
 
-# Thử script trong bin: gọi thẳng bằng tên qua symlink trong $BIN_DIR.
-# Bấm theo thứ tự rồi xem log (lỗi như "Permission denied" cũng hiện ở đây).
 [[group]]
-title = "Thử script trong bin"
+title = "Busybox dựng sẵn (bin)"
 
 [[group.item]]
 type  = "button"
 title = "Xem thư mục bin"
-desc  = "ls -l $BIN_DIR: thấy symlink của busybox, toybox, 7z, state-set, state-get"
+desc  = "ls -l $BIN_DIR: thấy symlink của busybox"
 run   = 'ls -l "$BIN_DIR"'
-
-[[group.item]]
-type  = "button"
-title = "state-set test_key"
-desc  = "Ghi test_key = xin chào (chạy script trực tiếp bằng tên)"
-run   = 'state-set test_key "xin chào"'
-
-[[group.item]]
-type  = "button"
-title = "state-get test_key"
-desc  = "Đọc lại test_key; chưa có thì in 0"
-run   = 'state-get test_key'
-
-[[group.item]]
-type  = "button"
-title = "Kiểm tra lệnh 7z"
-desc  = "7z i: in thông tin bản 7-Zip"
-run   = '7z i | head -n 3'
 
 [[group.item]]
 type  = "button"

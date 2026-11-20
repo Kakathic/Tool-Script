@@ -65,7 +65,7 @@ run     = 'echo "Đã chọn: $tools_cols"'
 shell   = "banner"
 options = ["Lựa chọn 1|x", "Lựa chọn 2|y", "Lựa chọn 3|z", "Lựa chọn 4|w"]
 
-# multiselect: chọn nhiều mục, bấm Xác nhận mới lưu và chạy lệnh; $tools_multi = các giá trị đã chọn, cách nhau bằng dấu phẩy
+# multiselect: chọn nhiều mục, bấm Xác nhận mới lưu và chạy lệnh; $tools_multi = các giá trị đã chọn, mỗi giá trị một dòng
 [[group.item]]
 type      = "multiselect"
 id        = "tools_multi"

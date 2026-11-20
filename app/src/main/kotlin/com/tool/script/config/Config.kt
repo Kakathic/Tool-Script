@@ -323,7 +323,7 @@ object TomlParser {
                 true
             }
         }
-        val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: ","
+        val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: "\n"
         val lockMode = when (t.str("lock_mode")?.lowercase()) {
             null, "readonly" -> LockMode.Readonly
             "hide" -> LockMode.Hide
@@ -404,9 +404,13 @@ object TomlParser {
     }
 }
 
-/** multiselect: giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options. */
+/**
+ * multiselect: giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options.
+ * Separator mặc định là xuống dòng; khi đó `raw` kiểu cũ cách nhau bằng dấu phẩy (default, file đã lưu) vẫn đọc được.
+ */
 fun Item.normalizeMulti(raw: String): String {
-    val chosen = raw.split(separator).map { it.trim() }.toSet()
+    val parts = if (separator == "\n") raw.split("\n", ",") else raw.split(separator)
+    val chosen = parts.map { it.trim() }.toSet()
     return options.filter { it.value in chosen }.joinToString(separator) { it.value }
 }
 

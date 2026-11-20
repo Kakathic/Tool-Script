@@ -524,6 +524,7 @@ fun Banner(
     onAction: () -> Unit = {},
     progress: Float? = null,
     indeterminate: Boolean = false,
+    maxLines: Int = 3,
     onDismiss: (() -> Unit)? = null,
 ) {
     val colors = if (warning) {
@@ -565,7 +566,7 @@ fun Banner(
                 modifier = Modifier.weight(1f),
                 color = colors.contentColor,
                 style = MiuixTheme.textStyles.body2,
-                maxLines = 3,
+                maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
             )
             if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
@@ -694,12 +695,15 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
                 },
             progress = progress.value,
             indeterminate = lastRunning,
+            maxLines = BANNER_OUTPUT_MAX_LINES,
             actionLabel = if (lastRunning) "Hủy" else null,
             onAction = dismiss,
             onDismiss = if (lastRunning) null else dismiss,
         )
     }
 }
+
+private const val BANNER_OUTPUT_MAX_LINES = 8
 
 private const val SWIPE_DISMISS_FRACTION = 0.3f
 
