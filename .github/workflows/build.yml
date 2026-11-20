@@ -38,25 +38,21 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace --warning-mode none
-
-      # Bản chính thức (release, đã bật R8), ký bằng khóa beta trong app/beta.jks. Luôn dựng, không điều kiện.
+      # Chỉ dựng bản chính thức (release, đã bật R8), ký bằng khóa beta trong app/beta.jks.
       - name: Build release APK
         run: gradle :app:assembleRelease --stacktrace --warning-mode none -PversionCode="$GITHUB_RUN_NUMBER"
 
-      # Đăng cả hai APK lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request chỉ build, không đăng.
+      # Đăng APK release lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request chỉ build, không đăng.
       - name: Publish release
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          cp app/build/outputs/apk/debug/*.apk ToolScript-debug.apk
           cp app/build/outputs/apk/release/*.apk ToolScript-release.apk
           gh release delete latest --cleanup-tag --yes || true
-          gh release create latest ToolScript-release.apk ToolScript-debug.apk \
+          gh release create latest ToolScript-release.apk \
             --target "$GITHUB_SHA" \
             --title "Tool Script (bản build mới nhất)" \
-            --notes "ToolScript-release.apk: bản chính thức (R8, ký khóa beta). ToolScript-debug.apk: bản debug. Dựng từ commit $GITHUB_SHA" \
+            --notes "ToolScript-release.apk: bản chính thức (R8, ký khóa beta). Dựng từ commit $GITHUB_SHA" \
             --latest

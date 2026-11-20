@@ -1,5 +1,5 @@
 # Trang dialog: link có style = "dialog" mở trang này trượt từ dưới lên, thanh trên có nút đóng (X).
-# Từ 4 mục trở lên (như trang này) dialog hiện dạng sheet gần toàn màn hình, kéo thanh trên lên để full; dưới 4 mục thì toàn màn hình.
+# Dialog là sheet kéo được ở các mức 30% / 50% / 70% / toàn màn hình; mức mở mặc định theo số mục (≤3: 30%, 4: 50%, 5: 70%, từ 6 mục: full).
 # Item trong dialog chỉ để truyền biến, không chạy lệnh khi đổi (run / on / off bị bỏ qua);
 # button và link không dùng được trong dialog. Bấm Xác nhận mới chạy `run` của item link đã mở dialog này,
 # với các biến đã chọn; bấm Hủy, X hoặc Back thì khôi phục biến về lúc mở dialog.

@@ -31,7 +31,9 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
@@ -67,7 +69,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -422,10 +423,15 @@ private class LastDialog {
 private fun countItems(items: List<Item>): Int =
     items.sumOf { if (it.type == ItemType.Group) countItems(it.children) else 1 }
 
-/**
- * Lớp phủ của dialog: từ [DIALOG_SHEET_MIN_ITEMS] mục trở lên hiện dạng sheet gần toàn màn hình (chừa mép trên, nền mờ phía sau,
- * kéo thanh trên lên để toàn màn hình); ít hơn thì toàn màn hình như trước.
- */
+/** Mức mở mặc định của dialog theo số mục: 30% (≤3 mục), 50% (4), 70% (5), toàn màn hình (từ 6 mục trở lên). */
+private fun initialSheetLevel(itemCount: Int): Float = when {
+    itemCount >= 6 -> 1f
+    itemCount == 5 -> 0.7f
+    itemCount == 4 -> 0.5f
+    else -> 0.3f
+}
+
+/** Lớp phủ của dialog: nền mờ (bấm vào là Hủy) và sheet trượt từ dưới lên, kéo thanh trên để đổi mức 30 / 50 / 70 / toàn màn hình. */
 @Composable
 private fun AnimatedVisibilityScope.DialogLayer(
     page: SubPage,
@@ -434,18 +440,14 @@ private fun AnimatedVisibilityScope.DialogLayer(
     onBack: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val expandable = countItems(page.items) >= DIALOG_SHEET_MIN_ITEMS
     Box(Modifier.fillMaxSize()) {
-        if (expandable) {
-            // Nền mờ: bấm vào là Hủy.
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .animateEnterExit(enter = fadeIn(tween(DIALOG_MILLIS)), exit = fadeOut(tween(DIALOG_MILLIS)))
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack),
-            )
-        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .animateEnterExit(enter = fadeIn(tween(DIALOG_MILLIS)), exit = fadeOut(tween(DIALOG_MILLIS)))
+                .background(Color.Black.copy(alpha = 0.4f))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack),
+        )
         Box(
             Modifier
                 .fillMaxSize()
@@ -454,20 +456,20 @@ private fun AnimatedVisibilityScope.DialogLayer(
                     exit = slideOutVertically(tween(DIALOG_MILLIS)) { it },
                 ),
         ) {
-            DialogSheet(page, expandable, env, feedback, onBack, onConfirm)
+            DialogSheet(page, env, feedback, onBack, onConfirm)
         }
     }
 }
 
 /**
- * Sheet của dialog. [topPx] là vị trí mép trên của sheet tính từ đỉnh màn hình:
- * 0 = toàn màn hình, collapsedTop = gần toàn màn hình (dưới thanh trạng thái một đoạn), lớn hơn = đang kéo xuống để đóng.
- * Kéo thanh trên (hoặc cuộn nội dung lên) để mở rộng; kéo thanh trên xuống để thu lại, kéo tiếp để đóng (như Hủy).
+ * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (đáy luôn cố định nên hai nút Hủy / Xác nhận luôn thấy,
+ * kéo xuống thì các mục phía trên bị che dần). Thả tay thì dừng ở mức gần nhất trong [SHEET_LEVELS] (có tính vận tốc);
+ * kéo thấp hơn mức nhỏ nhất rồi thả thì đóng như Hủy. Cuộn nội dung lên khi sheet chưa full thì mở rộng sheet trước,
+ * nội dung đã ở đầu mà còn kéo xuống thì thu sheet về mức nhỏ nhất (không đóng, tránh mất lựa chọn).
  */
 @Composable
 private fun DialogSheet(
     page: SubPage,
-    expandable: Boolean,
     env: RenderEnv,
     feedback: FeedbackHost,
     onBack: () -> Unit,
@@ -476,13 +478,14 @@ private fun DialogSheet(
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val currentOnBack by rememberUpdatedState(onBack)
-    val view = LocalView.current
-    val statusPx = view.rootWindowInsets?.systemWindowInsetTop?.toFloat() ?: 0f
+    val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
+    val startLevel = remember(page) { initialSheetLevel(countItems(page.items)) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenPx = constraints.maxHeight.toFloat()
-        val collapsedTop = if (expandable) statusPx + with(density) { SHEET_TOP_GAP.toPx() } else 0f
-        var topPx by remember(collapsedTop) { mutableFloatStateOf(collapsedTop) }
+        val anchors = remember(screenPx) { SHEET_LEVELS.map { it * screenPx } }
+        val minAnchor = anchors.first()
+        var heightPx by remember(screenPx, startLevel) { mutableFloatStateOf(startLevel * screenPx) }
         val jobs = remember { arrayOfNulls<Job>(1) }
 
         fun cancelSettle() {
@@ -493,60 +496,58 @@ private fun DialogSheet(
             cancelSettle()
             jobs[0] = scope.launch {
                 animate(
-                    initialValue = topPx,
+                    initialValue = heightPx,
                     targetValue = target,
                     initialVelocity = velocity,
                     animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
-                ) { value, _ -> topPx = value }
+                ) { value, _ -> heightPx = value }
                 onEnd()
             }
         }
 
-        // Thả tay: chọn vị trí dừng theo vị trí hiện tại và vận tốc (px/s, dương = xuống).
+        // Thả tay: velocity (px/s) dương = kéo xuống. Kéo lên làm sheet cao hơn, nên chiều cao đổi ngược dấu.
         fun settle(velocity: Float) {
-            val below = topPx - collapsedTop
-            when {
-                topPx >= collapsedTop - 1f -> when {
-                    velocity < -FLING_VELOCITY && below <= 1f -> animateTo(0f, velocity)
-                    below > (screenPx - collapsedTop) * DISMISS_FRACTION || velocity > DISMISS_VELOCITY ->
-                        animateTo(screenPx, velocity) { currentOnBack() }
-                    else -> animateTo(collapsedTop, velocity)
-                }
-                velocity < -FLING_VELOCITY -> animateTo(0f, velocity)
-                velocity > FLING_VELOCITY -> animateTo(collapsedTop, velocity)
-                else -> animateTo(if (topPx < collapsedTop / 2f) 0f else collapsedTop, velocity)
+            val dismiss = heightPx < minAnchor * DISMISS_RATIO ||
+                (velocity > DISMISS_VELOCITY && heightPx <= minAnchor * 1.15f)
+            if (dismiss) {
+                animateTo(0f, -velocity) { currentOnBack() }
+                return
             }
+            val target = when {
+                velocity < -FLING_VELOCITY -> anchors.firstOrNull { it > heightPx + 1f } ?: anchors.last()
+                velocity > FLING_VELOCITY -> anchors.lastOrNull { it < heightPx - 1f } ?: minAnchor
+                else -> anchors.minBy { kotlin.math.abs(it - heightPx) }
+            }
+            animateTo(target, -velocity)
         }
 
-        fun isResting() = topPx <= 0.5f || kotlin.math.abs(topPx - collapsedTop) <= 0.5f
+        fun isResting() = anchors.any { kotlin.math.abs(it - heightPx) <= 0.5f }
 
         val dragState = rememberDraggableState { delta ->
             cancelSettle()
-            topPx = (topPx + delta).coerceIn(0f, screenPx)
+            heightPx = (heightPx - delta).coerceIn(0f, screenPx)
         }
 
-        // Cuộn nội dung: kéo lên khi sheet chưa full thì mở rộng sheet trước; nội dung đã ở đầu mà còn kéo xuống thì thu sheet về gần full.
-        // Đóng dialog bằng kéo chỉ làm qua thanh trên, để cuộn nội dung không vô tình đóng và mất lựa chọn.
-        val connection = remember(collapsedTop) {
+        val connection = remember(screenPx) {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     val dy = available.y
-                    if (dy < 0f && topPx > 0f) {
-                        val delta = max(dy, -topPx)
+                    if (dy < 0f && heightPx < screenPx) {
+                        val grow = min(-dy, screenPx - heightPx)
                         cancelSettle()
-                        topPx += delta
-                        return Offset(0f, delta)
+                        heightPx += grow
+                        return Offset(0f, -grow)
                     }
                     return Offset.Zero
                 }
 
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                     val dy = available.y
-                    if (dy > 0f && topPx < collapsedTop) {
-                        val delta = min(dy, collapsedTop - topPx)
+                    if (dy > 0f && heightPx > minAnchor) {
+                        val shrink = min(dy, heightPx - minAnchor)
                         cancelSettle()
-                        topPx += delta
-                        return Offset(0f, delta)
+                        heightPx -= shrink
+                        return Offset(0f, shrink)
                     }
                     return Offset.Zero
                 }
@@ -565,12 +566,11 @@ private fun DialogSheet(
             }
         }
 
-        // 0 = toàn màn hình, 1 = gần toàn màn hình: bo góc và thanh kéo mờ dần khi lên full.
-        val progress = if (collapsedTop > 0f) (topPx / collapsedTop).coerceIn(0f, 1f) else 0f
-        val corner = SHEET_CORNER * progress
-        val heightPx = screenPx - min(topPx, collapsedTop)
-        val translatePx = max(0f, topPx - collapsedTop)
-        // Phần thanh trạng thái đã nằm phía trên sheet thì báo "đã dùng", để thanh trên bên trong không chừa chỗ lần nữa.
+        // topPx = khoảng từ đỉnh màn hình đến mép trên sheet. Chạm tới thanh trạng thái thì hết bo góc, thanh kéo mờ dần.
+        val topPx = (screenPx - heightPx).coerceAtLeast(0f)
+        val roundness = if (statusPx > 0f) (topPx / statusPx).coerceIn(0f, 1f) else if (topPx > 0f) 1f else 0f
+        val corner = SHEET_CORNER * roundness
+        // Phần thanh trạng thái nằm phía trên sheet thì báo "đã dùng", để thanh trên bên trong không chừa chỗ lần nữa.
         val consumedTop = with(density) { min(topPx, statusPx).toDp() }
 
         Box(
@@ -578,7 +578,6 @@ private fun DialogSheet(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(with(density) { heightPx.toDp() })
-                .graphicsLayer { translationY = translatePx }
                 .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
                 // Chặn chạm xuyên xuống nền mờ (nếu không, chạm vào chỗ trống của sheet sẽ thành Hủy).
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
@@ -590,28 +589,22 @@ private fun DialogSheet(
                 feedback = feedback,
                 onBack = onBack,
                 onConfirm = onConfirm,
-                topBarModifier = if (expandable) {
-                    Modifier.draggable(
-                        state = dragState,
-                        orientation = Orientation.Vertical,
-                        onDragStarted = { cancelSettle() },
-                        onDragStopped = { velocity -> settle(velocity) },
-                    )
-                } else {
-                    Modifier
-                },
-                contentModifier = if (expandable) Modifier.nestedScroll(connection) else Modifier,
+                topBarModifier = Modifier.draggable(
+                    state = dragState,
+                    orientation = Orientation.Vertical,
+                    onDragStarted = { cancelSettle() },
+                    onDragStopped = { velocity -> settle(velocity) },
+                ),
+                contentModifier = Modifier.nestedScroll(connection),
             )
-            if (expandable) {
-                Box(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 6.dp)
-                        .size(width = 36.dp, height = 4.dp)
-                        .graphicsLayer { alpha = progress }
-                        .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
-                )
-            }
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 6.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .graphicsLayer { alpha = roundness }
+                    .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
+            )
         }
     }
 }
@@ -729,19 +722,18 @@ private fun rebootErrorText(result: ExecResult): String {
 
 private const val DIALOG_MILLIS = 280
 
-/** Dialog có từ chừng này mục trở lên thì hiện dạng sheet gần toàn màn hình (kéo lên để full); ít hơn thì toàn màn hình. */
-private const val DIALOG_SHEET_MIN_ITEMS = 4
+/** Các mức chiều cao của dialog (tỉ lệ chiều cao màn hình), từ thấp đến cao; 1 = toàn màn hình. */
+private val SHEET_LEVELS = listOf(0.3f, 0.5f, 0.7f, 1f)
 
-/** Khoảng chừa phía trên (dưới thanh trạng thái) và bo góc của sheet lúc chưa full. */
-private val SHEET_TOP_GAP = 24.dp
+/** Bo góc sheet khi chưa chạm thanh trạng thái. */
 private val SHEET_CORNER = 24.dp
 
-/** Vận tốc (px/s) coi là vuốt nhanh để mở rộng / thu lại; vuốt xuống nhanh hơn mức DISMISS thì đóng. */
+/** Vận tốc (px/s) coi là vuốt nhanh để lên / xuống một mức; vuốt xuống nhanh hơn mức DISMISS khi đang ở mức thấp nhất thì đóng. */
 private const val FLING_VELOCITY = 800f
 private const val DISMISS_VELOCITY = 1800f
 
-/** Kéo sheet xuống quá tỉ lệ này (so với quãng từ vị trí gần full đến đáy màn hình) rồi thả thì đóng. */
-private const val DISMISS_FRACTION = 0.25f
+/** Kéo sheet thấp hơn tỉ lệ này của mức nhỏ nhất rồi thả thì đóng. */
+private const val DISMISS_RATIO = 0.6f
 
 /** Thời gian trượt khi mở / đóng trang con (ms) và độ lùi của trang bên dưới (1/N chiều rộng). */
 private const val PAGE_MILLIS = 320
