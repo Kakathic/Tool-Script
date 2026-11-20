@@ -220,7 +220,10 @@ private fun CheckboxItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
     }
 }
 
-/** Khung chung cho item bật / tắt: đọc `get` lúc xuất hiện, chạy `on` / `off`, chỉ đổi trạng thái khi lệnh thành công. */
+/**
+ * Khung chung cho item bật / tắt: giá trị lấy từ file đã lưu (xem Boot), chạy `on` / `off`, chỉ đổi trạng thái khi lệnh thành công.
+ * `get` là tùy chọn: có khai báo thì vẫn chạy lúc item xuất hiện và ghi đè giá trị (rồi được lưu lại như mọi lần đổi).
+ */
 @Composable
 private fun BinaryItem(
     item: Item,
@@ -234,7 +237,7 @@ private fun BinaryItem(
     val id = item.id ?: return
     val checked = env.store[id] == "1"
 
-    // Đọc trạng thái hiện tại bằng `get` khi item xuất hiện lần đầu.
+    // Tùy chọn: có `get` thì đọc trạng thái thật bằng shell khi item xuất hiện lần đầu.
     LaunchedEffect(id) {
         val get = item.get
         if (!get.isNullOrBlank()) {

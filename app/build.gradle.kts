@@ -34,6 +34,14 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        jniLibs {
+            // Lệnh dựng sẵn (jniLibs/<abi>/libbin_*.so) phải được giải nén ra nativeLibraryDir để chạy được; không strip.
+            useLegacyPackaging = true
+            keepDebugSymbols += "**/libbin_*.so"
+        }
+    }
 }
 
 // Tắt các dòng "w: ..." (cảnh báo trình biên dịch Kotlin) khi build. Lỗi (e:) vẫn hiện.

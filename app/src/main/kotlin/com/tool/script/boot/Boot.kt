@@ -10,7 +10,9 @@ import com.tool.script.config.Item
 import com.tool.script.config.ItemType
 import com.tool.script.config.LoadedConfig
 import com.tool.script.executor.ExecutorManager
+import com.tool.script.state.StateFiles
 import com.tool.script.state.VariableStore
+import com.tool.script.util.BinInstaller
 import com.tool.script.util.EnvFile
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
@@ -93,6 +95,14 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val script = withContext(Dispatchers.IO) {
                 Util.copyAsset(app, "scripts/init.sh", File(app.filesDir, "scripts/init.sh"))
             }
+            // Tạo symlink lệnh dựng sẵn (busybox, toybox, 7z) trong files/bin trỏ tới thư viện native, trước khi chạy script.
+            withContext(Dispatchers.IO) { runCatching { BinInstaller.install(app) } }
+                .onSuccess { bin ->
+                    if (bin.total == 0) log("bin: không có lệnh dựng sẵn cho ABI của máy")
+                    else if (bin.linked.isNotEmpty()) log("bin: ${bin.linked.joinToString(", ")}")
+                    bin.failed.forEach { log("bin: lỗi $it") }
+                }
+                .onFailure { log("bin: không chuẩn bị được lệnh dựng sẵn: ${it.message ?: it}") }
             val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
             envResult.getOrNull()?.let { prepared ->
                 ExecutorManager.envFile = prepared.file.absolutePath
@@ -143,7 +153,21 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         val defaults = LinkedHashMap<String, String>()
         config.pages.forEach { collectDefaults(it.items, defaults) }
         config.subPages.values.forEach { collectDefaults(it.items, defaults) }
-        val store = VariableStore(defaults + builtin)
+
+        // Giá trị đã lưu: mỗi item có id một file trong files/state (tên file = id). Có file thì lấy giá trị trong đó
+        // (đúng kiểu mới hợp lệ), chưa có hoặc hỏng thì tạo file với giá trị mặc định. Item không id không lưu.
+        val specs = LinkedHashMap<String, Item>()
+        config.pages.forEach { collectPersisted(it.items, specs) }
+        config.subPages.values.forEach { collectPersisted(it.items, specs) }
+        val files = StateFiles(File(app.filesDir, "state"))
+        val values = LinkedHashMap(defaults)
+        withContext(Dispatchers.IO) {
+            for ((id, item) in specs) {
+                val restored = files.read(id)?.let { restoreValue(item, it) }
+                if (restored != null) values[id] = restored else files.writeNow(id, values[id].orEmpty())
+            }
+        }
+        val store = VariableStore(values + builtin, files, specs.keys)
 
         val bootLog = synchronized(allLogs) { allLogs.toList() }
         _state.update {
@@ -169,6 +193,33 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 else -> Unit
             }
         }
+    }
+
+    /** Các item có `id` và có giá trị để lưu (không gồm text / button / link). Trùng id thì item sau thắng, như [collectDefaults]. */
+    private fun collectPersisted(items: List<Item>, out: MutableMap<String, Item>) {
+        for (item in items) {
+            val id = item.id
+            when (item.type) {
+                ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Select, ItemType.Radio,
+                ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) out[id] = item
+                ItemType.Group -> collectPersisted(item.children, out)
+                else -> Unit
+            }
+        }
+    }
+
+    /** Đọc giá trị đã lưu theo kiểu của [item]; không hợp lệ (vd option không còn trong TOML) thì null để dùng mặc định. */
+    private fun restoreValue(item: Item, saved: String): String? = when (item.type) {
+        ItemType.Switch, ItemType.Checkbox -> when (saved.trim().lowercase()) {
+            "1", "true", "on" -> "1"
+            "0", "false", "off" -> "0"
+            else -> null
+        }
+        ItemType.Input -> saved
+        ItemType.Select, ItemType.Radio -> saved.takeIf { v -> item.options.any { it.value == v } }
+        ItemType.Slider, ItemType.Progress ->
+            saved.trim().toFloatOrNull()?.let { formatNumber(it.coerceIn(item.min, item.max)) }
+        else -> null
     }
 
     private companion object {

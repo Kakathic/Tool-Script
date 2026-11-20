@@ -11,29 +11,23 @@ content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml."
 [[group]]
 title = "Công tắc"
 
-# switch + get: đọc trạng thái hiện tại bằng lệnh get (in 1 hoặc 0), on / off chạy khi bật / tắt.
-# Ví dụ lưu trạng thái thành một file trong $STATE_DIR, tên file = id của tính năng (home_switch).
-# state_set / state_get là hàm trong assets/scripts/env.sh.
+# Item có id tự lưu giá trị: app ghi file tên = id vào $STATE_DIR (ở đây là home_switch) và đọc lại khi mở app.
+# Không cần get / state_set / state_get; on / off là tùy chọn, chạy khi bật / tắt.
 [[group.item]]
 type  = "switch"
 id    = "home_switch"
 title = "Công tắc có lưu trạng thái"
-desc  = "Lưu vào file home_switch, mở lại app vẫn giữ"
-on    = "state_set home_switch 1"
-off   = "state_set home_switch 0"
-get   = "state_get home_switch"
+desc  = "Tự lưu vào file home_switch, mở lại app vẫn giữ"
+on    = "echo bật"
+off   = "echo tắt"
 shell = "banner"
 
-# Cũng lưu trạng thái (file home_show_more); shell = hidden (lỗi mới báo toast)
+# Cũng tự lưu (file home_show_more); không có on / off thì chỉ đổi và lưu giá trị
 [[group.item]]
 type  = "switch"
 id    = "home_show_more"
 title = "Hiện thêm tùy chọn"
 desc  = "Bật để hiện mục bên dưới (visible_if), lưu vào file home_show_more"
-on    = "state_set home_show_more 1"
-off   = "state_set home_show_more 0"
-get   = "state_get home_show_more"
-shell = "hidden"
 
 # visible_if: chỉ hiện khi công tắc bên trên bật
 [[group.item]]

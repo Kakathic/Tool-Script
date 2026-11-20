@@ -120,6 +120,7 @@ Làm lần lượt từ trên xuống. Mức 1 đã xong.
 
 Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
 
+- [x] Lưu giá trị: item có `id` tự lưu / đọc lại qua file `$STATE_DIR/<id>` (docs/schema.md, mục 7); `get` thành tùy chọn.
 - [x] `checkbox`: giống `switch` (`on` / `off` / `get`), hiện ô tick, bấm cả hàng cũng đổi.
 - [x] `radio`: chọn một trong `options`, hiện sẵn mọi lựa chọn (khác `select` là hộp thoại).
 - [x] `progress`: thanh tiến trình chỉ để xem, đọc giá trị từ `get`.

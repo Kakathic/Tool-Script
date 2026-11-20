@@ -65,6 +65,7 @@ file  = "pages/home.toml"
 | `@CACHE_DIR@` | thư mục cache của app |
 | `@SCRIPTS_DIR@` | thư mục chứa script chép từ assets (cùng nơi có `env.sh`) |
 | `@STATE_DIR@` | thư mục lưu trạng thái các tính năng (`files/state`, app tạo sẵn) |
+| `@BIN_DIR@` | thư mục lệnh dựng sẵn (`files/bin`, xem "Lệnh dựng sẵn" bên dưới) |
 | `@LIB_DIR@` | thư mục thư viện native của app |
 | `@EXT_ROOT@` | gốc bộ nhớ trong (thường `/storage/emulated/0`) |
 | `@EXT_DIR@` | thư mục làm việc ngoài của app (`@EXT_ROOT@/ToolScript`) |
@@ -75,19 +76,28 @@ export EXT_DIR="@EXT_DIR@"
 export PATH="$FILES_DIR/bin:$PATH"
 ```
 
-- `env.sh` mẫu có sẵn hai hàm lưu trạng thái, tên file = `id` của tính năng trong `$STATE_DIR`:
+- `env.sh` mẫu có sẵn hai hàm để script tự đọc / ghi cùng thư mục `$STATE_DIR` mà app dùng để lưu giá trị item (xem "Lưu giá trị theo id", mục 7):
   `state_set <id> <giá trị>` và `state_get <id> [mặc định]` (chưa có file thì in giá trị mặc định, mặc định `0`).
-  Dùng với `switch` / `checkbox` để giữ trạng thái giữa các lần mở app:
+  Item không cần dùng chúng nữa: app tự lưu và tự đọc lại giá trị.
 
-  ```toml
-  [[item]]
-  type  = "switch"
-  id    = "game_mode"
-  title = "Chế độ mẫu"
-  on    = "state_set game_mode 1"
-  off   = "state_set game_mode 0"
-  get   = "state_get game_mode"
-  ```
+### Lệnh dựng sẵn (bin)
+
+Các file chạy được nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/libbin_<tên>.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
+Android cài đúng ABI của máy và giải nén ra `$LIB_DIR` (`useLegacyPackaging = true` trong `app/build.gradle.kts`), nơi app thường không root cũng được chạy file.
+Mỗi lần mở app, app tạo symlink `files/bin/<tên>` (`$BIN_DIR`) trỏ tới `libbin_<tên>.so` tương ứng. `$BIN_DIR` đứng đầu `PATH` trong `env.sh`,
+nên mọi lệnh của app gọi thẳng được `7z`, `toybox`, `busybox`. Thêm lệnh mới: bỏ file `libbin_<tên>.so` vào đủ các thư mục ABI.
+
+| Lệnh | Nội dung |
+|---|---|
+| `busybox` | BusyBox 1.36.1 (bản NDK của osm0sis, qua Magisk-Modules-Repo/busybox-ndk), biên dịch tĩnh. Gọi applet: `busybox ls`, `busybox wget`... (chưa tạo symlink applet để không đè lệnh hệ thống) |
+| `toybox` | Toybox 0.8.15 (landley/toybox), biên dịch tĩnh bằng glibc; đã tắt `login`, `mkpasswd`, `passwd`, `su`, `sulogin` vì cần `crypt`. Gọi: `toybox ls`... |
+| `7z` | 7-Zip 26.06 (`7zzs` bản tĩnh của ip7z/7zip). Giấy phép: `docs/licenses/7zip.txt` |
+
+- Script `.sh` cũng đặt được theo cách này (dòng đầu phải là `#!/system/bin/sh`). Hai script thử `state-set` / `state-get` (ghi / đọc `$STATE_DIR/<id>`)
+  nằm sẵn trong `jniLibs`; trang `tools.toml` có nhóm nút "Thử script trong bin" để kiểm tra. Tên `state-set` dùng dấu gạch ngang để không trùng
+  hàm `state_set` của `env.sh` (hàm shell luôn được ưu tiên hơn file trong `PATH`).
+- Toybox biên dịch bằng glibc tĩnh nên tra cứu tên (DNS, `getpwnam`...) có thể khác bản của Android; các lệnh thông thường không bị ảnh hưởng.
+- Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.
 
 - Key lạ (không có trong bảng) giữ nguyên và ghi một dòng vào log khởi động.
 - Giữ nháy kép quanh `@KEY@` để đường dẫn có khoảng trắng vẫn đúng.
@@ -104,7 +114,7 @@ title = "Chế độ game"
 desc  = "Tăng xung CPU/GPU"
 on    = "echo 1 > /sys/xxx"
 off   = "echo 0 > /sys/xxx"
-get   = "cat /sys/xxx"       # đọc trạng thái hiện tại
+get   = "cat /sys/xxx"       # tùy chọn: đọc trạng thái thật bằng shell lúc item xuất hiện
 shell = "log"                # chế độ hiển thị khi chạy (mặc định log)
 lock  = "ROOT_MODE != root"
 lock_mode = "readonly"
@@ -177,6 +187,21 @@ title = "Chế độ game"
 - Cú pháp cũ `[[item]]` + `type = "group"` và `[[item.item]]` không còn dùng:
   `type = "group"` bị bỏ qua kèm cảnh báo.
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).
+
+### Lưu giá trị theo id
+
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `slider`, `progress`) được lưu tự động:
+
+- Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
+  (`switch` / `checkbox` lưu `1` hoặc `0`).
+- Mỗi lần giá trị đổi (với `switch`, `checkbox`, `select`, `radio`: sau khi lệnh chạy thành công) app ghi lại file.
+- Lúc mở app: chưa có file thì app tạo file với giá trị mặc định (`default`, hoặc `0`, `min`, lựa chọn đầu); có file thì lấy giá trị trong đó.
+  File có giá trị không hợp lệ (vd lựa chọn không còn trong `options`, không phải số) thì bị ghi đè bằng giá trị mặc định.
+- Item không có `id`, và `text` / `button` / `link`, không lưu gì.
+- `id` chỉ gồm chữ, số, `_`, `.`, `-` (tối đa 128 ký tự, không bắt đầu bằng `.` hoặc `-`); id khác không được lưu.
+- `get` (switch, checkbox, progress) vẫn dùng được nhưng là tùy chọn: có khai báo thì lúc item xuất hiện app chạy `get` và lấy kết quả thay cho
+  giá trị đã lưu (rồi lưu lại). Dùng khi trạng thái thật nằm ở hệ thống (vd `cat /sys/xxx`).
+- Script đọc được giá trị bằng `state_get <id>`.
 
 `select` – cách khai báo `options`:
 
