@@ -296,26 +296,19 @@ fun MainScreen(
                     bottomBar = {
                         if (pages.size >= 2) {
                             NavigationBar {
-                                // Giữ toàn bộ tab trong một viewport cố định và chỉ dịch nội dung bên trong.
-                                // Vì Row có đúng chiều rộng = số tab * chiều rộng một ô, mỗi ô luôn rộng
-                                // chính xác 1/visibleTabs màn hình; clipToBounds ngăn tab thừa lộ ra ở mép.
-                                val slide by animateFloatAsState(
-                                    targetValue = windowStart.toFloat(),
-                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                                    label = "tabWindowSlide",
-                                )
-                                BoxWithConstraints(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clipToBounds(),
-                                ) {
-                                    val itemWidth = maxWidth / visibleTabs
-                                    Row(
-                                        Modifier
-                                            .requiredWidth(itemWidth * pages.size)
-                                            .offset(x = -(itemWidth * slide)),
-                                    ) {
-                                        pages.forEachIndexed { index, page ->
+                                // Chỉ vẽ các tab thuộc cửa sổ hiện tại. Không dịch một Row lớn hơn
+                                // viewport, vì khi đó icon ở mép sẽ bị parent cắt trong lúc animation.
+                                AnimatedContent(
+                                    targetState = windowStart,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(180)) togetherWith
+                                            fadeOut(animationSpec = tween(120))
+                                    },
+                                    label = "tabWindowTransition",
+                                ) { start ->
+                                    Row(Modifier.fillMaxWidth()) {
+                                        pages.drop(start).take(visibleTabs).forEachIndexed { offset, page ->
+                                            val index = start + offset
                                             TabItem(
                                                 ref = page.ref,
                                                 selected = pagerState.currentPage == index,
