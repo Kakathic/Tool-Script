@@ -1,6 +1,7 @@
 package com.tool.script.ui.render
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -590,21 +591,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                             haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
                             draft = if (checked) draft - option.value else draft + option.value
                         }
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClick = toggle)
-                                .padding(horizontal = 8.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                state = if (checked) ToggleableState.On else ToggleableState.Off,
-                                onClick = toggle,
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(option.label, modifier = Modifier.weight(1f))
-                        }
+                        ChoiceCard(option.label, checked, toggle, Modifier.weight(1f))
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -628,6 +615,40 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                 )
             }
         }
+    }
+}
+
+/**
+ * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: khung bo quanh (cả mục đã chọn lẫn chưa chọn),
+ * chữ bên trái, ô tích có khung bên phải. Mục đã chọn có viền và nền màu chủ đạo, chữ màu chủ đạo.
+ */
+@Composable
+private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(12.dp)
+    val primary = MiuixTheme.colorScheme.primary
+    Row(
+        modifier = modifier
+            .clip(shape)
+            .background(if (checked) primary.copy(alpha = SELECTED_ALPHA) else Color.Transparent)
+            .border(
+                width = if (checked) 1.5.dp else 1.dp,
+                color = if (checked) primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
+                shape = shape,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            color = if (checked) primary else MiuixTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.width(8.dp))
+        Checkbox(
+            state = if (checked) ToggleableState.On else ToggleableState.Off,
+            onClick = onClick,
+        )
     }
 }
 
@@ -677,22 +698,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
                         }
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClick = pick)
-                                .padding(horizontal = 8.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // Chữ bên trái, ô tích có khung bên phải; chỉ một mục được tích.
-                            Text(option.label, modifier = Modifier.weight(1f))
-                            Spacer(Modifier.width(8.dp))
-                            Checkbox(
-                                state = if (selected) ToggleableState.On else ToggleableState.Off,
-                                onClick = pick,
-                            )
-                        }
+                        ChoiceCard(option.label, selected, pick, Modifier.weight(1f))
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }

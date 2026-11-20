@@ -271,7 +271,7 @@ separator = ","              # tùy chọn: dấu phân tách trong $id, mặc �
 run       = 'echo "Đã chọn: $features"'
 ```
 
-- `options` khai báo như `select` (mục 7). Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại có ô tích cho từng mục.
+- `options` khai báo như `select` (mục 7). Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ có khung bo (cả mục đã chọn lẫn chưa chọn), chữ bên trái, ô tích có khung bên phải.
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
@@ -289,7 +289,7 @@ columns = 2                  # tùy chọn: 1 (mặc định) hoặc 2 cột tro
 run     = 'echo "Đã chọn: $mode"'
 ```
 
-- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục một dòng với ô tích có khung ở bên phải (chỉ tích được một mục).
+- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục là một thẻ có khung bo, chữ bên trái, ô tích có khung bên phải (chỉ tích được một mục).
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
 
