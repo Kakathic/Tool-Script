@@ -26,6 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.state.ToggleableState
@@ -43,6 +46,7 @@ import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.tool.script.config.SelectOption
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.util.Util
@@ -75,6 +79,7 @@ import kotlin.math.roundToInt
 // Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
 
 private const val SELECTED_ALPHA = 0.16f
+private val SELECT_ROW_BLEED = 48.dp
 
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 private const val RUN_BUTTON_ALPHA = 0.16f
@@ -452,35 +457,93 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
         )
     }
     OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item.options.chunked(item.columns).forEach { rowOptions ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    rowOptions.forEach { option ->
-                        val selected = option.value == current
-                        TextButton(
-                            text = option.label,
-                            modifier = Modifier.weight(1f),
-                            // Mục đang chọn: nền màu chủ đạo nhạt, chữ màu chủ đạo.
-                            colors = if (selected) {
-                                ButtonDefaults.textButtonColors(
-                                    color = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA),
-                                    textColor = MiuixTheme.colorScheme.primary,
-                                )
-                            } else {
-                                ButtonDefaults.textButtonColors()
-                            },
-                            onClick = {
-                                showDialog = false
-                                if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                env.run(item, item.run, mapOf(id to option.value)) { result ->
-                                    if (result.ok) env.store[id] = option.value
-                                }
-                            },
-                        )
-                    }
-                    repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
+        val choose = { option: SelectOption ->
+            showDialog = false
+            if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            env.run(item, item.run, mapOf(id to option.value)) { result ->
+                if (result.ok) env.store[id] = option.value
+            }
+        }
+        if (item.columns <= 1) {
+            // Mỗi lựa chọn một dòng: dòng đang chọn nền màu chủ đạo nhạt tràn hết chiều ngang hộp thoại,
+            // chữ màu chủ đạo, dấu tích bên phải.
+            Column {
+                item.options.forEach { option ->
+                    SelectDialogRow(
+                        label = option.label,
+                        selected = option.value == current,
+                        onClick = { choose(option) },
+                    )
                 }
             }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item.options.chunked(item.columns).forEach { rowOptions ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rowOptions.forEach { option ->
+                            val selected = option.value == current
+                            TextButton(
+                                text = option.label,
+                                modifier = Modifier.weight(1f),
+                                // Mục đang chọn: nền màu chủ đạo nhạt, chữ màu chủ đạo.
+                                colors = if (selected) {
+                                    ButtonDefaults.textButtonColors(
+                                        color = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA),
+                                        textColor = MiuixTheme.colorScheme.primary,
+                                    )
+                                } else {
+                                    ButtonDefaults.textButtonColors()
+                                },
+                                onClick = { choose(option) },
+                            )
+                        }
+                        repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Một dòng lựa chọn trong hộp thoại `select` (kiểu HyperOS): chữ trái, dấu tích phải.
+ * Nền dòng đang chọn được vẽ tràn ra ngoài lề trong của hộp thoại ([SELECT_ROW_BLEED]); hộp thoại tự cắt
+ * theo góc bo nên nền vừa khít mép, không cần biết chính xác lề của Miuix.
+ */
+@Composable
+private fun SelectDialogRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    val highlight = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (selected) {
+                    val bleed = SELECT_ROW_BLEED.toPx()
+                    drawRect(
+                        color = highlight,
+                        topLeft = Offset(-bleed, 0f),
+                        size = Size(size.width + bleed * 2, size.height),
+                    )
+                }
+            }
+            .clickable(onClick = onClick)
+            .padding(vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+            style = MiuixTheme.textStyles.headline1,
+        )
+        if (selected) {
+            Spacer(Modifier.width(16.dp))
+            AsyncImage(
+                model = Util.iconModel("icons/bar_check.svg"),
+                contentDescription = "Đang chọn",
+                modifier = Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+            )
         }
     }
 }
