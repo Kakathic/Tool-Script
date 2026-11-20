@@ -35,7 +35,6 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.offset
 import com.tool.script.config.Item
 import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
@@ -47,7 +46,6 @@ import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.tool.script.config.SelectOption
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.util.Util
@@ -80,7 +78,6 @@ import kotlin.math.roundToInt
 // Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
 
 private const val SELECTED_ALPHA = 0.16f
-private val SELECT_ROW_BLEED = 48.dp
 
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 private const val RUN_BUTTON_ALPHA = 0.16f
@@ -177,7 +174,6 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
         ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
         ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
         ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
-        ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
         ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
         ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
         ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
@@ -326,7 +322,7 @@ private fun BinaryItem(
     }
 }
 
-/** Chọn một trong nhiều `options` (giống select) nhưng hiện sẵn tất cả lựa chọn, mỗi dòng một nút tròn. */
+/** Chọn một trong nhiều `options` nhưng hiện sẵn tất cả lựa chọn, mỗi dòng một nút tròn. */
 @Composable
 private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -417,7 +413,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
             )
             if (!env.varsOnly) {
                 Spacer(Modifier.height(12.dp))
-                // Nút Chạy dạng nhạt: nền màu chủ đạo mờ, chữ màu chủ đạo (cùng kiểu mục đang chọn của radio/select).
+                // Nút Chạy dạng nhạt: nền màu chủ đạo mờ, chữ màu chủ đạo (cùng kiểu mục đang chọn của radio).
                 TextButton(
                     text = "Chạy",
                     onClick = withTapHaptic { env.run(item, item.run) },
@@ -429,117 +425,6 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                     ),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
-    val id = item.id ?: return
-    var showDialog by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
-    val current = env.store[id]
-    val label = item.options.firstOrNull { it.value == current }?.label ?: current
-
-    ItemSurface(modifier, inGroup) {
-        BasicComponent(
-            title = item.title,
-            summary = item.desc,
-            startAction = itemIcon(item),
-            enabled = enabled,
-            endActions = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
-                    Spacer(Modifier.width(4.dp))
-                    UpDownIcon()
-                }
-            },
-            onClick = withTapHaptic { showDialog = true },
-        )
-    }
-    OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
-        val choose = { option: SelectOption ->
-            showDialog = false
-            if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-            env.run(item, item.run, mapOf(id to option.value)) { result ->
-                if (result.ok) env.store[id] = option.value
-            }
-        }
-        if (item.columns <= 1) {
-            // Mỗi lựa chọn một dòng: dòng đang chọn nền màu chủ đạo nhạt tràn hết chiều ngang hộp thoại,
-            // chữ màu chủ đạo, dấu tích bên phải.
-            Column {
-                item.options.forEach { option ->
-                    SelectDialogRow(
-                        label = option.label,
-                        selected = option.value == current,
-                        onClick = { choose(option) },
-                    )
-                }
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item.options.chunked(item.columns).forEach { rowOptions ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rowOptions.forEach { option ->
-                            val selected = option.value == current
-                            TextButton(
-                                text = option.label,
-                                modifier = Modifier.weight(1f),
-                                // Mục đang chọn: nền màu chủ đạo nhạt, chữ màu chủ đạo.
-                                colors = if (selected) {
-                                    ButtonDefaults.textButtonColors(
-                                        color = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA),
-                                        textColor = MiuixTheme.colorScheme.primary,
-                                    )
-                                } else {
-                                    ButtonDefaults.textButtonColors()
-                                },
-                                onClick = { choose(option) },
-                            )
-                        }
-                        repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Một dòng lựa chọn trong hộp thoại `select` (kiểu HyperOS): chữ trái, dấu tích phải.
- * Hàng được kéo rộng ra [SELECT_ROW_BLEED] mỗi bên (vượt lề trong của hộp thoại, phần thừa bị hộp thoại cắt theo
- * góc bo) rồi lùi chữ vào đúng bấy nhiêu, nên nền và hiệu ứng nhấn phủ hết chiều ngang mà chữ vẫn thẳng hàng với tiêu đề.
- */
-@Composable
-private fun SelectDialogRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .layout { measurable, constraints ->
-                val extra = (SELECT_ROW_BLEED * 2).roundToPx()
-                val placeable = measurable.measure(constraints.offset(horizontal = extra))
-                layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
-            }
-            .fillMaxWidth()
-            .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA) else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = SELECT_ROW_BLEED, vertical = 18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-            style = MiuixTheme.textStyles.headline1,
-        )
-        if (selected) {
-            Spacer(Modifier.width(16.dp))
-            AsyncImage(
-                model = Util.iconModel("icons/bar_check.svg"),
-                contentDescription = "Đang chọn",
-                modifier = Modifier.size(24.dp),
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
-            )
         }
     }
 }
@@ -766,7 +651,7 @@ private fun TitleRow(item: Item, title: @Composable () -> Unit) {
     }
 }
 
-/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `select`, `multiselect`, `singleselect` và `dropdown`. */
+/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `multiselect`, `singleselect` và `dropdown`. */
 @Composable
 private fun UpDownIcon() {
     AsyncImage(
@@ -778,7 +663,7 @@ private fun UpDownIcon() {
 }
 
 /**
- * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (khác `select` là hộp thoại):
+ * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (không dùng hộp thoại):
  * bên phải hiện giá trị đang chọn kèm mũi tên lên/xuống; mục đang chọn nổi nền, có dấu tích bên phải.
  */
 @Composable

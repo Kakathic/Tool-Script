@@ -151,12 +151,11 @@ lock_mode = "readonly"
 | `button` | `run` |
 | `switch` | `on`, `off`, `get` |
 | `input` | `hint`, `default`, `run`, `input_type` (`text`/`number`) |
-| `select` | `options`, `default`, `run` |
 | `slider` | `min`, `max`, `step`, `default`, `run` |
 | `link` | `tab` (id của một `[[tab]]`, chuyển tab) hoặc `page` (đường dẫn file trang con, mở trang mới) |
 | `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
-| `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
-| `dropdown` | `options`, `default`, `run` (giống `select`, nhưng chọn bằng menu thả xuống) |
+| `radio` | `options`, `default`, `run` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
+| `dropdown` | `options`, `default`, `run` (chọn bằng menu thả xuống) |
 | `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
 | `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục có Xác nhận, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
@@ -187,11 +186,11 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `multiselect`, `singleselect`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `multiselect`, `singleselect`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
-- Mỗi lần giá trị đổi (với `switch`, `checkbox`, `select`, `radio`, `dropdown`: sau khi lệnh chạy thành công) app ghi lại file.
+- Mỗi lần giá trị đổi (với `switch`, `checkbox`, `radio`, `dropdown`: sau khi lệnh chạy thành công) app ghi lại file.
 - Lúc mở app: chưa có file thì app tạo file với giá trị mặc định (`default`, hoặc `0`, `min`, lựa chọn đầu); có file thì lấy giá trị trong đó.
   File có giá trị không hợp lệ (vd lựa chọn không còn trong `options`, không phải số) thì bị ghi đè bằng giá trị mặc định.
 - Item không có `id`, và `text` / `button` / `link`, không lưu gì.
@@ -200,11 +199,11 @@ Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`,
   giá trị đã lưu (rồi lưu lại). Dùng khi trạng thái thật nằm ở hệ thống (vd `cat /sys/xxx`).
 - Script đọc được giá trị bằng `state_get <id>`.
 
-`select` – cách khai báo `options`:
+Cách khai báo `options` (dùng cho `radio`, `dropdown`, `multiselect`, `singleselect`):
 
 ```toml
 [[item]]
-type  = "select"
+type  = "radio"
 id    = "governor"
 title = "Governor"
 run   = "echo $governor > /sys/yyy"
@@ -215,7 +214,7 @@ options = [
 ]
 ```
 
-- `columns` (tùy chọn, chỉ với `select`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng, dạng `[ Lựa chọn 1 ] [ Lựa chọn 2 ]`). Giá trị khác thì cảnh báo và dùng `1`. Mục đang chọn có nền màu chủ đạo nhạt.
+- `columns` (tùy chọn, chỉ với `multiselect` và `singleselect`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng). Giá trị khác thì cảnh báo và dùng `1`.
 - Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
@@ -271,7 +270,7 @@ separator = ","              # tùy chọn: dấu phân tách trong $id, mặc �
 run       = 'echo "Đã chọn: $features"'
 ```
 
-- `options` khai báo như `select` (mục 7). Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ có khung bo (cả mục đã chọn lẫn chưa chọn), chữ bên trái, ô tích có khung bên phải.
+- `options` khai báo như mục 7. Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ có khung bo (cả mục đã chọn lẫn chưa chọn), chữ bên trái, ô tích có khung bên phải.
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
@@ -289,15 +288,15 @@ columns = 2                  # tùy chọn: 1 (mặc định) hoặc 2 cột tro
 run     = 'echo "Đã chọn: $mode"'
 ```
 
-- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục là một thẻ có khung bo, chữ bên trái, ô tích có khung bên phải (chỉ tích được một mục).
+- `options` khai báo như mục 7. Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục là một thẻ có khung bo, chữ bên trái, ô tích có khung bên phải (chỉ tích được một mục).
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
 - `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `on` / `off` chạy khi đổi trạng thái, chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
-- `radio` khai báo `options` như `select` (mục 7), nhãn hiện trên giao diện, giá trị truyền qua `$id`.
-- `dropdown` khai báo `options` như `select` (mục 7). Bên phải hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm vào thì menu thả xuống ngay dưới hàng, căn mép phải (thiếu chỗ phía dưới thì lật lên trên, danh sách dài thì cuộn được). Mục đang chọn nổi nền màu chủ đạo và có dấu tích bên phải. Chọn xong đóng menu và chạy `run` như `select`.
+- `radio` khai báo `options` như mục 7, nhãn hiện trên giao diện, giá trị truyền qua `$id`.
+- `dropdown` khai báo `options` như mục 7. Bên phải hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm vào thì menu thả xuống ngay dưới hàng, căn mép phải (thiếu chỗ phía dưới thì lật lên trên, danh sách dài thì cuộn được). Mục đang chọn nổi nền màu chủ đạo và có dấu tích bên phải. Chọn xong đóng menu và chạy `run`.
 - `progress` cần `id`. `get` in ra một số trong khoảng `min`..`max` (mặc định 0..100), chỉ đọc khi item xuất hiện. Giá trị nằm ngoài khoảng được cắt về mép. Không có `get` thì dùng `default` (mặc định `min`).
 
 ```toml
@@ -352,7 +351,7 @@ lock_mode = "hide"
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `multiselect`, `singleselect`, `radio`, `dropdown`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `multiselect`, `singleselect`, `radio`, `dropdown`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|

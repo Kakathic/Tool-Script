@@ -11,7 +11,7 @@ import dev.eav.tomlkt.TomlTable
 
 enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
-    Input("input"), Select("select"), Slider("slider"), Link("link"),
+    Input("input"), Slider("slider"), Link("link"),
     Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
     MultiSelect("multiselect"), SingleSelect("singleselect");
 
@@ -44,7 +44,7 @@ data class Item(
     val timeoutSec: Int,
     // text
     val content: String?,
-    // button / input / select / slider
+    // button / input / slider
     val run: String?,
     // switch / checkbox
     val on: String?,
@@ -54,9 +54,9 @@ data class Item(
     val hint: String?,
     val default: String?,
     val numberInput: Boolean,
-    // select / radio / dropdown
+    // radio / dropdown / multiselect / singleselect
     val options: List<SelectOption>,
-    // select / multiselect / singleselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
+    // multiselect / singleselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
     val columns: Int,
     // multiselect: dấu phân tách các giá trị đã chọn trong $id
     val separator: String,
@@ -249,7 +249,7 @@ object TomlParser {
         }
         val id = t.str("id")?.takeIf { it.isNotBlank() }
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
-            type == ItemType.Select || type == ItemType.Slider ||
+            type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
             type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect
         if (needsId) {
@@ -344,7 +344,7 @@ object TomlParser {
                 options += option
             }
         }
-        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect ||
+        if ((type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect ||
             type == ItemType.SingleSelect) &&
             options.isEmpty()
         ) {

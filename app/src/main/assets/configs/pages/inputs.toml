@@ -1,12 +1,12 @@
 # Tab 2 - Demo: nhập liệu và các kiểu lựa chọn.
-# input, select, multiselect, singleselect, radio, dropdown, slider.
+# input, multiselect, singleselect, radio, dropdown, slider.
 # Giá trị của item có id dùng trong lệnh dưới dạng $id (luôn đặt trong nháy kép).
 # Mọi lệnh chỉ là echo, không đổi thông số thiết bị.
 
 [[item]]
 type    = "text"
 title   = "Nhập liệu và lựa chọn"
-content = "Tab này demo input, select, multiselect, singleselect, radio, dropdown và slider. Giá trị chọn được truyền vào lệnh qua $id."
+content = "Tab này demo input, multiselect, singleselect, radio, dropdown và slider. Giá trị chọn được truyền vào lệnh qua $id."
 
 [[group]]
 title = "Nhập liệu"
@@ -30,45 +30,6 @@ default    = "5555"
 input_type = "number"
 run        = 'echo "Số đã nhập: $inputs_number"'
 shell      = "live"
-
-[[group]]
-title = "Select (hộp thoại)"
-
-# options là chuỗi "nhãn|giá trị"; chọn xong chạy lệnh ngay
-[[group.item]]
-type    = "select"
-id      = "inputs_choice"
-title   = "Chọn một mục"
-desc    = "Giá trị chọn được truyền vào $inputs_choice"
-default = "b"
-run     = 'echo "Đã chọn: $inputs_choice"'
-shell   = "banner"
-options = [
-  "Mục A|a",
-  "Mục B|b",
-  "Mục C|c",
-]
-
-# columns = 2: các lựa chọn xếp hai mỗi hàng trong hộp thoại
-[[group.item]]
-type    = "select"
-id      = "inputs_cols"
-title   = "Select 2 cột"
-default = "x"
-columns = 2
-run     = 'echo "Đã chọn: $inputs_cols"'
-shell   = "banner"
-options = ["Lựa chọn 1|x", "Lựa chọn 2|y", "Lựa chọn 3|z", "Lựa chọn 4|w"]
-
-# không có | thì nhãn = giá trị
-[[group.item]]
-type    = "select"
-id      = "inputs_short"
-title   = "Select rút gọn"
-default = "một"
-run     = 'echo "Đã chọn: $inputs_short"'
-shell   = "banner"
-options = ["một", "hai", "ba"]
 
 [[group]]
 title = "Chọn nhiều, chọn sẵn, thả xuống"
@@ -149,7 +110,7 @@ shell   = "banner"
 title = "Hiện theo lựa chọn (visible_if)"
 
 [[group.item]]
-type    = "select"
+type    = "radio"
 id      = "inputs_toggle"
 title   = "Hiện mục phụ"
 default = "hide"

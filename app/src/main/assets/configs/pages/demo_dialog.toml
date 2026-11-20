@@ -20,7 +20,7 @@ hint    = "Nhập nội dung"
 default = "xin chào"
 
 [[group.item]]
-type    = "select"
+type    = "radio"
 id      = "demo_dialog_mode"
 title   = "Chế độ"
 default = "balanced"

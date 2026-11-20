@@ -1,4 +1,4 @@
-# Trang mẫu: button, input, select (options = "nhãn|giá trị"), radio, slider, checkbox, progress.
+# Trang mẫu: button, input, radio (options = "nhãn|giá trị"), slider, checkbox, progress.
 # Chỉ để làm mẫu tính năng: mọi lệnh đều là echo, không đổi thông số thiết bị.
 # Giá trị của item có id dùng trong lệnh dưới dạng $id (luôn đặt trong nháy kép).
 
@@ -39,32 +39,6 @@ shell      = "live"
 [[group]]
 title = "Lựa chọn"
 
-# select: options là chuỗi "nhãn|giá trị"; chọn xong chạy lệnh ngay
-[[group.item]]
-type    = "select"
-id      = "tools_choice"
-title   = "Chọn một mục"
-desc    = "Giá trị chọn được truyền vào $tools_choice"
-default = "b"
-run     = 'echo "Đã chọn: $tools_choice"'
-shell   = "banner"
-options = [
-  "Mục A|a",
-  "Mục B|b",
-  "Mục C|c",
-]
-
-# select 2 cột: columns = 2, các lựa chọn xếp hai mỗi hàng trong hộp thoại
-[[group.item]]
-type    = "select"
-id      = "tools_cols"
-title   = "Select 2 cột"
-default = "x"
-columns = 2
-run     = 'echo "Đã chọn: $tools_cols"'
-shell   = "banner"
-options = ["Lựa chọn 1|x", "Lựa chọn 2|y", "Lựa chọn 3|z", "Lựa chọn 4|w"]
-
 # multiselect: chọn nhiều mục, bấm Xác nhận mới lưu và chạy lệnh; $tools_multi = các giá trị đã chọn, mỗi giá trị một dòng
 [[group.item]]
 type      = "multiselect"
@@ -77,17 +51,7 @@ run       = 'echo "Đã chọn: $tools_multi"'
 shell     = "banner"
 options   = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
-# select dạng rút gọn: không có | thì nhãn = giá trị
-[[group.item]]
-type    = "select"
-id      = "tools_short"
-title   = "Select rút gọn"
-default = "một"
-run     = 'echo "Đã chọn: $tools_short"'
-shell   = "banner"
-options = ["một", "hai", "ba"]
-
-# dropdown: giống select nhưng chọn bằng menu thả xuống ngay dưới hàng (giá trị đang chọn + mũi tên ở bên phải)
+# dropdown: chọn bằng menu thả xuống ngay dưới hàng (giá trị đang chọn + mũi tên ở bên phải)
 [[group.item]]
 type    = "dropdown"
 id      = "tools_dropdown"
@@ -98,7 +62,7 @@ run     = 'echo "Đã chọn: $tools_dropdown"'
 shell   = "banner"
 options = ["Không giới hạn|0", "1", "2", "3", "4", "5", "6"]
 
-# radio: giống select nhưng hiện sẵn mọi lựa chọn
+# radio: hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn
 [[group.item]]
 type    = "radio"
 id      = "tools_radio"
@@ -141,9 +105,9 @@ get   = "echo 65"
 [[group]]
 title = "Hiện theo lựa chọn"
 
-# select + visible_if: các mục bên dưới chỉ hiện khi chọn "Hiện"
+# radio + visible_if: các mục bên dưới chỉ hiện khi chọn "Hiện"
 [[group.item]]
-type    = "select"
+type    = "radio"
 id      = "tools_toggle"
 title   = "Hiện mục phụ"
 default = "hide"
