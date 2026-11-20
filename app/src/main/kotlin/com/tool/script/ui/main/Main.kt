@@ -32,9 +32,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -298,24 +296,19 @@ fun MainScreen(
                     bottomBar = {
                         if (pages.size >= 2) {
                             NavigationBar {
-                                // Giữ nguyên chuyển động của Row tab như trước: toàn bộ dãy tab
-                                // trượt ngang theo từng vị trí. Row được đo đúng theo số tab, còn
-                                // viewport cắt ở mép nên không tạo ra nửa tab cố định khi đứng yên.
-                                BoxWithConstraints(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clipToBounds(),
-                                ) {
-                                    val tabWidth = maxWidth / visibleTabs
-                                    val animatedStart by animateFloatAsState(
-                                        targetValue = windowStart.toFloat(),
-                                        animationSpec = tween(PAGE_MILLIS, easing = FastOutSlowInEasing),
-                                        label = "tabWindowOffset",
-                                    )
+                                // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
+                                val slide by animateFloatAsState(
+                                    targetValue = windowStart.toFloat(),
+                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                    label = "tabWindowSlide",
+                                )
+                                BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
+                                    val itemWidth = maxWidth / visibleTabs
+                                    val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
                                     Row(
-                                        modifier = Modifier
-                                            .width(maxWidth * (pages.size.toFloat() / visibleTabs))
-                                            .offset(x = -(tabWidth * animatedStart)),
+                                        Modifier
+                                            .requiredWidth(itemWidth * pages.size)
+                                            .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
                                     ) {
                                         pages.forEachIndexed { index, page ->
                                             TabItem(
