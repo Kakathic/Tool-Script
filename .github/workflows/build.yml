@@ -3,6 +3,8 @@ name: Build APK
 on:
   push:
     branches: [main]
+    # Đẩy tag dạng v1.0.0 để dựng và đăng bản phát hành chính thức (APK release đã ký).
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -39,11 +41,12 @@ jobs:
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Build debug APK
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: gradle :app:assembleDebug --stacktrace --warning-mode none
 
-      # Đăng APK lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request chỉ build, không đăng.
+      # Đăng APK lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request và tag phát hành không chạy bước này.
       - name: Publish release
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -57,3 +60,65 @@ jobs:
             --title "Tool Script (bản build mới nhất)" \
             --notes "APK debug dựng từ commit $GITHUB_SHA" \
             --prerelease
+
+      # ---- Bản phát hành chính thức: chỉ chạy khi đẩy tag v* ----
+      # Tạm thời ký bằng khóa beta (app/beta.jks). Khi có khóa thật, thêm 4 secret: KEYSTORE_BASE64 (keystore mã hóa base64),
+      # KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD thì bước này tự chuyển sang khóa thật (xem README).
+      - name: Prepare signing key
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Thiếu secret $name"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -eq 4 ]; then
+            echo "::notice::Chưa có secret khóa thật, ký bản chính thức bằng khóa beta (app/beta.jks)."
+          elif [ "$missing" -gt 0 ]; then
+            echo "::error::Có secret khóa nhưng chưa đủ 4 cái. Thêm đủ hoặc xóa hết để dùng khóa beta."
+            exit 1
+          else
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gradle :app:assembleRelease --stacktrace --warning-mode none \
+            -PversionName="$VERSION" -PversionCode="$GITHUB_RUN_NUMBER"
+
+      - name: Publish official release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          test -f "$APK"
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)apksigner"
+          "$APKSIGNER" verify --print-certs "$APK"
+          OUT="ToolScript-${GITHUB_REF_NAME}.apk"
+          cp "$APK" "$OUT"
+          rm -f "$RUNNER_TEMP/release.jks"
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$OUT" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$OUT" \
+              --verify-tag \
+              --title "Tool Script $GITHUB_REF_NAME" \
+              --generate-notes \
+              --latest
+          fi

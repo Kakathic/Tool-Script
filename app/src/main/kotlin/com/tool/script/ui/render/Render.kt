@@ -43,7 +43,6 @@ import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.tool.script.ui.theme.LocalHapticEnabled
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.util.Util
@@ -52,7 +51,6 @@ import com.tool.script.util.formatNumber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -77,6 +75,9 @@ import kotlin.math.roundToInt
 // Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
 
 private const val SELECTED_ALPHA = 0.16f
+
+// Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
+private const val RUN_BUTTON_ALPHA = 0.16f
 
 // Bọc onClick của item: rung nhẹ khi chạm rồi mới chạy hành động.
 @Composable
@@ -394,14 +395,17 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
             )
             if (!env.varsOnly) {
                 Spacer(Modifier.height(12.dp))
-                Button(
+                // Nút Chạy dạng nhạt: nền màu chủ đạo mờ, chữ màu chủ đạo (cùng kiểu mục đang chọn của radio/select).
+                TextButton(
+                    text = "Chạy",
                     onClick = withTapHaptic { env.run(item, item.run) },
                     enabled = enabled && !item.run.isNullOrBlank(),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text("Chạy")
-                }
+                    colors = ButtonDefaults.textButtonColors(
+                        color = MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA),
+                        textColor = MiuixTheme.colorScheme.primary,
+                    ),
+                )
             }
         }
     }
@@ -612,6 +616,7 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
     val id = item.id ?: return
     val value = (env.store[id].toFloatOrNull() ?: item.min).coerceIn(item.min, item.max)
     val steps = (((item.max - item.min) / item.step).roundToInt() - 1).coerceAtLeast(0)
+    val haptic = LocalHapticFeedback.current
 
     ItemSurface(modifier, inGroup) {
         Column(Modifier.padding(16.dp)) {
@@ -631,17 +636,20 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
                 value = value,
                 onValueChange = { raw ->
                     val snapped = item.min + ((raw - item.min) / item.step).roundToInt() * item.step
-                    env.store[id] = formatNumber(snapped.coerceIn(item.min, item.max))
+                    val text = formatNumber(snapped.coerceIn(item.min, item.max))
+                    // Rung nhẹ mỗi lần giá trị nhích sang bước mới (không rung khi chỉ kéo trong cùng một bước).
+                    // LocalHapticFeedback đã là bản không làm gì khi người dùng tắt "Rung khi chạm".
+                    if (text != env.store[id]) {
+                        haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                        env.store[id] = text
+                    }
                 },
                 enabled = enabled,
                 valueRange = item.min..item.max,
                 steps = steps,
                 onValueChangeFinished = { env.run(item, item.run) },
-                hapticEffect = if (LocalHapticEnabled.current) {
-                    SliderDefaults.DefaultHapticEffect
-                } else {
-                    SliderDefaults.SliderHapticEffect.None
-                },
+                // Rung đã tự xử lý ở onValueChange; tắt rung có sẵn của Miuix để không bị rung đôi.
+                hapticEffect = SliderDefaults.SliderHapticEffect.None,
             )
         }
     }

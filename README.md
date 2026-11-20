@@ -19,6 +19,38 @@
 - Kết quả: APK debug (`ToolScript-debug.apk`) đăng lên mục Releases, tag `latest`, mỗi lần build trên main ghi đè bản cũ. Pull request chỉ build kiểm tra, không đăng.
 - Lần chạy đầu cũng là lần build thử đầu tiên: nếu lỗi, xem log của bước "Build debug APK".
 
+## Phát hành chính thức (APK release)
+
+Bản `latest` ở trên là bản debug để thử. Bản chính thức là APK release (đã bật R8), đăng thành một Release riêng theo tag phiên bản, không đánh dấu pre-release.
+
+**Mỗi lần phát hành**
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Workflow dựng `ToolScript-v0.1.0.apk`, kiểm tra chữ ký bằng `apksigner`, rồi đăng lên Releases với ghi chú tự sinh. `versionName` lấy từ tag (bỏ chữ `v`), `versionCode` là số lần chạy của workflow. Chạy lại cùng tag thì ghi đè file APK của release đó.
+
+**Chữ ký hiện tại: khóa beta (tạm thời)**
+
+Hiện cả bản debug và bản chính thức đều ký bằng khóa beta `app/beta.jks` (alias `beta`, mật khẩu `android`). File này commit trong repo và mật khẩu công khai, nên **không bảo mật**: ai cũng ký được app giả mạo cùng chữ ký. Ưu điểm là mọi build cùng chữ ký, cài đè / cập nhật lên nhau được, không cần cấu hình secret.
+
+**Khi có khóa thật**
+
+```bash
+keytool -genkeypair -v -keystore release.jks -alias toolscript \
+  -keyalg RSA -keysize 4096 -validity 10000
+base64 -w0 release.jks   # macOS: base64 -i release.jks
+```
+
+Thêm 4 secret vào repo (Settings > Secrets and variables > Actions): `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Từ tag kế tiếp, bản chính thức tự ký bằng khóa thật (thiếu một trong bốn secret thì workflow dừng và báo lỗi). Giữ `release.jks` và mật khẩu ở nơi an toàn, không commit.
+Đổi sang khóa thật là đổi chữ ký: người đã cài bản ký bằng khóa beta phải gỡ app rồi cài lại.
+
+Build local: bản debug và release đều tự dùng khóa beta. Muốn ký bằng khóa thật thì đặt `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` rồi chạy `gradle :app:assembleRelease`.
+
+> Bản release bật R8 (`isMinifyEnabled = true`) nhưng `proguard-rules.pro` mới chỉ có luật cho model TOML. Lần phát hành đầu cần cài thử trên máy thật để chắc app không lỗi do bị rút gọn.
+
 ## Tài liệu
 
 - `docs/schema.md`: schema TOML (bản v0.5), nguồn sự thật cho parser và renderer.

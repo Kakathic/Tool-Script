@@ -11,3 +11,7 @@
 *.apk
 *.aab
 *.bak
+*.jks
+*.keystore
+# Khóa beta công khai (dùng tạm, xem app/build.gradle.kts) được phép commit
+!app/beta.jks
