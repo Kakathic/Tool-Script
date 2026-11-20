@@ -174,12 +174,21 @@ class FeedbackHost(private val context: Context) {
 
     private fun summaryOf(title: String, result: ExecResult): String = when {
         result.timedOut -> "$title: hết thời gian chờ"
-        result.ok -> "$title: hoàn tất"
+        result.ok -> outputOf(result) ?: "$title: hoàn tất"
         else -> {
             val firstLine = result.stderr.lineSequence().firstOrNull { it.isNotBlank() }
             "$title: lỗi (mã ${result.code})" + (firstLine?.let { " - $it" } ?: "")
         }
     }
+
+    /** Phần lệnh in ra (stdout) để làm nội dung banner / thông báo; null nếu lệnh không in gì. */
+    private fun outputOf(result: ExecResult): String? =
+        result.stdout.lineSequence()
+            .filterNot { it.startsWith("@progress") }
+            .joinToString("\n")
+            .trim()
+            .takeIf { it.isNotEmpty() }
+            ?.take(OUTPUT_MAX_CHARS)
 
     fun notice(title: String, text: String) {
         if (Build.VERSION.SDK_INT >= 33 &&
@@ -519,6 +528,8 @@ fun Banner(
 }
 
 const val BANNER_MILLIS = 5_000
+
+private const val OUTPUT_MAX_CHARS = 300
 
 @Composable
 fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
