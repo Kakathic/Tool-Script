@@ -248,7 +248,9 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
   Mở trang con: trang mới trượt vào từ bên phải, trang bên dưới lùi nhẹ sang trái; đóng thì ngược lại (dialog vẫn trượt từ dưới lên).
-- `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên che kín màn hình, thanh trên có nút đóng (X) thay vì mũi tên.
+- `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên, thanh trên có nút đóng (X) thay vì mũi tên.
+  - Dialog có **từ 4 mục trở lên** (đếm cả item trong group, không đếm group) hiện dạng sheet gần toàn màn hình: chừa một đoạn phía trên, nền mờ phía sau, bo góc, có thanh kéo nhỏ. **Kéo thanh trên lên** (hoặc cuộn nội dung lên) để mở rộng toàn màn hình; kéo thanh trên xuống để thu lại, kéo tiếp xuống để đóng (như Hủy). Bấm vào nền mờ cũng là Hủy.
+  - Dialog dưới 4 mục che kín toàn màn hình như trước, không kéo được.
 - Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
   - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
   - **Xác nhận**: đóng dialog rồi chạy `run` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `run` thì chỉ lưu biến.
