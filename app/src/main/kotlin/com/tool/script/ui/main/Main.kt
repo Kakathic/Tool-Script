@@ -52,6 +52,7 @@ import com.tool.script.config.SubPage
 import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.ui.feedback.Banner
+import com.tool.script.ui.feedback.BannerOverlay
 import com.tool.script.ui.feedback.FeedbackHost
 import com.tool.script.ui.feedback.ConfirmDialog
 import com.tool.script.ui.feedback.LogDialog
@@ -63,7 +64,6 @@ import com.tool.script.ui.render.RenderEnv
 import com.tool.script.ui.render.isShown
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -166,118 +166,112 @@ fun MainScreen(
         if (config.warnings.isNotEmpty()) add("${config.warnings.size} cảnh báo cấu hình.")
     }.joinToString(" ")
 
-    // Banner ngắn của shell = "banner" tự ẩn sau vài giây.
-    val bannerMessage = feedback.banner
-    LaunchedEffect(bannerMessage) {
-        if (bannerMessage != null) {
-            delay(BANNER_MILLIS)
-            if (feedback.banner == bannerMessage) feedback.banner = null
-        }
-    }
-
     val top = stack.lastOrNull()
-    AnimatedContent(
-        targetState = top,
-        transitionSpec = {
-            val from = initialState
-            val to = targetState
-            val opening = to != null && config.subPages[to]?.dialog == true
-            val closing = to == null && from != null && config.subPages[from]?.dialog == true
-            when {
-                opening -> (slideInVertically(tween(DIALOG_MILLIS)) { it } togetherWith ExitTransition.KeepUntilTransitionsFinished)
-                    .also { it.targetContentZIndex = 1f }
-                closing -> EnterTransition.None togetherWith slideOutVertically(tween(DIALOG_MILLIS)) { it }
-                else -> EnterTransition.None togetherWith ExitTransition.None
-            }
-        },
-        label = "subPage",
-    ) { file ->
-        val subPage = file?.let { config.subPages[it] }
-        if (subPage != null) {
-            SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
-        } else {
-            Scaffold(
-                topBar = {
-                    AppTopBar(
-                        title = config.app.name,
-                        actions = {
-                            // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
-                            ThemeMenu(
-                                expanded = showThemeMenu,
-                                current = themeMode,
-                                onOpen = { showThemeMenu = true },
-                                onDismiss = { showThemeMenu = false },
-                                onSelect = {
-                                    showThemeMenu = false
-                                    onThemeChange(it)
-                                },
-                            )
-                            // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
-                            PowerMenu(
-                                expanded = showRestartMenu,
-                                onOpen = { showRestartMenu = true },
-                                onDismiss = { showRestartMenu = false },
-                                onRestartApp = {
-                                    showRestartMenu = false
-                                    env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-                                },
-                                onRebootDevice = {
-                                    showRestartMenu = false
-                                    env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                                        scope.launch {
-                                            val result = ExecutorManager.current.exec("reboot", 10)
-                                            if (!result.ok) feedback.toast(rebootErrorText(result))
-                                        }
-                                    }
-                                },
-                            )
-                        },
-                    )
-                },
-                bottomBar = {
-                    if (pages.size >= 2) {
-                        NavigationBar {
-                            for (index in windowStart until windowStart + visibleTabs) {
-                                val ref = pages[index].ref
-                                TabItem(
-                                    ref = ref,
-                                    selected = pagerState.currentPage == index,
-                                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+    Box(Modifier.fillMaxSize()) {
+        AnimatedContent(
+            targetState = top,
+            transitionSpec = {
+                val from = initialState
+                val to = targetState
+                val opening = to != null && config.subPages[to]?.dialog == true
+                val closing = to == null && from != null && config.subPages[from]?.dialog == true
+                when {
+                    opening -> (slideInVertically(tween(DIALOG_MILLIS)) { it } togetherWith ExitTransition.KeepUntilTransitionsFinished)
+                        .also { it.targetContentZIndex = 1f }
+                    closing -> EnterTransition.None togetherWith slideOutVertically(tween(DIALOG_MILLIS)) { it }
+                    else -> EnterTransition.None togetherWith ExitTransition.None
+                }
+            },
+            label = "subPage",
+        ) { file ->
+            val subPage = file?.let { config.subPages[it] }
+            if (subPage != null) {
+                SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+            } else {
+                Scaffold(
+                    topBar = {
+                        AppTopBar(
+                            title = config.app.name,
+                            actions = {
+                                // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
+                                ThemeMenu(
+                                    expanded = showThemeMenu,
+                                    current = themeMode,
+                                    onOpen = { showThemeMenu = true },
+                                    onDismiss = { showThemeMenu = false },
+                                    onSelect = {
+                                        showThemeMenu = false
+                                        onThemeChange(it)
+                                    },
                                 )
+                                // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                                PowerMenu(
+                                    expanded = showRestartMenu,
+                                    onOpen = { showRestartMenu = true },
+                                    onDismiss = { showRestartMenu = false },
+                                    onRestartApp = {
+                                        showRestartMenu = false
+                                        env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                                    },
+                                    onRebootDevice = {
+                                        showRestartMenu = false
+                                        env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                            scope.launch {
+                                                val result = ExecutorManager.current.exec("reboot", 10)
+                                                if (!result.ok) feedback.toast(rebootErrorText(result))
+                                            }
+                                        }
+                                    },
+                                )
+                            },
+                        )
+                    },
+                    bottomBar = {
+                        if (pages.size >= 2) {
+                            NavigationBar {
+                                for (index in windowStart until windowStart + visibleTabs) {
+                                    val ref = pages[index].ref
+                                    TabItem(
+                                        ref = ref,
+                                        selected = pagerState.currentPage == index,
+                                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                    )
+                                }
                             }
                         }
+                    },
+                ) { inner ->
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(top = inner.calculateTopPadding()),
+                    ) {
+                        if (warningText.isNotEmpty() && !warningDismissed) {
+                            Banner(
+                                message = warningText,
+                                warning = true,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                                actionLabel = "Xem",
+                                onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                                onDismiss = { warningDismissed = true },
+                            )
+                        }
+                            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                            val page = pages[pageIndex]
+                            PageList(
+                                list = page.items.filter { isShown(it, env.store) },
+                                error = page.error,
+                                env = env,
+                                bottomInset = inner.calculateBottomPadding(),
+                            )
+                        }
+                        FeedbackDialogs(feedback, env)
                     }
-                },
-            ) { inner ->
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(top = inner.calculateTopPadding()),
-                ) {
-                    if (warningText.isNotEmpty() && !warningDismissed) {
-                        Banner(
-                            message = warningText,
-                            warning = true,
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-                            actionLabel = "Xem",
-                            onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
-                            onDismiss = { warningDismissed = true },
-                        )
-                    }
-                    FeedbackBanner(feedback)
-                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
-                        val page = pages[pageIndex]
-                        PageList(
-                            list = page.items.filter { isShown(it, env.store) },
-                            error = page.error,
-                            env = env,
-                            bottomInset = inner.calculateBottomPadding(),
-                        )
-                    }
-                    FeedbackDialogs(feedback, env)
                 }
             }
         }
+        // Banner thông báo hiện đè lên cả thanh trên, trượt xuống / lên.
+        BannerOverlay(feedback, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -343,7 +337,6 @@ private fun SubPageScreen(
                 .fillMaxSize()
                 .padding(top = inner.calculateTopPadding()),
         ) {
-            FeedbackBanner(feedback)
             Box(Modifier.weight(1f)) {
                 PageList(
                     list = page.items.filter { isShown(it, pageEnv.store) },
@@ -383,19 +376,6 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
     for (item in items) {
         item.id?.let { add(it) }
         addAll(variableIds(item.children))
-    }
-}
-
-/** Banner ngắn của shell = "banner". */
-@Composable
-private fun FeedbackBanner(feedback: FeedbackHost) {
-    feedback.banner?.let {
-        Banner(
-            message = it,
-            warning = false,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-            onDismiss = { feedback.banner = null },
-        )
     }
 }
 
@@ -480,5 +460,4 @@ private fun rebootErrorText(result: ExecResult): String {
     return "Không khởi động lại được máy (cần root)" + (firstLine?.let { ": $it" } ?: "")
 }
 
-private const val BANNER_MILLIS = 4_000L
 private const val DIALOG_MILLIS = 280

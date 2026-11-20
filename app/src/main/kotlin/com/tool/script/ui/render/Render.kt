@@ -37,8 +37,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.RadioButton
@@ -271,6 +273,10 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val current = env.store[id]
     ItemSurface(modifier, inGroup) {
         BasicComponent(title = item.title, summary = item.desc, enabled = enabled)
+        // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
+        if (item.options.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        }
         item.options.forEach { option ->
             val select = {
                 env.run(item, item.run, mapOf(id to option.value)) { result ->
@@ -352,6 +358,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                     onClick = { env.run(item, item.run) },
                     enabled = enabled && !item.run.isNullOrBlank(),
                     modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text("Chạy")
                 }
@@ -381,9 +388,12 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
     OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item.options.forEach { option ->
+                val selected = option.value == current
                 TextButton(
-                    text = if (option.value == current) "✓ ${option.label}" else option.label,
+                    text = option.label,
                     modifier = Modifier.fillMaxWidth(),
+                    // Mục đang chọn hiện màu chủ đạo thay vì dấu ✓
+                    colors = if (selected) ButtonDefaults.textButtonColorsPrimary() else ButtonDefaults.textButtonColors(),
                     onClick = {
                         showDialog = false
                         env.run(item, item.run, mapOf(id to option.value)) { result ->

@@ -10,6 +10,14 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,10 +26,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +52,7 @@ import com.tool.script.util.copyToClipboard
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -63,7 +75,6 @@ class LogEntry(val title: String, val command: String, initialResult: ExecResult
 
     val text: String
         get() = buildString {
-            appendLine("$ $command")
             val r = result
             if (r == null) {
                 lines.forEach { appendLine(it) }
@@ -98,6 +109,15 @@ class FeedbackHost(private val context: Context) {
     var log by mutableStateOf<LogEntry?>(null)
     var banner by mutableStateOf<String?>(null)
 
+    /** Tăng mỗi lần hiện banner, để cùng một nội dung hiện lại vẫn tính lại thời gian. */
+    var bannerToken by mutableIntStateOf(0)
+        private set
+
+    fun showBanner(message: String) {
+        banner = message
+        bannerToken++
+    }
+
     /** Gắn bởi [rememberFeedbackHost]: mở hộp thoại xin quyền thông báo. */
     internal var requestNoticePermission: (() -> Unit)? = null
     private var pendingNotice: Pair<String, String>? = null
@@ -115,7 +135,7 @@ class FeedbackHost(private val context: Context) {
             ShellMode.Log -> log = LogEntry(item.title, command, result)
             ShellMode.Live -> Unit // đã hiện từng dòng qua startLive
             ShellMode.Hidden -> if (!result.ok) toast(summary)
-            ShellMode.Banner -> banner = summary
+            ShellMode.Banner -> showBanner(summary)
             ShellMode.Notice -> notice(item.title, summary)
         }
     }
@@ -135,7 +155,7 @@ class FeedbackHost(private val context: Context) {
         ) {
             val ask = requestNoticePermission
             if (ask == null) {
-                banner = text
+                showBanner(text)
             } else {
                 pendingNotice = title to text
                 ask()
@@ -148,7 +168,7 @@ class FeedbackHost(private val context: Context) {
     internal fun onNoticePermissionResult(granted: Boolean) {
         val pending = pendingNotice ?: return
         pendingNotice = null
-        if (granted) post(pending.first, pending.second) else banner = pending.second
+        if (granted) post(pending.first, pending.second) else showBanner(pending.second)
     }
 
     private fun post(title: String, text: String) {
@@ -220,7 +240,12 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
                     onClick = { copyToClipboard(context, "log", text) },
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(text = "Đóng", onClick = onDismiss, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = "Đóng",
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
             }
         }
     }
@@ -257,6 +282,8 @@ fun Banner(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: () -> Unit = {},
+    /** Khác null: hiện thanh tiến trình thời gian còn lại (1 → 0) ở cuối banner. */
+    progress: Float? = null,
     onDismiss: () -> Unit,
 ) {
     val colors = if (warning) {
@@ -285,5 +312,54 @@ fun Banner(
             if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
             TextButton(text = "Ẩn", onClick = onDismiss)
         }
+        if (progress != null) {
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+            )
+        }
     }
 }
+
+/** Thời gian hiện mặc định của banner shell (ms). */
+const val BANNER_MILLIS = 5_000
+
+/**
+ * Banner shell = "banner": hiện đè lên cả thanh trên, trượt xuống khi hiện và trượt lên khi ẩn,
+ * có thanh tiến trình đếm ngược [BANNER_MILLIS] rồi tự ẩn. Đặt trong Box phủ toàn màn hình.
+ */
+@Composable
+fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
+    val message = feedback.banner
+    // Giữ nội dung cuối để banner không rỗng trong lúc trượt lên.
+    var last by remember { mutableStateOf(message.orEmpty()) }
+    if (message != null) last = message
+
+    val progress = remember { Animatable(1f) }
+    LaunchedEffect(feedback.bannerToken, message != null) {
+        if (message != null) {
+            progress.snapTo(1f)
+            progress.animateTo(0f, tween(BANNER_MILLIS, easing = LinearEasing))
+            feedback.banner = null
+        }
+    }
+
+    AnimatedVisibility(
+        visible = message != null,
+        modifier = modifier,
+        enter = slideInVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeIn(tween(BANNER_SLIDE_MILLIS)),
+        exit = slideOutVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeOut(tween(BANNER_SLIDE_MILLIS)),
+    ) {
+        Banner(
+            message = last,
+            warning = false,
+            // statusBarsPadding nằm trong phần trượt để banner trượt hẳn ra khỏi mép trên màn hình.
+            modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+            progress = progress.value,
+            onDismiss = { feedback.banner = null },
+        )
+    }
+}
+
+private const val BANNER_SLIDE_MILLIS = 300
