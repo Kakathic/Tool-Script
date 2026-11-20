@@ -249,8 +249,8 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
   Mở trang con: trang mới trượt vào từ bên phải, trang bên dưới lùi nhẹ sang trái; đóng thì ngược lại (dialog vẫn trượt từ dưới lên).
 - `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên, thanh trên có nút đóng (X) thay vì mũi tên.
-  - Dialog là sheet trượt từ dưới lên, nền mờ phía sau (bấm vào nền mờ là Hủy). Mức mở mặc định theo số mục (đếm cả item trong group, không đếm group): **≤3 mục 30%**, **4 mục 50%**, **5 mục 70%**, **từ 6 mục trở lên toàn màn hình**.
-  - **Kéo thanh trên** để đổi mức, thả tay thì dừng ở mức gần nhất trong 30% / 50% / 70% / toàn màn hình (vuốt nhanh thì lên / xuống một mức); kéo thấp hơn 30% rồi thả thì đóng như Hủy. Cuộn nội dung lên khi chưa full thì sheet mở rộng trước; nội dung đã ở đầu mà còn kéo xuống thì sheet thu về 30% (không đóng).
+  - Dialog là sheet trượt từ dưới lên, nền mờ phía sau (bấm vào nền mờ là Hủy). Chiều cao mở **tự tính theo nội dung thật** (thanh trên + toàn bộ mục + hai nút), tối thiểu 30% màn hình; nội dung cao quá 80% màn hình thì mở **toàn màn hình**.
+  - **Kéo thanh trên** để đổi chiều cao. Thả tay: dưới 30% thì **đóng** như Hủy, trên 80% thì **lên toàn màn hình**, ở giữa thì giữ nguyên chiều cao vừa kéo. **Vuốt mạnh lên thì lên toàn màn hình, vuốt mạnh xuống thì đóng** (như Hủy); vuốt nhẹ thì chỉ đổi chiều cao theo đà vuốt (giảm không thấp hơn 30% và không đóng, tăng vượt 80% thì lên toàn màn hình). Cuộn nội dung lên khi chưa full thì sheet mở rộng trước; nội dung đã ở đầu mà còn kéo xuống thì sheet thu lại (không thấp hơn 30%, không đóng).
   - Hai nút **Hủy** và **Xác nhận** cố định ở đáy sheet; kéo sheet thấp xuống thì các mục phía trên bị che dần, hai nút vẫn thấy.
 - Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
   - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).

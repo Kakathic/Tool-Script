@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
@@ -60,10 +61,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -72,13 +75,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Velocity
 import coil3.compose.AsyncImage
 import com.tool.script.boot.BootResult
 import com.tool.script.config.Item
-import com.tool.script.config.ItemType
 import com.tool.script.config.PageRef
 import com.tool.script.config.SubPage
 import com.tool.script.executor.ExecResult
@@ -419,19 +422,7 @@ private class LastDialog {
     var file: String? = null
 }
 
-/** Số mục (item) của trang, tính cả item trong group, không tính bản thân group. */
-private fun countItems(items: List<Item>): Int =
-    items.sumOf { if (it.type == ItemType.Group) countItems(it.children) else 1 }
-
-/** Mức mở mặc định của dialog theo số mục: 30% (≤3 mục), 50% (4), 70% (5), toàn màn hình (từ 6 mục trở lên). */
-private fun initialSheetLevel(itemCount: Int): Float = when {
-    itemCount >= 6 -> 1f
-    itemCount == 5 -> 0.7f
-    itemCount == 4 -> 0.5f
-    else -> 0.3f
-}
-
-/** Lớp phủ của dialog: nền mờ (bấm vào là Hủy) và sheet trượt từ dưới lên, kéo thanh trên để đổi mức 30 / 50 / 70 / toàn màn hình. */
+/** Lớp phủ của dialog: nền mờ (bấm vào là Hủy) và sheet trượt từ dưới lên; chiều cao tự tính theo nội dung, kéo thanh trên để đổi. */
 @Composable
 private fun AnimatedVisibilityScope.DialogLayer(
     page: SubPage,
@@ -462,10 +453,37 @@ private fun AnimatedVisibilityScope.DialogLayer(
 }
 
 /**
- * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (đáy luôn cố định nên hai nút Hủy / Xác nhận luôn thấy,
- * kéo xuống thì các mục phía trên bị che dần). Thả tay thì dừng ở mức gần nhất trong [SHEET_LEVELS] (có tính vận tốc);
- * kéo thấp hơn mức nhỏ nhất rồi thả thì đóng như Hủy. Cuộn nội dung lên khi sheet chưa full thì mở rộng sheet trước,
- * nội dung đã ở đầu mà còn kéo xuống thì thu sheet về mức nhỏ nhất (không đóng, tránh mất lựa chọn).
+ * Đo chiều cao tự nhiên của dialog (thanh trên + toàn bộ mục + hai nút) bằng cách dựng nội dung ẩn, không vẽ, không nhận chạm.
+ * Chiều cao được báo qua [onHeight] và tự cập nhật khi các mục đổi (vd điều kiện hiện / ẩn).
+ */
+@Composable
+private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int) -> Unit) {
+    val pageEnv = remember(env) { env.asVarsOnly() }
+    Box(Modifier.fillMaxWidth().height(0.dp).clearAndSetSemantics {}) {
+        Column(
+            Modifier
+                .wrapContentHeight(align = Alignment.Top, unbounded = true)
+                .alpha(0f)
+                .onSizeChanged { onHeight(it.height) },
+        ) {
+            Spacer(Modifier.height(DIALOG_TOP_BAR_HEIGHT))
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                page.error?.let { PageErrorCard(it) }
+                page.items.filter { isShown(it, pageEnv.store) }.forEach { ItemRenderer(it, pageEnv) }
+            }
+            DialogButtons(onCancel = {}, onConfirm = {})
+        }
+    }
+}
+
+/**
+ * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (đáy cố định nên hai nút Hủy / Xác nhận luôn thấy,
+ * kéo xuống thì các mục phía trên bị che dần).
+ * Chiều cao mở = chiều cao nội dung thật (tối thiểu [SHEET_MIN_FRACTION] màn hình); nếu nội dung vượt [SHEET_FULL_FRACTION] thì mở toàn màn hình.
+ * Thả tay: dưới [SHEET_MIN_FRACTION] thì đóng như Hủy, trên [SHEET_FULL_FRACTION] thì lên toàn màn hình, ở giữa thì giữ nguyên chiều cao.
+ * Vuốt mạnh (hơn [DISMISS_VELOCITY]): xuống thì đóng như Hủy, lên thì toàn màn hình. Vuốt nhẹ thì chỉ đổi chiều cao theo đà vuốt
+ * (giảm không thấp hơn mức tối thiểu; tăng vượt mức full thì lên toàn màn hình).
+ * Cuộn nội dung lên khi sheet chưa full thì mở rộng sheet trước; nội dung đã ở đầu mà còn kéo xuống thì thu sheet (không thấp hơn mức tối thiểu, không đóng).
  */
 @Composable
 private fun DialogSheet(
@@ -479,14 +497,27 @@ private fun DialogSheet(
     val scope = rememberCoroutineScope()
     val currentOnBack by rememberUpdatedState(onBack)
     val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
-    val startLevel = remember(page) { initialSheetLevel(countItems(page.items)) }
+    var naturalPx by remember { mutableIntStateOf(0) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenPx = constraints.maxHeight.toFloat()
-        val anchors = remember(screenPx) { SHEET_LEVELS.map { it * screenPx } }
-        val minAnchor = anchors.first()
-        var heightPx by remember(screenPx, startLevel) { mutableFloatStateOf(startLevel * screenPx) }
+        val minPx = SHEET_MIN_FRACTION * screenPx
+        val fullThresholdPx = SHEET_FULL_FRACTION * screenPx
+        var heightPx by remember(screenPx) { mutableFloatStateOf(0f) }
+        var ready by remember(screenPx) { mutableStateOf(false) }
+        var movedByGesture by remember { mutableStateOf(false) }
         val jobs = remember { arrayOfNulls<Job>(1) }
+
+        DialogContentMeasurer(page, env) { naturalPx = it }
+
+        // Lần đo đầu tiên: đặt chiều cao mở. Sheet ẩn (alpha 0) tới lúc đó để không bị nhảy chiều cao.
+        LaunchedEffect(naturalPx, screenPx) {
+            if (!ready && naturalPx > 0) {
+                val natural = naturalPx.toFloat()
+                heightPx = if (natural > fullThresholdPx) screenPx else max(natural, minPx)
+                ready = true
+            }
+        }
 
         fun cancelSettle() {
             jobs[0]?.cancel()
@@ -505,23 +536,20 @@ private fun DialogSheet(
             }
         }
 
-        // Thả tay: velocity (px/s) dương = kéo xuống. Kéo lên làm sheet cao hơn, nên chiều cao đổi ngược dấu.
+        // Thả tay: velocity (px/s) dương = kéo xuống. Kéo lên làm sheet cao hơn nên vận tốc chiều cao ngược dấu.
         fun settle(velocity: Float) {
-            val dismiss = heightPx < minAnchor * DISMISS_RATIO ||
-                (velocity > DISMISS_VELOCITY && heightPx <= minAnchor * 1.15f)
-            if (dismiss) {
-                animateTo(0f, -velocity) { currentOnBack() }
-                return
+            when {
+                heightPx < minPx - 1f || velocity > DISMISS_VELOCITY -> animateTo(0f, -velocity) { currentOnBack() }
+                velocity < -DISMISS_VELOCITY -> if (heightPx < screenPx - 0.5f) animateTo(screenPx, -velocity)
+                velocity > FLING_VELOCITY ->
+                    animateTo((heightPx - velocity * FLING_PROJECTION).coerceAtLeast(minPx), -velocity)
+                velocity < -FLING_VELOCITY -> {
+                    val target = heightPx - velocity * FLING_PROJECTION
+                    animateTo(if (target > fullThresholdPx) screenPx else target, -velocity)
+                }
+                heightPx > fullThresholdPx -> if (heightPx < screenPx - 0.5f) animateTo(screenPx, -velocity)
             }
-            val target = when {
-                velocity < -FLING_VELOCITY -> anchors.firstOrNull { it > heightPx + 1f } ?: anchors.last()
-                velocity > FLING_VELOCITY -> anchors.lastOrNull { it < heightPx - 1f } ?: minAnchor
-                else -> anchors.minBy { kotlin.math.abs(it - heightPx) }
-            }
-            animateTo(target, -velocity)
         }
-
-        fun isResting() = anchors.any { kotlin.math.abs(it - heightPx) <= 0.5f }
 
         val dragState = rememberDraggableState { delta ->
             cancelSettle()
@@ -536,6 +564,7 @@ private fun DialogSheet(
                         val grow = min(-dy, screenPx - heightPx)
                         cancelSettle()
                         heightPx += grow
+                        movedByGesture = true
                         return Offset(0f, -grow)
                     }
                     return Offset.Zero
@@ -543,23 +572,19 @@ private fun DialogSheet(
 
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                     val dy = available.y
-                    if (dy > 0f && heightPx > minAnchor) {
-                        val shrink = min(dy, heightPx - minAnchor)
+                    if (dy > 0f && heightPx > minPx) {
+                        val shrink = min(dy, heightPx - minPx)
                         cancelSettle()
                         heightPx -= shrink
+                        movedByGesture = true
                         return Offset(0f, shrink)
                     }
                     return Offset.Zero
                 }
 
                 override suspend fun onPreFling(available: Velocity): Velocity {
-                    if (isResting()) return Velocity.Zero
-                    settle(available.y)
-                    return available
-                }
-
-                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                    if (isResting()) return Velocity.Zero
+                    if (!movedByGesture) return Velocity.Zero
+                    movedByGesture = false
                     settle(available.y)
                     return available
                 }
@@ -578,6 +603,7 @@ private fun DialogSheet(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(with(density) { heightPx.toDp() })
+                .graphicsLayer { alpha = if (ready) 1f else 0f }
                 .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
                 // Chặn chạm xuyên xuống nền mờ (nếu không, chạm vào chỗ trống của sheet sẽ thành Hủy).
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
@@ -722,18 +748,22 @@ private fun rebootErrorText(result: ExecResult): String {
 
 private const val DIALOG_MILLIS = 280
 
-/** Các mức chiều cao của dialog (tỉ lệ chiều cao màn hình), từ thấp đến cao; 1 = toàn màn hình. */
-private val SHEET_LEVELS = listOf(0.3f, 0.5f, 0.7f, 1f)
+/** Chiều cao sheet (tỉ lệ chiều cao màn hình): thả dưới mức tối thiểu thì đóng, trên mức "full" thì lên toàn màn hình. */
+private const val SHEET_MIN_FRACTION = 0.3f
+private const val SHEET_FULL_FRACTION = 0.8f
+
+/** Chiều cao thanh trên của dialog (khớp AppTopBar), dùng khi đo chiều cao nội dung. */
+private val DIALOG_TOP_BAR_HEIGHT = 56.dp
 
 /** Bo góc sheet khi chưa chạm thanh trạng thái. */
 private val SHEET_CORNER = 24.dp
 
-/** Vận tốc (px/s) coi là vuốt nhanh để lên / xuống một mức; vuốt xuống nhanh hơn mức DISMISS khi đang ở mức thấp nhất thì đóng. */
+/** Vận tốc (px/s): vuốt nhanh hơn mức FLING thì đổi chiều cao theo đà (lên / xuống); nhanh hơn mức DISMISS thì lên toàn màn hình (vuốt lên) hoặc đóng (vuốt xuống). */
 private const val FLING_VELOCITY = 800f
-private const val DISMISS_VELOCITY = 1800f
+private const val DISMISS_VELOCITY = 2200f
 
-/** Kéo sheet thấp hơn tỉ lệ này của mức nhỏ nhất rồi thả thì đóng. */
-private const val DISMISS_RATIO = 0.6f
+/** Thời gian (giây) tính quãng trượt tiếp theo đà khi vuốt nhẹ: đổi chiều cao ≈ vận tốc × hệ số này. */
+private const val FLING_PROJECTION = 0.25f
 
 /** Thời gian trượt khi mở / đóng trang con (ms) và độ lùi của trang bên dưới (1/N chiều rộng). */
 private const val PAGE_MILLIS = 320
