@@ -5,26 +5,39 @@ lang    = "vi"
 # env: đoạn shell chạy đầu tiên trước mọi lệnh của app (ví dụ đặt PATH). Bỏ dấu # để bật.
 # env  = "export PATH=$PATH:/data/adb/bin"
 
+# 5 tab, mỗi tab một loại demo. Thanh tab hiện cửa sổ trượt 4 ô, vuốt tới tab thứ 4 thì tab 5 hiện ra.
+
+# Tab 1: công tắc, ô tick, điều kiện hiển thị, khóa
 [[tab]]
-id    = "home"
-title = "Trang chủ"
+id    = "switches"
+title = "Công tắc"
 icon  = "icons/home.svg"
-file  = "pages/home.toml"
+file  = "pages/switches.toml"
 
+# Tab 2: nhập liệu và các kiểu lựa chọn
 [[tab]]
-id    = "tools"
-title = "Công cụ"
+id    = "inputs"
+title = "Nhập liệu"
 icon  = "icons/tools.svg"
-file  = "pages/tools.toml"
+file  = "pages/inputs.toml"
 
+# Tab 3: các kiểu hiển thị kết quả lệnh
 [[tab]]
-id    = "about"
-title = "Giới thiệu"
-icon  = "icons/about.svg"
-file  = "pages/about.toml"
+id    = "output"
+title = "Kết quả"
+icon  = "icons/output.svg"
+file  = "pages/output.toml"
 
+# Tab 4: trang con, dialog, biến env.sh, lệnh trong bin
 [[tab]]
-id    = "demo"
-title = "Demo"
+id    = "pages"
+title = "Trang con"
 icon  = "icons/demo.svg"
-file  = "pages/demo.toml"
+file  = "pages/pages.toml"
+
+# Tab 5: chỉ chứa nút chuyển tab
+[[tab]]
+id    = "nav"
+title = "Chuyển tab"
+icon  = "icons/nav.svg"
+file  = "pages/nav.toml"

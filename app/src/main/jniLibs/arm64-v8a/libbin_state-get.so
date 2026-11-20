@@ -1,8 +1,0 @@
-#!/system/bin/sh
-# Thử script trong bin: đọc giá trị từ $STATE_DIR/<id>, chưa có thì in giá trị mặc định (mặc định 0).
-# Dùng: state-get <id> [mặc định]
-case "$1" in
-  ""|*/*|.*) echo "id không hợp lệ: '$1'" >&2; exit 2 ;;
-esac
-[ -n "$STATE_DIR" ] || { echo "thiếu biến STATE_DIR (env.sh chưa được nạp)" >&2; exit 3; }
-cat "$STATE_DIR/$1" 2>/dev/null || echo "${2:-0}"

@@ -1,0 +1,85 @@
+# Tab 4 - Demo: trang con, dialog toàn màn hình, biến env.sh, lệnh dựng sẵn trong bin.
+# Mọi lệnh chỉ là echo / ls, không đổi thông số thiết bị.
+
+[[item]]
+type    = "text"
+title   = "Trang con và công cụ hệ thống"
+content = "Tab này demo trang con, dialog toàn màn hình, biến từ env.sh và lệnh dựng sẵn trong bin."
+
+[[group]]
+title = "Trang con và dialog"
+
+# page: mở trang mới có nút quay lại
+[[group.item]]
+type  = "link"
+title = "Trang con mẫu"
+desc  = "page = \"pages/demo_sub.toml\""
+page  = "pages/demo_sub.toml"
+
+# style = "dialog": trang trượt từ dưới lên, có nút Hủy / Xác nhận.
+# Item trong dialog chỉ truyền biến; bấm Xác nhận mới chạy `run` của link này.
+[[group.item]]
+type  = "link"
+title = "Mở dialog toàn màn hình"
+desc  = "style = \"dialog\", Xác nhận mới chạy run"
+page  = "pages/demo_dialog.toml"
+style = "dialog"
+run   = 'echo "note=$demo_dialog_note mode=$demo_dialog_mode level=$demo_dialog_level flag=$demo_dialog_flag"'
+shell = "live"
+
+[[group]]
+title = "Biến từ env.sh"
+
+# Biến trong assets/scripts/env.sh được nạp trước mọi lệnh
+[[group.item]]
+type  = "button"
+title = "Xem các biến đường dẫn"
+desc  = "FILES_DIR, CACHE_DIR, EXT_DIR từ env.sh"
+run   = 'echo "FILES_DIR=$FILES_DIR"; echo "CACHE_DIR=$CACHE_DIR"; echo "EXT_DIR=$EXT_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "Xem thư mục lưu trạng thái"
+desc  = "ls $STATE_DIR: mỗi item có id là một file"
+run   = 'ls -l "$STATE_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "Hàm state_get / state_set"
+desc  = "Ghi rồi đọc lại pages_demo_key bằng hàm trong env.sh"
+run   = 'state_set pages_demo_key "xin chào"; echo "pages_demo_key=$(state_get pages_demo_key)"'
+
+# Thử script trong bin: gọi thẳng bằng tên qua symlink trong $BIN_DIR.
+# Bấm theo thứ tự rồi xem log (lỗi như "Permission denied" cũng hiện ở đây).
+[[group]]
+title = "Thử script trong bin"
+
+[[group.item]]
+type  = "button"
+title = "Xem thư mục bin"
+desc  = "ls -l $BIN_DIR: thấy symlink của busybox, toybox, 7z, state-set, state-get"
+run   = 'ls -l "$BIN_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "state-set test_key"
+desc  = "Ghi test_key = xin chào (chạy script trực tiếp bằng tên)"
+run   = 'state-set test_key "xin chào"'
+
+[[group.item]]
+type  = "button"
+title = "state-get test_key"
+desc  = "Đọc lại test_key; chưa có thì in 0"
+run   = 'state-get test_key'
+
+[[group.item]]
+type  = "button"
+title = "Kiểm tra lệnh 7z"
+desc  = "7z i: in thông tin bản 7-Zip"
+run   = '7z i | head -n 3'
+
+[[group.item]]
+type  = "button"
+title = "Kiểm tra busybox"
+desc  = "busybox: in phiên bản và vài applet"
+run   = 'busybox | head -n 3'

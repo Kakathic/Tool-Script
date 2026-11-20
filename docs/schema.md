@@ -82,19 +82,15 @@ export PATH="$FILES_DIR/bin:$PATH"
 
 ### Lệnh dựng sẵn (bin)
 
-Các file chạy được nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/libbin_<tên>.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
+Các file chạy được nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/lib_<tên>.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
 Android cài đúng ABI của máy và giải nén ra `$LIB_DIR` (`useLegacyPackaging = true` trong `app/build.gradle.kts`), nơi app thường không root cũng được chạy file.
-Mỗi lần mở app, app tạo symlink `files/bin/<tên>` (`$BIN_DIR`) trỏ tới `libbin_<tên>.so` tương ứng. `$BIN_DIR` đứng đầu `PATH` trong `env.sh`,
-nên mọi lệnh của app gọi thẳng được `7z`, `toybox`, `busybox`. Thêm lệnh mới: bỏ file `libbin_<tên>.so` vào đủ các thư mục ABI.
+Mỗi lần mở app, app tạo symlink `files/bin/<tên>` (`$BIN_DIR`) trỏ tới `lib_<tên>.so` tương ứng. `$BIN_DIR` đứng đầu `PATH` trong `env.sh`,
+nên mọi lệnh của app gọi thẳng được `7z`, `toybox`, `busybox`. Thêm lệnh mới: bỏ file `lib_<tên>.so` vào đủ các thư mục ABI.
 
 | Lệnh | Nội dung |
 |---|---|
 | `busybox` | BusyBox 1.36.1 (bản NDK của osm0sis, qua Magisk-Modules-Repo/busybox-ndk), biên dịch tĩnh. Gọi applet: `busybox ls`, `busybox wget`... (chưa tạo symlink applet để không đè lệnh hệ thống) |
-| `toybox` | Toybox 0.8.15 (landley/toybox), biên dịch tĩnh bằng glibc; đã tắt `login`, `mkpasswd`, `passwd`, `su`, `sulogin` vì cần `crypt`. Gọi: `toybox ls`... |
-| `7z` | 7-Zip 26.06 (`7zzs` bản tĩnh của ip7z/7zip). Giấy phép: `docs/licenses/7zip.txt` |
-
-- Script `.sh` cũng đặt được theo cách này (dòng đầu phải là `#!/system/bin/sh`). Hai script thử `state-set` / `state-get` (ghi / đọc `$STATE_DIR/<id>`)
-  nằm sẵn trong `jniLibs`; trang `tools.toml` có nhóm nút "Thử script trong bin" để kiểm tra. Tên `state-set` dùng dấu gạch ngang để không trùng
+  nằm sẵn trong `jniLibs`; trang `pages.toml` có nhóm nút "Thử script trong bin" để kiểm tra. Tên `state-set` dùng dấu gạch ngang để không trùng
   hàm `state_set` của `env.sh` (hàm shell luôn được ưu tiên hơn file trong `PATH`).
 - Toybox biên dịch bằng glibc tĩnh nên tra cứu tên (DNS, `getpwnam`...) có thể khác bản của Android; các lệnh thông thường không bị ảnh hưởng.
 - Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.

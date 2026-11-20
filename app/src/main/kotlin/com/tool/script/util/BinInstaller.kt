@@ -5,15 +5,15 @@ import android.system.Os
 import java.io.File
 
 /**
- * Lệnh dựng sẵn (busybox, toybox, 7z...) nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/libbin_<tên>.so`.
+ * Lệnh dựng sẵn (busybox, toybox, 7z...) nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/lib_<tên>.so`.
  * Android cài đúng ABI của máy rồi giải nén ra `nativeLibraryDir` (`$LIB_DIR`), nơi app thường (không root) được phép chạy file.
- * Ở đây chỉ tạo symlink `filesDir/bin/<tên>` -> `libbin_<tên>.so` (`$BIN_DIR`, đã nằm đầu `PATH`, xem env.sh) để gọi bằng tên gốc;
+ * Ở đây chỉ tạo symlink `filesDir/bin/<tên>` -> `lib_<tên>.so` (`$BIN_DIR`, đã nằm đầu `PATH`, xem env.sh) để gọi bằng tên gốc;
  * gọi qua symlink thì argv[0] vẫn là `busybox` / `toybox` nên các lệnh multi-call chạy đúng.
  * Đường dẫn thư viện đổi sau mỗi lần cập nhật app nên mỗi lần mở app symlink được kiểm tra và tạo lại nếu lệch.
  */
 object BinInstaller {
 
-    private const val PREFIX = "libbin_"
+    private const val PREFIX = "lib_"
     private const val SUFFIX = ".so"
 
     /** [linked] = tên lệnh đã tạo / sửa symlink, [total] = số lệnh tìm thấy, [failed] = lỗi kèm lý do. */

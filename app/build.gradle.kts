@@ -57,7 +57,7 @@ android {
         jniLibs {
             // Lệnh dựng sẵn (jniLibs/<abi>/libbin_*.so) phải được giải nén ra nativeLibraryDir để chạy được; không strip.
             useLegacyPackaging = true
-            keepDebugSymbols += "**/libbin_*.so"
+            keepDebugSymbols += "**/lib_*.so"
         }
     }
 }

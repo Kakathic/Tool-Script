@@ -22,6 +22,6 @@ shell = "banner"
 
 [[group.item]]
 type  = "link"
-title = "Đến tab Công cụ"
+title = "Đến tab Chuyển tab"
 desc  = "link tab từ trang con sẽ đóng trang con"
-tab   = "tools"
+tab   = "nav"
