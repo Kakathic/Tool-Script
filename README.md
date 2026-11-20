@@ -16,7 +16,7 @@
 ## Build tự động (GitHub Actions)
 
 - Workflow: `.github/workflows/build.yml`, chạy khi push lên `main`, khi có pull request, hoặc chạy tay (Actions > Build APK > Run workflow).
-- Kết quả: APK debug trong mục Artifacts của lần chạy (`ToolScript-debug-apk`), giữ 30 ngày.
+- Kết quả: APK debug (`ToolScript-debug.apk`) đăng lên mục Releases, tag `latest`, mỗi lần build trên main ghi đè bản cũ. Pull request chỉ build kiểm tra, không đăng.
 - Lần chạy đầu cũng là lần build thử đầu tiên: nếu lỗi, xem log của bước "Build debug APK".
 
 ## Tài liệu

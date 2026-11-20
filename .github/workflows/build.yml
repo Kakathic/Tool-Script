@@ -6,9 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+# Chỉ hủy lần chạy cũ của pull request; build trên main không bị hủy giữa chừng để release không bị mất.
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -37,10 +41,19 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace --warning-mode none
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v6
-        with:
-          name: ToolScript-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
+      # Đăng APK lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request chỉ build, không đăng.
+      - name: Publish release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          test -f "$APK"
+          cp "$APK" ToolScript-debug.apk
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest ToolScript-debug.apk \
+            --target "$GITHUB_SHA" \
+            --title "Tool Script (bản build mới nhất)" \
+            --notes "APK debug dựng từ commit $GITHUB_SHA" \
+            --prerelease
