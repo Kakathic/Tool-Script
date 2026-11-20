@@ -1,5 +1,6 @@
 package com.tool.script.ui.render
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,15 +27,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.tool.script.config.Item
 import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
@@ -507,27 +507,22 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 
 /**
  * Một dòng lựa chọn trong hộp thoại `select` (kiểu HyperOS): chữ trái, dấu tích phải.
- * Nền dòng đang chọn được vẽ tràn ra ngoài lề trong của hộp thoại ([SELECT_ROW_BLEED]); hộp thoại tự cắt
- * theo góc bo nên nền vừa khít mép, không cần biết chính xác lề của Miuix.
+ * Hàng được kéo rộng ra [SELECT_ROW_BLEED] mỗi bên (vượt lề trong của hộp thoại, phần thừa bị hộp thoại cắt theo
+ * góc bo) rồi lùi chữ vào đúng bấy nhiêu, nên nền và hiệu ứng nhấn phủ hết chiều ngang mà chữ vẫn thẳng hàng với tiêu đề.
  */
 @Composable
 private fun SelectDialogRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    val highlight = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA)
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                if (selected) {
-                    val bleed = SELECT_ROW_BLEED.toPx()
-                    drawRect(
-                        color = highlight,
-                        topLeft = Offset(-bleed, 0f),
-                        size = Size(size.width + bleed * 2, size.height),
-                    )
-                }
+            .layout { measurable, constraints ->
+                val extra = (SELECT_ROW_BLEED * 2).roundToPx()
+                val placeable = measurable.measure(constraints.offset(horizontal = extra))
+                layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
             }
+            .fillMaxWidth()
+            .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA) else Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(vertical = 18.dp),
+            .padding(horizontal = SELECT_ROW_BLEED, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
