@@ -296,28 +296,16 @@ fun MainScreen(
                     bottomBar = {
                         if (pages.size >= 2) {
                             NavigationBar {
-                                // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
-                                val slide by animateFloatAsState(
-                                    targetValue = windowStart.toFloat(),
-                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                                    label = "tabWindowSlide",
-                                )
-                                BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
-                                    val itemWidth = maxWidth / visibleTabs
-                                    val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
-                                    Row(
-                                        Modifier
-                                            .requiredWidth(itemWidth * pages.size)
-                                            .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
-                                    ) {
-                                        pages.forEachIndexed { index, page ->
-                                            TabItem(
-                                                ref = page.ref,
-                                                selected = pagerState.currentPage == index,
-                                                width = itemWidth,
-                                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                            )
-                                        }
+                                // Chỉ dựng các tab đang nằm trong cửa sổ. Không đặt cả danh sách 5 tab
+                                // vào một Row rộng hơn màn hình nên sẽ không còn lộ nửa tab ở hai mép.
+                                Row(Modifier.fillMaxWidth()) {
+                                    pages.drop(windowStart).take(visibleTabs).forEachIndexed { offset, page ->
+                                        val index = windowStart + offset
+                                        TabItem(
+                                            ref = page.ref,
+                                            selected = pagerState.currentPage == index,
+                                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                        )
                                     }
                                 }
                             }
@@ -729,11 +717,11 @@ private fun PageList(
 }
 
 @Composable
-private fun TabItem(ref: PageRef, selected: Boolean, width: Dp, onClick: () -> Unit) {
+private fun RowScope.TabItem(ref: PageRef, selected: Boolean, onClick: () -> Unit) {
     val color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantActions
     Column(
         modifier = Modifier
-            .requiredWidth(width)
+            .weight(1f)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
