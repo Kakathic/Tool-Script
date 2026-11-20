@@ -28,7 +28,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsets.Companion.statusBars
+import androidx.compose.foundation.layout.WindowInsets.Companion.systemBars
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -477,7 +477,7 @@ private fun DialogSheet(
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val currentOnBack by rememberUpdatedState(onBack)
-    val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
+    val statusPx = WindowInsets.systemBars.getTop(density).toFloat()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenPx = constraints.maxHeight.toFloat()
