@@ -33,10 +33,10 @@ lang    = "vi"
 env     = "export PATH=$PATH:/data/adb/bin"   # tùy chọn, xem bên dưới
 
 [[tab]]
-id    = "home"
-title = "Trang chủ"             # bắt buộc, tên tab
+id    = "switches"
+title = "Công tắc"              # bắt buộc, tên tab
 icon  = "icons/home.svg"        # bắt buộc, đường dẫn icon tab
-file  = "pages/home.toml"
+file  = "pages/switches.toml"
 ```
 
 - `[app] env` (tùy chọn): đoạn shell chạy **đầu tiên** trước mọi lệnh của app: `run`, `on`, `off`, `get`, lệnh của link dialog và lệnh khởi động lại máy. Dùng để đặt `PATH`, nạp hàm dùng chung, v.v.
