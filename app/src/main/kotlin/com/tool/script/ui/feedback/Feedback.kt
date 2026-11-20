@@ -167,8 +167,8 @@ class FeedbackHost(private val context: Context) {
     private var lastRun = 0
     private var runJob: Job? = null
 
-    /** Có lệnh `banner` / `notice` đang chạy: các item dùng hai kiểu này bị khóa cho tới khi xong. */
-    val busy: Boolean get() = activeRun != 0
+    /** Có lệnh `banner` / `notice` đang chạy hoặc banner còn hiện: các item dùng hai kiểu này bị khóa cho tới khi banner biến mất. */
+    val busy: Boolean get() = activeRun != 0 || banner != null
 
     /** Bắt đầu một lượt chạy; trả về mã lượt để [attachJob] / [endRun] nhận ra đúng lượt. */
     fun beginRun(): Int {

@@ -367,7 +367,7 @@ lock_mode = "hide"
 | `banner` | Banner trong app. Khi lệnh bắt đầu chạy, banner hiện ngay dòng "Đang chạy script…" kèm thanh chạy vô hạn; lệnh xong thì banner đổi sang kết quả và thanh đếm ngược 5 giây. Thành công có in ra thì hiện đúng phần in ra (stdout, tối đa 300 ký tự), không in gì thì hiện "<title>: hoàn tất". Lỗi hoặc hết thời gian chờ thì banner nền đỏ nhạt, dòng đầu là mã lỗi, kèm phần lệnh in ra (stdout và stderr, tối đa 300 ký tự) |
 | `notice` | Chạy như `banner` (banner "Đang chạy script…" khi đang chạy), xong thì banner ẩn đi và gửi thông báo hệ thống của Android với nội dung như quy tắc của `banner` (chỉ xin quyền thông báo khi dùng tới, Android 13+) |
 
-Khi một lệnh `banner` / `notice` đang chạy, mọi item dùng hai kiểu này bị khóa (mờ, không bấm được) cho tới khi lệnh xong. Banner có nút **Hủy** khi đang chạy (dừng lệnh, mở khóa ngay) và nút **Ẩn** khi đã xong; vuốt banner sang trái hoặc phải cũng làm đúng việc đó (đang chạy thì hủy, đã xong thì ẩn).
+Khi một lệnh `banner` / `notice` đang chạy, mọi item dùng hai kiểu này bị khóa (mờ, không bấm được) cho tới khi lệnh xong **và banner biến mất** (hết đếm ngược, bấm Ẩn hoặc vuốt). Banner có nút **Hủy** khi đang chạy (dừng lệnh, mở khóa ngay) và nút **Ẩn** khi đã xong; vuốt banner sang trái hoặc phải cũng làm đúng việc đó (đang chạy thì hủy, đã xong thì ẩn).
 
 Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng.
 
