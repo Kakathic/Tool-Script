@@ -12,7 +12,7 @@ import dev.eav.tomlkt.TomlTable
 enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Select("select"), Slider("slider"), Link("link"),
-    Checkbox("checkbox"), Radio("radio"), Progress("progress");
+    Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -48,7 +48,7 @@ data class Item(
     val hint: String?,
     val default: String?,
     val numberInput: Boolean,
-    // select / radio
+    // select / radio / dropdown
     val options: List<SelectOption>,
     // slider / progress
     val min: Float,
@@ -240,7 +240,8 @@ object TomlParser {
         val id = t.str("id")?.takeIf { it.isNotBlank() }
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Select || type == ItemType.Slider ||
-            type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress
+            type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
+            type == ItemType.Dropdown
         if (needsId) {
             if (id == null) {
                 warnings += "$label \"$title\" (${type.key}) thiếu id, bỏ qua"
@@ -305,7 +306,7 @@ object TomlParser {
                 options += option
             }
         }
-        if ((type == ItemType.Select || type == ItemType.Radio) && options.isEmpty()) {
+        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown) && options.isEmpty()) {
             warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
         }
 

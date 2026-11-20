@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,11 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -60,7 +68,7 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit) {
     }
 }
 
-/** Đặt menu ngay dưới icon, căn mép phải với icon và giữ trong màn hình. */
+/** Đặt menu ngay dưới anchor, căn mép phải với anchor và giữ trong màn hình; thiếu chỗ phía dưới thì lật lên trên. */
 private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
@@ -71,7 +79,12 @@ private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPosi
         val x = (anchorBounds.right - popupContentSize.width)
             .coerceAtMost(windowSize.width - popupContentSize.width - marginPx)
             .coerceAtLeast(marginPx)
-        return IntOffset(x, anchorBounds.bottom)
+        val y = when {
+            anchorBounds.bottom + popupContentSize.height + marginPx <= windowSize.height -> anchorBounds.bottom
+            anchorBounds.top - popupContentSize.height >= marginPx -> anchorBounds.top - popupContentSize.height
+            else -> (windowSize.height - popupContentSize.height - marginPx).coerceAtLeast(marginPx)
+        }
+        return IntOffset(x, y)
     }
 }
 
@@ -115,43 +128,89 @@ private fun TopBarMenu(
     Box {
         TopBarIcon(icon = icon, description = description, onClick = onOpen)
         if (expanded) {
-            Popup(
-                popupPositionProvider = BelowAnchorPositionProvider(
-                    marginPx = with(LocalDensity.current) { 16.dp.roundToPx() },
-                ),
-                onDismissRequest = onDismiss,
-                properties = PopupProperties(focusable = true),
-            ) {
-                DimMenuBackground()
-                val shape = RoundedCornerShape(16.dp)
-                BoxWithConstraints {
-                    Column(
-                        modifier = Modifier
-                            .widthIn(max = (maxWidth - 32.dp).coerceAtLeast(0.dp))
-                            .width(IntrinsicSize.Max)
-                            .shadow(elevation = 8.dp, shape = shape)
-                            .background(MiuixTheme.colorScheme.surfaceContainer, shape)
-                            .padding(vertical = 8.dp),
-                        content = content,
+            MenuPopup(onDismiss = onDismiss, content = content)
+        }
+    }
+}
+
+/**
+ * Popup menu thả xuống dùng chung (menu thanh trên và item `dropdown`): nằm ngay dưới vị trí đặt nó
+ * (lật lên trên nếu thiếu chỗ), làm tối nền, bo góc, cuộn được khi danh sách dài.
+ * Chạm ra ngoài hoặc bấm Back thì gọi [onDismiss].
+ */
+@Composable
+internal fun MenuPopup(
+    onDismiss: () -> Unit,
+    minWidth: Dp = 0.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Popup(
+        popupPositionProvider = BelowAnchorPositionProvider(
+            marginPx = with(LocalDensity.current) { 16.dp.roundToPx() },
+        ),
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(focusable = true),
+    ) {
+        DimMenuBackground()
+        val shape = RoundedCornerShape(16.dp)
+        BoxWithConstraints {
+            val maxW = (maxWidth - 32.dp).coerceAtLeast(0.dp)
+            val maxH = (maxHeight - 96.dp).coerceAtLeast(0.dp)
+            Column(
+                modifier = Modifier
+                    .widthIn(min = minWidth.coerceAtMost(maxW), max = maxW)
+                    .width(IntrinsicSize.Max)
+                    .heightIn(max = maxH)
+                    .shadow(elevation = 8.dp, shape = shape)
+                    .background(MiuixTheme.colorScheme.surfaceContainer, shape)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+/**
+ * Mục menu. [selected] = null: menu không có lựa chọn (không chừa chỗ cho dấu tích);
+ * khác null: luôn chừa ô tích bên phải để các mục thẳng hàng, true thì hiện dấu tích.
+ */
+@Composable
+internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> Unit) {
+    val color = if (selected == true) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+    // Mục đang chọn: nền màu chủ đạo nhạt bo tròn, chữ màu chủ đạo, dấu tích bên phải.
+    val itemShape = RoundedCornerShape(12.dp)
+    val itemBackground = if (selected == true) MiuixTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .clip(itemShape)
+            .background(itemBackground)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = color,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected != null) {
+            Spacer(Modifier.width(16.dp))
+            Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                if (selected) {
+                    AsyncImage(
+                        model = Util.iconModel("icons/bar_check.svg"),
+                        contentDescription = "Đang chọn",
+                        modifier = Modifier.size(20.dp),
+                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun MenuItem(label: String, selected: Boolean = false, onClick: () -> Unit) {
-    val color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
-    Text(
-        text = if (selected) "✓  $label" else label,
-        color = color,
-        fontSize = 16.sp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-    )
 }
 
 @Composable

@@ -78,7 +78,7 @@ Giai đoạn 1: khung ứng dụng
 Giai đoạn 2: giao diện
 
 - [x] Màn hình chính: tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
-- [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`, `checkbox`, `radio`, `progress`.
+- [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `select`, `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `live` / `hidden` / `banner` / `notice`).
 - [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
 - [x] Chủ đề: Theo hệ thống / Sáng / Tối và 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại.
@@ -123,6 +123,7 @@ Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
 - [x] Lưu giá trị: item có `id` tự lưu / đọc lại qua file `$STATE_DIR/<id>` (docs/schema.md, mục 7); `get` thành tùy chọn.
 - [x] `checkbox`: giống `switch` (`on` / `off` / `get`), hiện ô tick, bấm cả hàng cũng đổi.
 - [x] `radio`: chọn một trong `options`, hiện sẵn mọi lựa chọn (khác `select` là hộp thoại).
+- [x] `dropdown`: chọn một trong `options` bằng menu thả xuống ngay dưới hàng (khác `select` là hộp thoại).
 - [x] `progress`: thanh tiến trình chỉ để xem, đọc giá trị từ `get`.
 
 Mức 2: dễ đến vừa, thêm trường mới cho item có sẵn

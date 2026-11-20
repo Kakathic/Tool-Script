@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -284,7 +286,8 @@ fun Banner(
     onAction: () -> Unit = {},
     /** Khác null: hiện thanh tiến trình thời gian còn lại (1 → 0) ở cuối banner. */
     progress: Float? = null,
-    onDismiss: () -> Unit,
+    /** null = không có nút "Ẩn" (banner tự ẩn khi hết giờ). */
+    onDismiss: (() -> Unit)? = null,
 ) {
     val colors = if (warning) {
         CardDefaults.defaultColors(
@@ -297,10 +300,13 @@ fun Banner(
             contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
         )
     }
+    // Có nút bên phải thì lề phải 8dp (nút tự có đệm), không có nút thì 16dp cho cân với lề trái.
+    val hasButtons = actionLabel != null || onDismiss != null
+    val endPadding = if (hasButtons) 8.dp else 16.dp
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = colors,
-        insideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 12.dp),
+        insideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = endPadding, bottom = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -310,13 +316,17 @@ fun Banner(
                 style = MiuixTheme.textStyles.body2,
             )
             if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
-            TextButton(text = "Ẩn", onClick = onDismiss)
+            if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
         }
         if (progress != null) {
             Spacer(Modifier.height(4.dp))
             LinearProgressIndicator(
                 progress = progress,
-                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(end = if (hasButtons) 8.dp else 0.dp),
+                // Nền thanh sáng (trắng mờ) thay vì màu tối mặc định.
+                colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                    backgroundColor = Color.White.copy(alpha = 0.6f),
+                ),
             )
         }
     }
@@ -357,7 +367,6 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
             // statusBarsPadding nằm trong phần trượt để banner trượt hẳn ra khỏi mép trên màn hình.
             modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
             progress = progress.value,
-            onDismiss = { feedback.banner = null },
         )
     }
 }

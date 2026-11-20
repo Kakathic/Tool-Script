@@ -160,6 +160,7 @@ lock_mode = "readonly"
 | `link` | `tab` (id của một `[[tab]]`, chuyển tab) hoặc `page` (đường dẫn file trang con, mở trang mới) |
 | `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
 | `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
+| `dropdown` | `options`, `default`, `run` (giống `select`, nhưng chọn bằng menu thả xuống) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
@@ -190,11 +191,11 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
-- Mỗi lần giá trị đổi (với `switch`, `checkbox`, `select`, `radio`: sau khi lệnh chạy thành công) app ghi lại file.
+- Mỗi lần giá trị đổi (với `switch`, `checkbox`, `select`, `radio`, `dropdown`: sau khi lệnh chạy thành công) app ghi lại file.
 - Lúc mở app: chưa có file thì app tạo file với giá trị mặc định (`default`, hoặc `0`, `min`, lựa chọn đầu); có file thì lấy giá trị trong đó.
   File có giá trị không hợp lệ (vd lựa chọn không còn trong `options`, không phải số) thì bị ghi đè bằng giá trị mặc định.
 - Item không có `id`, và `text` / `button` / `link`, không lưu gì.
@@ -255,10 +256,11 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 - Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.
 - Biến (`id`) của trang con dùng chung kho biến với các tab.
 
-`checkbox`, `radio`, `progress` – ghi chú:
+`checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
 - `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `on` / `off` chạy khi đổi trạng thái, chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
 - `radio` khai báo `options` như `select` (mục 7), nhãn hiện trên giao diện, giá trị truyền qua `$id`.
+- `dropdown` khai báo `options` như `select` (mục 7). Bên phải hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm vào thì menu thả xuống ngay dưới hàng, căn mép phải (thiếu chỗ phía dưới thì lật lên trên, danh sách dài thì cuộn được). Mục đang chọn nổi nền màu chủ đạo và có dấu tích bên phải. Chọn xong đóng menu và chạy `run` như `select`.
 - `progress` cần `id`. `get` in ra một số trong khoảng `min`..`max` (mặc định 0..100), chỉ đọc khi item xuất hiện. Giá trị nằm ngoài khoảng được cắt về mép. Không có `get` thì dùng `default` (mặc định `min`).
 
 ```toml
@@ -313,7 +315,7 @@ lock_mode = "hide"
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `radio`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|

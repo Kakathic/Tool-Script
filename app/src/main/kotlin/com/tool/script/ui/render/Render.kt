@@ -1,6 +1,7 @@
 package com.tool.script.ui.render
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,11 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
+import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
 import com.tool.script.config.LockMode
 import com.tool.script.config.ShellMode
@@ -31,6 +36,9 @@ import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
+import com.tool.script.ui.main.MenuItem
+import com.tool.script.ui.main.MenuPopup
+import com.tool.script.util.Util
 import com.tool.script.util.ShellText
 import com.tool.script.util.formatNumber
 import kotlinx.coroutines.CoroutineScope
@@ -134,6 +142,7 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
         ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
         ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
         ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
+        ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
         ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
         ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
         ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
@@ -404,6 +413,54 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
                         }
                     },
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (khác `select` là hộp thoại):
+ * bên phải hiện giá trị đang chọn kèm mũi tên lên/xuống; mục đang chọn nổi nền, có dấu tích bên phải.
+ */
+@Composable
+private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    var expanded by remember { mutableStateOf(false) }
+    val current = env.store[id]
+    val label = item.options.firstOrNull { it.value == current }?.label ?: current
+
+    ItemSurface(modifier, inGroup) {
+        // Popup lấy cả hàng làm điểm neo: menu căn mép phải với hàng, nằm ngay dưới (lật lên nếu thiếu chỗ).
+        Box(Modifier.fillMaxWidth()) {
+            BasicComponent(
+                title = item.title,
+                summary = item.desc,
+                enabled = enabled,
+                endActions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
+                        Spacer(Modifier.width(4.dp))
+                        AsyncImage(
+                            model = Util.iconModel("icons/bar_updown.svg"),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
+                        )
+                    }
+                },
+                onClick = { expanded = true },
+            )
+            if (expanded) {
+                MenuPopup(onDismiss = { expanded = false }, minWidth = 180.dp) {
+                    item.options.forEach { option ->
+                        MenuItem(label = option.label, selected = option.value == current) {
+                            expanded = false
+                            env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                if (result.ok) env.store[id] = option.value
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -64,6 +64,17 @@ run     = 'echo "Đã chọn: $tools_short"'
 shell   = "banner"
 options = ["một", "hai", "ba"]
 
+# dropdown: giống select nhưng chọn bằng menu thả xuống ngay dưới hàng (giá trị đang chọn + mũi tên ở bên phải)
+[[group.item]]
+type    = "dropdown"
+id      = "tools_dropdown"
+title   = "Giới hạn thiết bị"
+desc    = "Giá trị chọn được truyền vào $tools_dropdown"
+default = "0"
+run     = 'echo "Đã chọn: $tools_dropdown"'
+shell   = "banner"
+options = ["Không giới hạn|0", "1", "2", "3", "4", "5", "6"]
+
 # radio: giống select nhưng hiện sẵn mọi lựa chọn
 [[group.item]]
 type    = "radio"
