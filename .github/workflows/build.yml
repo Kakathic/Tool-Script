@@ -42,5 +42,6 @@ jobs:
         with:
           name: ToolScript-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          compression-level: 0
           if-no-files-found: error
           retention-days: 30
