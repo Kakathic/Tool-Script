@@ -427,11 +427,8 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
             endActions = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
-                    Icon(
-                        imageVector = MiuixIcons.Basic.ArrowRight,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
+                    Spacer(Modifier.width(4.dp))
+                    UpDownIcon()
                 }
             },
             onClick = withTapHaptic { showDialog = true },
@@ -497,11 +494,8 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.widthIn(max = 160.dp),
                     )
-                    Icon(
-                        imageVector = MiuixIcons.Basic.ArrowRight,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
+                    Spacer(Modifier.width(4.dp))
+                    UpDownIcon()
                 }
             },
             onClick = withTapHaptic {
@@ -561,6 +555,17 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     }
 }
 
+/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `select`, `multiselect` và `dropdown`. */
+@Composable
+private fun UpDownIcon() {
+    AsyncImage(
+        model = Util.iconModel("icons/bar_updown.svg"),
+        contentDescription = null,
+        modifier = Modifier.size(20.dp),
+        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
+    )
+}
+
 /**
  * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (khác `select` là hộp thoại):
  * bên phải hiện giá trị đang chọn kèm mũi tên lên/xuống; mục đang chọn nổi nền, có dấu tích bên phải.
@@ -584,12 +589,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
                         Spacer(Modifier.width(4.dp))
-                        AsyncImage(
-                            model = Util.iconModel("icons/bar_updown.svg"),
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
-                        )
+                        UpDownIcon()
                     }
                 },
                 onClick = withTapHaptic { expanded = true },
