@@ -63,7 +63,8 @@ class RenderEnv(
     val store: VariableStore,
     val feedback: FeedbackHost,
     private val scope: CoroutineScope,
-    val navigateToPage: (String) -> Unit,
+    val openTab: (String) -> Unit,
+    val openPage: (String) -> Unit,
 ) {
     var confirm by mutableStateOf<ConfirmRequest?>(null)
 
@@ -429,7 +430,11 @@ private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Bo
                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
             },
-            onClick = { item.page?.let(env.navigateToPage) },
+            onClick = {
+                val tab = item.tab
+                val page = item.page
+                if (tab != null) env.openTab(tab) else if (page != null) env.openPage(page)
+            },
         )
     }
 }

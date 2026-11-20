@@ -1,8 +1,17 @@
 package com.tool.script.ui.main
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,9 +46,11 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.tool.script.boot.BootResult
 import com.tool.script.config.PageRef
+import com.tool.script.config.SubPage
 import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.ui.feedback.Banner
+import com.tool.script.ui.feedback.FeedbackHost
 import com.tool.script.ui.feedback.ConfirmDialog
 import com.tool.script.ui.feedback.LogDialog
 import com.tool.script.ui.feedback.rememberFeedbackHost
@@ -81,17 +92,43 @@ fun MainScreen(
     var showRestartMenu by remember { mutableStateOf(false) }
     var showThemeMenu by remember { mutableStateOf(false) }
 
+    // Ngăn xếp trang con (khóa = đường dẫn file); rỗng thì đang ở màn hình chính.
+    var stack by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
+    var pendingTab by remember { mutableStateOf<Int?>(null) }
+
     val env = remember(result) {
         RenderEnv(
             store = result.store,
             feedback = feedback,
             scope = scope,
-            navigateToPage = { id ->
+            openTab = { id ->
                 val index = pages.indexOfFirst { it.ref.id == id }
-                if (index >= 0) scope.launch { pagerState.animateScrollToPage(index) }
+                if (index >= 0) {
+                    pendingTab = index
+                    stack = emptyList()
+                }
+            },
+            openPage = { file ->
+                val current = stack.lastOrNull()?.let { config.subPages[it] }
+                when {
+                    file !in config.subPages || current?.file == file -> Unit
+                    current?.dialog == true -> feedback.toast("Trang dialog không mở được trang con")
+                    else -> stack = stack + file
+                }
             },
         )
     }
+
+    // Chuyển tab sau khi đã về màn hình chính (pager chỉ chạy khi đang hiện).
+    LaunchedEffect(pendingTab, stack.isEmpty()) {
+        val target = pendingTab
+        if (target != null && stack.isEmpty()) {
+            pendingTab = null
+            pagerState.animateScrollToPage(target)
+        }
+    }
+
+    BackHandler(enabled = stack.isNotEmpty()) { stack = stack.dropLast(1) }
 
     // Cửa sổ tab trượt.
     val visibleTabs = min(MAX_VISIBLE_TABS, pages.size)
@@ -116,121 +153,144 @@ fun MainScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = config.app.name,
-                actions = {
-                    // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
-                    ThemeMenu(
-                        expanded = showThemeMenu,
-                        current = themeMode,
-                        onOpen = { showThemeMenu = true },
-                        onDismiss = { showThemeMenu = false },
-                        onSelect = {
-                            showThemeMenu = false
-                            onThemeChange(it)
-                        },
-                    )
-                    // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
-                    PowerMenu(
-                        expanded = showRestartMenu,
-                        onOpen = { showRestartMenu = true },
-                        onDismiss = { showRestartMenu = false },
-                        onRestartApp = {
-                            showRestartMenu = false
-                            env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-                        },
-                        onRebootDevice = {
-                            showRestartMenu = false
-                            env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                                scope.launch {
-                                    val result = ExecutorManager.current.exec("reboot", 10)
-                                    if (!result.ok) feedback.toast(rebootErrorText(result))
-                                }
-                            }
+    val top = stack.lastOrNull()
+    AnimatedContent(
+        targetState = top,
+        transitionSpec = {
+            val from = initialState
+            val to = targetState
+            val opening = to != null && config.subPages[to]?.dialog == true
+            val closing = to == null && from != null && config.subPages[from]?.dialog == true
+            when {
+                opening -> (slideInVertically(tween(DIALOG_MILLIS)) { it } togetherWith ExitTransition.KeepUntilTransitionsFinished)
+                    .also { it.targetContentZIndex = 1f }
+                closing -> EnterTransition.None togetherWith slideOutVertically(tween(DIALOG_MILLIS)) { it }
+                else -> EnterTransition.None togetherWith ExitTransition.None
+            }
+        },
+        label = "subPage",
+    ) { file ->
+        val subPage = file?.let { config.subPages[it] }
+        if (subPage != null) {
+            SubPageScreen(subPage, env, feedback, onBack = { stack = stack.dropLast(1) })
+        } else {
+            Scaffold(
+                topBar = {
+                    AppTopBar(
+                        title = config.app.name,
+                        actions = {
+                            // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
+                            ThemeMenu(
+                                expanded = showThemeMenu,
+                                current = themeMode,
+                                onOpen = { showThemeMenu = true },
+                                onDismiss = { showThemeMenu = false },
+                                onSelect = {
+                                    showThemeMenu = false
+                                    onThemeChange(it)
+                                },
+                            )
+                            // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                            PowerMenu(
+                                expanded = showRestartMenu,
+                                onOpen = { showRestartMenu = true },
+                                onDismiss = { showRestartMenu = false },
+                                onRestartApp = {
+                                    showRestartMenu = false
+                                    env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                                },
+                                onRebootDevice = {
+                                    showRestartMenu = false
+                                    env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                        scope.launch {
+                                            val result = ExecutorManager.current.exec("reboot", 10)
+                                            if (!result.ok) feedback.toast(rebootErrorText(result))
+                                        }
+                                    }
+                                },
+                            )
                         },
                     )
                 },
-            )
-        },
-        bottomBar = {
-            if (pages.size >= 2) {
-                NavigationBar {
-                    for (index in windowStart until windowStart + visibleTabs) {
-                        val ref = pages[index].ref
-                        TabItem(
-                            ref = ref,
-                            selected = pagerState.currentPage == index,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                bottomBar = {
+                    if (pages.size >= 2) {
+                        NavigationBar {
+                            for (index in windowStart until windowStart + visibleTabs) {
+                                val ref = pages[index].ref
+                                TabItem(
+                                    ref = ref,
+                                    selected = pagerState.currentPage == index,
+                                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                )
+                            }
+                        }
+                    }
+                },
+            ) { inner ->
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = inner.calculateTopPadding()),
+                ) {
+                    if (warningText.isNotEmpty() && !warningDismissed) {
+                        Banner(
+                            message = warningText,
+                            warning = true,
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                            actionLabel = "Xem",
+                            onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                            onDismiss = { warningDismissed = true },
                         )
                     }
+                    FeedbackBanner(feedback)
+                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                        val page = pages[pageIndex]
+                        PageList(
+                            list = page.items.filter { isShown(it, env.store) },
+                            error = page.error,
+                            env = env,
+                            bottomInset = inner.calculateBottomPadding(),
+                        )
+                    }
+                    FeedbackDialogs(feedback, env)
                 }
             }
-        },
-    ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(top = inner.calculateTopPadding()),
-        ) {
-            if (warningText.isNotEmpty() && !warningDismissed) {
-                Banner(
-                    message = warningText,
-                    warning = true,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-                    actionLabel = "Xem",
-                    onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
-                    onDismiss = { warningDismissed = true },
-                )
-            }
-            bannerMessage?.let {
-                Banner(
-                    message = it,
-                    warning = false,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-                    onDismiss = { feedback.banner = null },
-                )
-            }
-            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
-                val page = pages[pageIndex]
-                PageList(
-                    list = page.items.filter { isShown(it, env.store) },
-                    error = page.error,
-                    env = env,
-                    bottomInset = inner.calculateBottomPadding(),
-                )
-            }
-            // OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện.
-            LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
-            val confirm = env.confirm
-            ConfirmDialog(
-                message = confirm?.message,
-                onConfirm = {
-                    env.confirm = null
-                    confirm?.onConfirm?.invoke()
-                },
-                onDismiss = { env.confirm = null },
-            )
         }
     }
 }
 
-/** Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn. */
+/**
+ * Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn.
+ * Có [onBack] thì thêm nút ở đầu thanh: mũi tên quay lại (trang con) hoặc dấu X khi [closeStyle] (dialog).
+ */
 @Composable
-private fun AppTopBar(title: String, actions: @Composable RowScope.() -> Unit) {
+private fun AppTopBar(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    closeStyle: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MiuixTheme.colorScheme.surface)
             .statusBarsPadding()
             .height(56.dp)
-            .padding(start = 16.dp, end = 8.dp),
+            .padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (onBack != null) {
+            TopBarIcon(
+                icon = if (closeStyle) "icons/bar_close.svg" else "icons/bar_back.svg",
+                description = if (closeStyle) "Đóng" else "Quay lại",
+                onClick = onBack,
+            )
+        }
         Text(
             text = title,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = if (onBack != null) 4.dp else 0.dp),
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurface,
@@ -239,6 +299,57 @@ private fun AppTopBar(title: String, actions: @Composable RowScope.() -> Unit) {
         )
         actions()
     }
+}
+
+/** Màn hình trang con: thanh trên có nút quay lại (dialog: nút đóng), nội dung nạp từ file TOML của trang con. */
+@Composable
+private fun SubPageScreen(page: SubPage, env: RenderEnv, feedback: FeedbackHost, onBack: () -> Unit) {
+    Scaffold(topBar = { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog) }) { inner ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(top = inner.calculateTopPadding()),
+        ) {
+            FeedbackBanner(feedback)
+            Box(Modifier.weight(1f)) {
+                PageList(
+                    list = page.items.filter { isShown(it, env.store) },
+                    error = page.error,
+                    env = env,
+                    bottomInset = inner.calculateBottomPadding(),
+                )
+            }
+            FeedbackDialogs(feedback, env)
+        }
+    }
+}
+
+/** Banner ngắn của shell = "banner". */
+@Composable
+private fun FeedbackBanner(feedback: FeedbackHost) {
+    feedback.banner?.let {
+        Banner(
+            message = it,
+            warning = false,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            onDismiss = { feedback.banner = null },
+        )
+    }
+}
+
+/** OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện. */
+@Composable
+private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
+    LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
+    val confirm = env.confirm
+    ConfirmDialog(
+        message = confirm?.message,
+        onConfirm = {
+            env.confirm = null
+            confirm?.onConfirm?.invoke()
+        },
+        onDismiss = { env.confirm = null },
+    )
 }
 
 @Composable
@@ -308,3 +419,4 @@ private fun rebootErrorText(result: ExecResult): String {
 }
 
 private const val BANNER_MILLIS = 4_000L
+private const val DIALOG_MILLIS = 280

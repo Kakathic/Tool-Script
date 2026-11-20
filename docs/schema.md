@@ -31,14 +31,15 @@ name    = "Tool Script"   # hiện làm tiêu đề thanh trên cùng
 version = 1               # phiên bản schema
 lang    = "vi"
 
-[[page]]
+[[tab]]
 id    = "home"
 title = "Trang chủ"             # bắt buộc, tên tab
 icon  = "icons/home.svg"        # bắt buộc, đường dẫn icon tab
 file  = "pages/home.toml"
 ```
 
-- Mỗi `[[page]]` là một tab ở thanh dưới. `title` và `icon` bắt buộc.
+- Mỗi `[[tab]]` là một tab ở thanh dưới. `title` và `icon` bắt buộc.
+- Cú pháp cũ `[[page]]` đã bỏ: gặp thì bỏ qua kèm cảnh báo.
 - Thiếu `title` hoặc `icon`: bỏ tab đó và ghi cảnh báo vào log.
 - `icon` là đường dẫn tới file icon:
   - Trong assets: `icons/home.svg` (tính từ thư mục configs).
@@ -98,7 +99,7 @@ lock_mode = "readonly"
 | `input` | `hint`, `default`, `run`, `input_type` (`text`/`number`) |
 | `select` | `options`, `default`, `run` |
 | `slider` | `min`, `max`, `step`, `default`, `run` |
-| `link` | `page` (id trang đích) |
+| `link` | `tab` (id của một `[[tab]]`, chuyển tab) hoặc `page` (đường dẫn file trang con, mở trang mới) |
 | `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
 | `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
@@ -147,6 +148,34 @@ options = [
 - Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
+
+`link` – chuyển tab hoặc mở trang con:
+
+```toml
+[[item]]
+type  = "link"
+title = "Đến tab Công cụ"
+tab   = "tools"                  # id của một [[tab]]; từ trang con thì đóng trang con rồi chuyển tab
+
+[[item]]
+type  = "link"
+title = "Cài đặt nâng cao"
+page  = "pages/advanced.toml"    # file trang con, tính từ thư mục configs
+
+[[item]]
+type  = "link"
+title = "Nhập nhanh"
+page  = "pages/quick.toml"
+style = "dialog"                 # dialog toàn màn hình
+```
+
+- Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
+- `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên che kín màn hình, thanh trên có nút đóng (X) thay vì mũi tên.
+- Trong trang dialog không mở được trang con: link `page` bị bỏ qua kèm cảnh báo, link `tab` vẫn dùng được (đóng dialog rồi chuyển tab).
+- Cùng một file trang con được nhiều link trỏ tới thì dùng `title` và `style` của link đầu tiên.
+- File trang con viết như file trang thường (mục 4); trong đó có thể có link tới trang con khác.
+- Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.
+- Biến (`id`) của trang con dùng chung kho biến với các tab.
 
 `checkbox`, `radio`, `progress` – ghi chú:
 

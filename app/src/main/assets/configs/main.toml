@@ -3,25 +3,25 @@ name    = "Tool Script"
 version = 1
 lang    = "vi"
 
-[[page]]
+[[tab]]
 id    = "home"
 title = "Trang chủ"
 icon  = "icons/home.svg"
 file  = "pages/home.toml"
 
-[[page]]
+[[tab]]
 id    = "tools"
 title = "Công cụ"
 icon  = "icons/tools.svg"
 file  = "pages/tools.toml"
 
-[[page]]
+[[tab]]
 id    = "about"
 title = "Giới thiệu"
 icon  = "icons/about.svg"
 file  = "pages/about.toml"
 
-[[page]]
+[[tab]]
 id    = "demo"
 title = "Demo"
 icon  = "icons/demo.svg"

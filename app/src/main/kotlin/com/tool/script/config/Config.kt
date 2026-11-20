@@ -54,8 +54,11 @@ data class Item(
     val min: Float,
     val max: Float,
     val step: Float,
-    // link
+    // link: tab = id của một [[tab]], page = đường dẫn file trang con
+    val tab: String?,
     val page: String?,
+    // link page: true = mở dạng dialog toàn màn hình (style = "dialog")
+    val dialog: Boolean,
     // group
     val children: List<Item>,
 )
@@ -67,9 +70,19 @@ data class PageRef(val id: String, val title: String, val icon: String, val file
 /** Một trang đã nạp. [error] khác null nghĩa là file trang bị lỗi parse (trang hiện thông báo lỗi). */
 data class LoadedPage(val ref: PageRef, val items: List<Item>, val error: String? = null)
 
+/** Trang con mở từ item `link` có `page`. [file] là khóa; [title] lấy từ item link đầu tiên trỏ tới nó. */
+data class SubPage(
+    val file: String,
+    val title: String,
+    val items: List<Item>,
+    val error: String? = null,
+    val dialog: Boolean = false,
+)
+
 data class LoadedConfig(
     val app: AppInfo,
     val pages: List<LoadedPage>,
+    val subPages: Map<String, SubPage>,
     val warnings: List<String>,
 )
 
@@ -115,10 +128,11 @@ object TomlParser {
         )
         val pages = mutableListOf<PageRef>()
         val seen = HashSet<String>()
-        val array = root["page"] as? TomlArray
+        if (root["page"] != null) warnings += "$file: [[page]] đã đổi thành [[tab]], bỏ qua"
+        val array = root["tab"] as? TomlArray
         array?.forEachIndexed { index, element ->
             val t = element as? TomlTable
-            val label = "$file: [[page]] #${index + 1}"
+            val label = "$file: [[tab]] #${index + 1}"
             val id = t?.str("id")
             val title = t?.str("title")
             val icon = t?.str("icon")
@@ -237,9 +251,23 @@ object TomlParser {
                 return null
             }
         }
-        if (type == ItemType.Link && t.str("page").isNullOrBlank()) {
-            warnings += "$label \"$title\" (link) thiếu page, bỏ qua"
-            return null
+        if (type == ItemType.Link) {
+            val hasTab = !t.str("tab").isNullOrBlank()
+            val hasPage = !t.str("page").isNullOrBlank()
+            if (!hasTab && !hasPage) {
+                warnings += "$label \"$title\" (link) thiếu tab hoặc page, bỏ qua"
+                return null
+            }
+            if (hasTab && hasPage) warnings += "$label \"$title\": có cả tab và page, dùng tab"
+        }
+
+        val dialog = when (val style = t.str("style")?.lowercase()) {
+            null, "page" -> false
+            "dialog" -> true
+            else -> {
+                warnings += "$label \"$title\": style = \"$style\" không hợp lệ, dùng page"
+                false
+            }
         }
 
         val shell = when (t.str("shell")?.lowercase()) {
@@ -313,7 +341,9 @@ object TomlParser {
             min = min,
             max = max,
             step = step,
-            page = t.str("page"),
+            tab = t.str("tab")?.takeIf { it.isNotBlank() },
+            page = t.str("page")?.takeIf { it.isNotBlank() },
+            dialog = dialog && t.str("page").isNullOrBlank().not(),
             children = children,
         )
     }
@@ -337,7 +367,7 @@ object ConfigRepository {
         }
         val (app, refs) = TomlParser.parseMain("main.toml", mainText, warnings)
         if (refs.isEmpty()) {
-            throw ConfigParseException("main.toml", null, "không có [[page]] hợp lệ nào để hiển thị")
+            throw ConfigParseException("main.toml", null, "không có [[tab]] hợp lệ nào để hiển thị")
         }
         val pages = refs.map { ref ->
             try {
@@ -351,6 +381,58 @@ object ConfigRepository {
                 LoadedPage(ref, emptyList(), error = msg)
             }
         }
-        return LoadedConfig(app, pages, warnings)
+        val subPages = loadSubPages(context, pages, warnings)
+        return LoadedConfig(app, pages, subPages, warnings)
+    }
+
+    /** Nạp mọi trang con được link `page` trỏ tới (kể cả link nằm trong trang con), mỗi file một lần. */
+    private fun loadSubPages(
+        context: Context,
+        tabs: List<LoadedPage>,
+        warnings: MutableList<String>,
+    ): Map<String, SubPage> {
+        val tabIds = tabs.map { it.ref.id }.toSet()
+        val result = LinkedHashMap<String, SubPage>()
+        val queue = ArrayDeque<Triple<String, List<Item>, Boolean>>()
+        tabs.forEach { queue += Triple(it.ref.file, it.items, false) }
+        while (queue.isNotEmpty()) {
+            val (owner, items, ownerIsDialog) = queue.removeFirst()
+            for (link in links(items)) {
+                val tab = link.tab
+                val page = link.page
+                if (tab != null) {
+                    if (tab !in tabIds) warnings += "$owner: link \"${link.title}\" trỏ tới tab \"$tab\" không tồn tại"
+                } else if (page != null) {
+                    if (ownerIsDialog) {
+                        warnings += "$owner: link \"${link.title}\" nằm trong trang dialog, không mở được trang con, bỏ qua"
+                        continue
+                    }
+                    val existing = result[page]
+                    if (existing != null) {
+                        if (existing.dialog != link.dialog) {
+                            warnings += "$owner: link \"${link.title}\" khác style với link đầu tiên trỏ tới $page, dùng style của link đầu tiên"
+                        }
+                        continue
+                    }
+                    val sub = try {
+                        SubPage(page, link.title, TomlParser.parsePage(page, readAsset(context, page), warnings), dialog = link.dialog)
+                    } catch (e: ConfigParseException) {
+                        warnings += e.message ?: "$page: lỗi parse"
+                        SubPage(page, link.title, emptyList(), error = e.message, dialog = link.dialog)
+                    } catch (e: java.io.IOException) {
+                        val msg = "$page: không đọc được file: ${e.message}"
+                        warnings += msg
+                        SubPage(page, link.title, emptyList(), error = msg, dialog = link.dialog)
+                    }
+                    result[page] = sub
+                    queue += Triple(page, sub.items, sub.dialog)
+                }
+            }
+        }
+        return result
+    }
+
+    private fun links(items: List<Item>): List<Item> = items.flatMap {
+        if (it.type == ItemType.Group) links(it.children) else if (it.type == ItemType.Link) listOf(it) else emptyList()
     }
 }

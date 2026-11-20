@@ -1,0 +1,27 @@
+# Trang con: mở từ item link có page = "pages/demo_sub.toml". Tiêu đề thanh trên = title của item link.
+
+[[item]]
+type    = "text"
+title   = "Trang con"
+content = "Bấm nút quay lại hoặc Back của máy để về trang trước."
+
+[[group]]
+title = "Thử trong trang con"
+
+[[group.item]]
+type  = "switch"
+id    = "demo_sub_switch"
+title = "Công tắc trong trang con"
+shell = "hidden"
+
+[[group.item]]
+type  = "button"
+title = "Nút thử"
+run   = "echo xin chào từ trang con"
+shell = "banner"
+
+[[group.item]]
+type  = "link"
+title = "Đến tab Công cụ"
+desc  = "link tab từ trang con sẽ đóng trang con"
+tab   = "tools"

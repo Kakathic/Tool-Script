@@ -8,17 +8,17 @@ content = "Giao diện được nạp từ file TOML trong assets/configs."
 [[group]]
 title = "Liên kết"
 
-# link: page = id của một [[page]] trong main.toml
+# link: tab = id của một [[tab]] trong main.toml (chuyển tab); page = file trang con (mở trang mới có nút quay lại)
 [[group.item]]
 type  = "link"
 title = "Đến trang Công cụ"
-desc  = "page = \"tools\""
-page  = "tools"
+desc  = "tab = \"tools\""
+tab   = "tools"
 
 [[group.item]]
 type  = "link"
 title = "Về trang chủ"
-page  = "home"
+tab   = "home"
 
 [[group]]
 title = "Các kiểu hiển thị kết quả"
@@ -50,4 +50,4 @@ title = "Thử ngay"
 type  = "link"
 title = "Thông tin máy và thử nghiệm lệnh"
 desc  = "Tab Trang chủ"
-page  = "home"
+tab   = "home"

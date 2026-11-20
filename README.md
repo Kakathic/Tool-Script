@@ -45,7 +45,7 @@ app/src/main/
 ## Quyết định đã chốt
 
 - Khởi động: Splash (logo, thanh tiến trình, 5 dòng log; căn giữa, lề 16dp) -> xin quyền bộ nhớ (từ chối thì thoát) -> chạy script -> nạp TOML -> màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
-- Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[page]]` là một tab, bắt buộc `title` và `icon`.
+- Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
 - Backend: su -> ROM -> adb -> không root, biến `ROOT_MODE`; `lock` thay cho `require`.
 - Hiển thị khi chạy lệnh: `shell = log | hidden | banner | notice`; `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.

@@ -134,6 +134,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         )
         val defaults = LinkedHashMap<String, String>()
         config.pages.forEach { collectDefaults(it.items, defaults) }
+        config.subPages.values.forEach { collectDefaults(it.items, defaults) }
         val store = VariableStore(defaults + builtin)
 
         val bootLog = synchronized(allLogs) { allLogs.toList() }

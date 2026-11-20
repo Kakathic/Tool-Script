@@ -1,0 +1,31 @@
+# Trang dialog: link có style = "dialog" mở trang này trượt từ dưới lên, thanh trên có nút đóng (X).
+# Trong dialog không dùng link page (không mở được trang con); link tab thì đóng dialog rồi chuyển tab.
+
+[[item]]
+type    = "text"
+title   = "Dialog toàn màn hình"
+content = "Hợp cho việc làm nhanh rồi đóng. Bấm X hoặc Back của máy để đóng."
+
+[[group]]
+title = "Thử trong dialog"
+
+[[group.item]]
+type    = "input"
+id      = "demo_dialog_note"
+title   = "Ghi chú"
+hint    = "Nhập nội dung"
+default = ""
+run     = 'echo "Ghi chú: $demo_dialog_note"'
+shell   = "banner"
+
+[[group.item]]
+type  = "button"
+title = "Nút thử"
+run   = "echo xin chào từ dialog"
+shell = "banner"
+
+[[group.item]]
+type  = "link"
+title = "Đến tab Công cụ"
+desc  = "đóng dialog rồi chuyển tab"
+tab   = "tools"

@@ -55,5 +55,18 @@ title = "Điều hướng"
 
 [[group.item]]
 type  = "link"
+title = "Mở trang con"
+desc  = "page = \"pages/demo_sub.toml\""
+page  = "pages/demo_sub.toml"
+
+[[group.item]]
+type  = "link"
+title = "Mở dialog toàn màn hình"
+desc  = "style = \"dialog\""
+page  = "pages/demo_dialog.toml"
+style = "dialog"
+
+[[group.item]]
+type  = "link"
 title = "Về trang chủ"
-page  = "home"
+tab   = "home"
