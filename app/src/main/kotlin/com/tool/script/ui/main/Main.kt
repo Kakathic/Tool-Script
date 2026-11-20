@@ -296,16 +296,32 @@ fun MainScreen(
                     bottomBar = {
                         if (pages.size >= 2) {
                             NavigationBar {
-                                // Chỉ dựng các tab đang nằm trong cửa sổ. Không đặt cả danh sách 5 tab
-                                // vào một Row rộng hơn màn hình nên sẽ không còn lộ nửa tab ở hai mép.
-                                Row(Modifier.fillMaxWidth()) {
-                                    pages.drop(windowStart).take(visibleTabs).forEachIndexed { offset, page ->
-                                        val index = windowStart + offset
-                                        TabItem(
-                                            ref = page.ref,
-                                            selected = pagerState.currentPage == index,
-                                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                        )
+                                // Giữ toàn bộ tab trong một viewport cố định và chỉ dịch nội dung bên trong.
+                                // Vì Row có đúng chiều rộng = số tab * chiều rộng một ô, mỗi ô luôn rộng
+                                // chính xác 1/visibleTabs màn hình; clipToBounds ngăn tab thừa lộ ra ở mép.
+                                val slide by animateFloatAsState(
+                                    targetValue = windowStart.toFloat(),
+                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                    label = "tabWindowSlide",
+                                )
+                                BoxWithConstraints(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clipToBounds(),
+                                ) {
+                                    val itemWidth = maxWidth / visibleTabs
+                                    Row(
+                                        Modifier
+                                            .requiredWidth(itemWidth * pages.size)
+                                            .offset(x = -(slide * itemWidth)),
+                                    ) {
+                                        pages.forEachIndexed { index, page ->
+                                            TabItem(
+                                                ref = page.ref,
+                                                selected = pagerState.currentPage == index,
+                                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                            )
+                                        }
                                     }
                                 }
                             }
