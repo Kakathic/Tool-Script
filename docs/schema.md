@@ -289,7 +289,7 @@ columns = 2                  # tùy chọn: 1 (mặc định) hoặc 2 cột tro
 run     = 'echo "Đã chọn: $mode"'
 ```
 
-- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại có nút tròn cho từng mục.
+- `options` khai báo như `select` (mục 7). Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục một dòng với ô tích có khung ở bên phải (chỉ tích được một mục).
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
 

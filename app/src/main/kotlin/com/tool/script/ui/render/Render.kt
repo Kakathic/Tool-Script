@@ -631,7 +631,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     }
 }
 
-// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại có nút tròn, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại có ô tích bên phải mỗi dòng, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
 @Composable
 private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -685,9 +685,13 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                                 .padding(horizontal = 8.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            RadioButton(selected = selected, onClick = pick)
-                            Spacer(Modifier.width(8.dp))
+                            // Chữ bên trái, ô tích có khung bên phải; chỉ một mục được tích.
                             Text(option.label, modifier = Modifier.weight(1f))
+                            Spacer(Modifier.width(8.dp))
+                            Checkbox(
+                                state = if (selected) ToggleableState.On else ToggleableState.Off,
+                                onClick = pick,
+                            )
                         }
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
