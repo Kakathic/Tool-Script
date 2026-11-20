@@ -45,6 +45,7 @@ import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
@@ -221,6 +222,29 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     }
 }
 
+// Mục menu có nút gạt bên phải: bấm cả hàng hoặc nút gạt đều đổi trạng thái.
+@Composable
+internal fun MenuSwitchItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onChange(!checked) }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(16.dp))
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
 @Composable
 private fun MenuDivider() {
     Box(
@@ -256,7 +280,7 @@ fun ThemeMenu(
             MenuItem(label = mode.label, selected = mode == current) { onSelect(mode) }
         }
         MenuDivider()
-        MenuItem(label = "Rung khi chạm", selected = haptic) { onHapticChange(!haptic) }
+        MenuSwitchItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
     }
 }
 

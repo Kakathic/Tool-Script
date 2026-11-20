@@ -1,5 +1,6 @@
 package com.tool.script.ui.render
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,10 +25,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
 import coil3.compose.AsyncImage
@@ -36,6 +41,8 @@ import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.tool.script.ui.theme.LocalHapticEnabled
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.MenuPopup
@@ -68,6 +75,8 @@ import kotlin.math.roundToInt
 
 // Renderer: ánh xạ type trong TOML sang composable Miuix.
 // Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
+
+private const val SELECTED_ALPHA = 0.16f
 
 class ConfirmRequest(val message: String, val onConfirm: () -> Unit)
 
@@ -144,6 +153,7 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
         ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
         ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
         ItemType.Select -> SelectItem(item, env, modifier, enabled, inGroup)
+        ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
         ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
         ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
         ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
@@ -247,6 +257,7 @@ private fun BinaryItem(
 ) {
     val id = item.id ?: return
     val checked = env.store[id] == "1"
+    val haptic = LocalHapticFeedback.current
 
     // Tùy chọn: có `get` thì đọc trạng thái thật bằng shell khi item xuất hiện lần đầu.
     LaunchedEffect(id) {
@@ -261,6 +272,9 @@ private fun BinaryItem(
     }
 
     val change: (Boolean) -> Unit = { newValue ->
+        if (rowClickable) {
+            haptic.performHapticFeedback(if (newValue) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+        }
         val value = if (newValue) "1" else "0"
         val command = if (newValue) item.on else item.off
         // Chỉ đổi trạng thái khi lệnh thành công (hoặc item không có lệnh).
@@ -285,6 +299,7 @@ private fun BinaryItem(
 private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     val current = env.store[id]
+    val haptic = LocalHapticFeedback.current
     ItemSurface(modifier, inGroup) {
         BasicComponent(title = item.title, summary = item.desc, enabled = enabled)
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
@@ -293,6 +308,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
         }
         item.options.forEach { option ->
             val select = {
+                if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                 env.run(item, item.run, mapOf(id to option.value)) { result ->
                     if (result.ok) env.store[id] = option.value
                 }
@@ -385,6 +401,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
 private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     var showDialog by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     val current = env.store[id]
     val label = item.options.firstOrNull { it.value == current }?.label ?: current
 
@@ -401,17 +418,113 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
     }
     OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item.options.forEach { option ->
-                val selected = option.value == current
+            item.options.chunked(item.columns).forEach { rowOptions ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    rowOptions.forEach { option ->
+                        val selected = option.value == current
+                        TextButton(
+                            text = option.label,
+                            modifier = Modifier.weight(1f),
+                            // Mục đang chọn: nền màu chủ đạo nhạt, chữ màu chủ đạo.
+                            colors = if (selected) {
+                                ButtonDefaults.textButtonColors(
+                                    color = MiuixTheme.colorScheme.primary.copy(alpha = SELECTED_ALPHA),
+                                    textColor = MiuixTheme.colorScheme.primary,
+                                )
+                            } else {
+                                ButtonDefaults.textButtonColors()
+                            },
+                            onClick = {
+                                showDialog = false
+                                if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                    if (result.ok) env.store[id] = option.value
+                                }
+                            },
+                        )
+                    }
+                    repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+// Chọn nhiều: hàng hiện các mục đã chọn; hộp thoại có ô tích, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+@Composable
+private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    var showDialog by remember { mutableStateOf(false) }
+    var draft by remember { mutableStateOf(emptySet<String>()) }
+    val haptic = LocalHapticFeedback.current
+    val current = env.store[id]
+    val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    val summary = item.options.filter { it.value in currentSet }.joinToString(", ") { it.label }.ifEmpty { "Chưa chọn" }
+
+    ItemSurface(modifier, inGroup) {
+        BasicComponent(
+            title = item.title,
+            summary = item.desc,
+            enabled = enabled,
+            endActions = {
+                Text(
+                    summary,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    style = MiuixTheme.textStyles.body2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 160.dp),
+                )
+            },
+            onClick = {
+                draft = currentSet
+                showDialog = true
+            },
+        )
+    }
+    OverlayDialog(show = showDialog, title = item.title, onDismissRequest = { showDialog = false }) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item.options.chunked(item.columns).forEach { rowOptions ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    rowOptions.forEach { option ->
+                        val checked = option.value in draft
+                        val toggle = {
+                            haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
+                            draft = if (checked) draft - option.value else draft + option.value
+                        }
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(onClick = toggle)
+                                .padding(horizontal = 8.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                state = if (checked) ToggleableState.On else ToggleableState.Off,
+                                onClick = toggle,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(option.label, modifier = Modifier.weight(1f))
+                        }
+                    }
+                    repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(text = "Hủy", onClick = { showDialog = false }, modifier = Modifier.weight(1f))
                 TextButton(
-                    text = option.label,
-                    modifier = Modifier.fillMaxWidth(),
-                    // Mục đang chọn hiện màu chủ đạo thay vì dấu ✓
-                    colors = if (selected) ButtonDefaults.textButtonColorsPrimary() else ButtonDefaults.textButtonColors(),
+                    text = "Xác nhận",
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
                     onClick = {
                         showDialog = false
-                        env.run(item, item.run, mapOf(id to option.value)) { result ->
-                            if (result.ok) env.store[id] = option.value
+                        val newValue = item.options.filter { it.value in draft }.joinToString(item.separator) { it.value }
+                        if (newValue != current) {
+                            env.run(item, item.run, mapOf(id to newValue)) { result ->
+                                if (result.ok) env.store[id] = newValue
+                            }
                         }
                     },
                 )
@@ -428,6 +541,7 @@ private fun SelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     var expanded by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     val current = env.store[id]
     val label = item.options.firstOrNull { it.value == current }?.label ?: current
 
@@ -457,6 +571,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                     item.options.forEach { option ->
                         MenuItem(label = option.label, selected = option.value == current) {
                             expanded = false
+                            if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             env.run(item, item.run, mapOf(id to option.value)) { result ->
                                 if (result.ok) env.store[id] = option.value
                             }

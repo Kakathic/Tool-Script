@@ -54,6 +54,29 @@ options = [
   "Mục C|c",
 ]
 
+# select 2 cột: columns = 2, các lựa chọn xếp hai mỗi hàng trong hộp thoại
+[[group.item]]
+type    = "select"
+id      = "tools_cols"
+title   = "Select 2 cột"
+default = "x"
+columns = 2
+run     = 'echo "Đã chọn: $tools_cols"'
+shell   = "banner"
+options = ["Lựa chọn 1|x", "Lựa chọn 2|y", "Lựa chọn 3|z", "Lựa chọn 4|w"]
+
+# multiselect: chọn nhiều mục, bấm Xác nhận mới lưu và chạy lệnh; $tools_multi = các giá trị đã chọn, cách nhau bằng dấu phẩy
+[[group.item]]
+type      = "multiselect"
+id        = "tools_multi"
+title     = "Chọn nhiều mục"
+desc      = "Giá trị chọn được truyền vào $tools_multi"
+default   = "a,c"
+columns   = 2
+run       = 'echo "Đã chọn: $tools_multi"'
+shell     = "banner"
+options   = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
+
 # select dạng rút gọn: không có | thì nhãn = giá trị
 [[group.item]]
 type    = "select"

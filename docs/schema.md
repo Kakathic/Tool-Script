@@ -161,6 +161,7 @@ lock_mode = "readonly"
 | `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
 | `radio` | `options`, `default`, `run` (giống `select`, hiện sẵn mọi lựa chọn) |
 | `dropdown` | `options`, `default`, `run` (giống `select`, nhưng chọn bằng menu thả xuống) |
+| `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
@@ -191,7 +192,7 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `multiselect`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
@@ -219,6 +220,7 @@ options = [
 ]
 ```
 
+- `columns` (tùy chọn, chỉ với `select`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng, dạng `[ Lựa chọn 1 ] [ Lựa chọn 2 ]`). Giá trị khác thì cảnh báo và dùng `1`. Mục đang chọn có nền màu chủ đạo nhạt.
 - Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
@@ -256,6 +258,25 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 - File trang con viết như file trang thường (mục 4); trong đó có thể có link tới trang con khác.
 - Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.
 - Biến (`id`) của trang con dùng chung kho biến với các tab.
+
+`multiselect` – chọn nhiều mục:
+
+```toml
+[[item]]
+type      = "multiselect"
+id        = "features"
+title     = "Tính năng bật"
+options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
+default   = "audio,net"      # tùy chọn: các giá trị chọn sẵn, cách nhau bằng separator
+columns   = 2                # tùy chọn: 1 (mặc định) hoặc 2 cột trong hộp thoại
+separator = ","              # tùy chọn: dấu phân tách trong $id, mặc định ","
+run       = 'echo "Đã chọn: $features"'
+```
+
+- `options` khai báo như `select` (mục 7). Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại có ô tích cho từng mục.
+- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
+- `$id` là các **giá trị** đã chọn nối bằng `separator`, theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
+- `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
@@ -316,7 +337,7 @@ lock_mode = "hide"
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `multiselect`, `radio`, `dropdown`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|

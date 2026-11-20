@@ -12,7 +12,8 @@ import dev.eav.tomlkt.TomlTable
 enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Select("select"), Slider("slider"), Link("link"),
-    Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown");
+    Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
+    MultiSelect("multiselect");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -50,6 +51,10 @@ data class Item(
     val numberInput: Boolean,
     // select / radio / dropdown
     val options: List<SelectOption>,
+    // select / multiselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
+    val columns: Int,
+    // multiselect: dấu phân tách các giá trị đã chọn trong $id
+    val separator: String,
     // slider / progress
     val min: Float,
     val max: Float,
@@ -241,7 +246,7 @@ object TomlParser {
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Select || type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
-            type == ItemType.Dropdown
+            type == ItemType.Dropdown || type == ItemType.MultiSelect
         if (needsId) {
             if (id == null) {
                 warnings += "$label \"$title\" (${type.key}) thiếu id, bỏ qua"
@@ -290,6 +295,18 @@ object TomlParser {
                 ShellMode.Live
             }
         }
+        val columns = when (t.str("columns")) {
+            null, "1" -> 1
+            "2" -> 2
+            else -> {
+                warnings += "$label \"$title\": columns = \"${t.str("columns")}\" không hợp lệ (1 hoặc 2), dùng 1"
+                1
+            }
+        }
+        val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: ","
+        if (type == ItemType.MultiSelect && options.any { separator in it.value }) {
+            warnings += "$label \"$title\": có giá trị trong options chứa dấu phân tách \"$separator\", kết quả sẽ sai"
+        }
         val lockMode = when (t.str("lock_mode")?.lowercase()) {
             null, "readonly" -> LockMode.Readonly
             "hide" -> LockMode.Hide
@@ -310,7 +327,9 @@ object TomlParser {
                 options += option
             }
         }
-        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown) && options.isEmpty()) {
+        if ((type == ItemType.Select || type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect) &&
+            options.isEmpty()
+        ) {
             warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
         }
 
@@ -348,6 +367,8 @@ object TomlParser {
             default = t.str("default"),
             numberInput = t.str("input_type")?.lowercase() == "number",
             options = options,
+            columns = columns,
+            separator = separator,
             min = min,
             max = max,
             step = step,
@@ -357,6 +378,12 @@ object TomlParser {
             children = children,
         )
     }
+}
+
+/** multiselect: giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options. */
+fun Item.normalizeMulti(raw: String): String {
+    val chosen = raw.split(separator).map { it.trim() }.toSet()
+    return options.filter { it.value in chosen }.joinToString(separator) { it.value }
 }
 
 /** Đọc `assets/configs`. Nạp từ thư mục ngoài và reload nóng để lại sau (schema mục 12). */

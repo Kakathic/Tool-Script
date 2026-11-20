@@ -187,6 +187,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 ItemType.Input -> if (id != null) out[id] = item.default.orEmpty()
                 ItemType.Select, ItemType.Radio, ItemType.Dropdown ->
                     if (id != null) out[id] = item.default ?: item.options.firstOrNull()?.value.orEmpty()
+                ItemType.MultiSelect -> if (id != null) out[id] = item.normalizeMulti(item.default.orEmpty())
                 ItemType.Slider, ItemType.Progress ->
                     if (id != null) out[id] = formatNumber(item.default?.toFloatOrNull() ?: item.min)
                 ItemType.Group -> collectDefaults(item.children, out)
@@ -201,7 +202,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val id = item.id
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Select, ItemType.Radio, ItemType.Dropdown,
-                ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) out[id] = item
+                ItemType.MultiSelect, ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) out[id] = item
                 ItemType.Group -> collectPersisted(item.children, out)
                 else -> Unit
             }
@@ -217,6 +218,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         }
         ItemType.Input -> saved
         ItemType.Select, ItemType.Radio, ItemType.Dropdown -> saved.takeIf { v -> item.options.any { it.value == v } }
+        ItemType.MultiSelect -> item.normalizeMulti(saved)
         ItemType.Slider, ItemType.Progress ->
             saved.trim().toFloatOrNull()?.let { formatNumber(it.coerceIn(item.min, item.max)) }
         else -> null
