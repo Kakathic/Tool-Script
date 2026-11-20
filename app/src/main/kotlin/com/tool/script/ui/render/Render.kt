@@ -659,13 +659,24 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
 
 /** Icon bên trái của item (`icon` trong TOML): cỡ `icon_size`, tô màu theme nếu `icon_tint` bật, tắt thì giữ màu ảnh. */
 @Composable
-private fun ItemIconImage(item: Item, icon: String) {
-    AsyncImage(
-        model = Util.iconModel(icon),
-        contentDescription = null,
-        modifier = Modifier.size(item.iconSize.dp),
-        colorFilter = if (item.iconTint) ColorFilter.tint(MiuixTheme.colorScheme.onSurface) else null,
-    )
+private fun ItemIconImage(item: Item, icon: String, balanceEnd: Boolean = true) {
+    // Ô chứa icon rộng cố định tối thiểu 24dp và căn giữa: icon nhỏ/lớn đều cùng một trục,
+    // chữ bên phải không bị xô lệch giữa các hàng. Miuix chỉ chừa khoảng cách nhỏ ở bên phải
+    // startAction trong khi bên trái có padding 16dp của hàng, nên bù thêm 8dp ở đây cho cân.
+    val slot = maxOf(item.iconSize, 24f).dp
+    Box(
+        modifier = Modifier
+            .padding(end = if (balanceEnd) 8.dp else 0.dp)
+            .size(slot),
+        contentAlignment = Alignment.Center,
+    ) {
+        AsyncImage(
+            model = Util.iconModel(icon),
+            contentDescription = null,
+            modifier = Modifier.size(item.iconSize.dp),
+            colorFilter = if (item.iconTint) ColorFilter.tint(MiuixTheme.colorScheme.onSurface) else null,
+        )
+    }
 }
 
 private fun itemIcon(item: Item): (@Composable () -> Unit)? =
@@ -675,7 +686,7 @@ private fun itemIcon(item: Item): (@Composable () -> Unit)? =
 @Composable
 private fun ItemIconInline(item: Item) {
     val icon = item.icon ?: return
-    ItemIconImage(item, icon)
+    ItemIconImage(item, icon, balanceEnd = false)
     Spacer(Modifier.width(12.dp))
 }
 
