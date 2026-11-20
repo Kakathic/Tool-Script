@@ -122,11 +122,9 @@ class RenderEnv(
         }
         val notifies = item.shell == ShellMode.Banner || item.shell == ShellMode.Notice
         val action: () -> Unit = action@{
-            if (notifies) {
-                if (feedback.busy) return@action
-                feedback.beginRun()
-            }
-            scope.launch {
+            if (notifies && feedback.busy) return@action
+            val runId = if (notifies) feedback.beginRun() else 0
+            val job = scope.launch {
                 try {
                     val vars = store.snapshot() + extra
                     val full = ShellText.withEnv(command, vars)
@@ -140,9 +138,10 @@ class RenderEnv(
                     feedback.report(item, command, result)
                     onDone(result)
                 } finally {
-                    if (notifies) feedback.endRun()
+                    if (notifies) feedback.endRun(runId)
                 }
             }
+            if (notifies) feedback.attachJob(runId, job)
         }
         val message = item.confirm
         if (message != null) confirm = ConfirmRequest(message, action) else action()

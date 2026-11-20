@@ -23,6 +23,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -49,6 +51,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +59,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -72,7 +79,10 @@ import com.tool.script.executor.ExecResult
 import com.tool.script.util.copyToClipboard
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -153,22 +163,43 @@ class FeedbackHost(private val context: Context) {
     var bannerRunning by mutableStateOf(false)
         private set
 
-    private var runningCount by mutableIntStateOf(0)
+    private var activeRun by mutableIntStateOf(0)
+    private var lastRun = 0
+    private var runJob: Job? = null
 
     /** Có lệnh `banner` / `notice` đang chạy: các item dùng hai kiểu này bị khóa cho tới khi xong. */
-    val busy: Boolean get() = runningCount > 0
+    val busy: Boolean get() = activeRun != 0
 
-    fun beginRun() {
-        runningCount++
+    /** Bắt đầu một lượt chạy; trả về mã lượt để [attachJob] / [endRun] nhận ra đúng lượt. */
+    fun beginRun(): Int {
+        activeRun = ++lastRun
         banner = RUNNING_TEXT
         bannerWarning = false
         bannerRunning = true
         bannerToken++
+        return activeRun
     }
 
-    fun endRun() {
-        if (runningCount > 0) runningCount--
-        if (runningCount == 0 && bannerRunning) banner = null
+    fun attachJob(id: Int, job: Job) {
+        if (activeRun == id) runJob = job
+    }
+
+    fun endRun(id: Int) {
+        if (activeRun != id) return
+        activeRun = 0
+        runJob = null
+        if (bannerRunning) banner = null
+    }
+
+    /** Hủy lượt đang chạy: dừng coroutine, ẩn banner và mở khóa ngay (kết quả của lượt bị bỏ). */
+    fun cancelRun() {
+        if (activeRun == 0) return
+        runJob?.cancel()
+        runJob = null
+        activeRun = 0
+        banner = null
+        bannerRunning = false
+        toast("Đã hủy")
     }
 
     var bannerToken by mutableIntStateOf(0)
@@ -599,9 +630,11 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
     val message = feedback.banner
     var last by remember { mutableStateOf(message.orEmpty()) }
     var lastWarning by remember { mutableStateOf(false) }
+    var lastRunning by remember { mutableStateOf(false) }
     if (message != null) {
         last = message
         lastWarning = feedback.bannerWarning
+        lastRunning = feedback.bannerRunning
     }
 
     val progress = remember { Animatable(1f) }
@@ -614,6 +647,15 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
         }
     }
 
+    // Vuốt ngang: đang chạy thì hủy script, đã xong thì ẩn banner. Banner mới hiện thì về lại vị trí giữa.
+    val scope = rememberCoroutineScope()
+    val offsetX = remember { Animatable(0f) }
+    var widthPx by remember { mutableIntStateOf(0) }
+    LaunchedEffect(feedback.bannerToken) { offsetX.snapTo(0f) }
+    val dismiss: () -> Unit = {
+        if (feedback.bannerRunning) feedback.cancelRun() else feedback.banner = null
+    }
+
     AnimatedVisibility(
         visible = message != null,
         modifier = modifier,
@@ -624,13 +666,43 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
             message = last,
             warning = lastWarning,
             modifier = Modifier
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .graphicsLayer { alpha = 1f - (abs(offsetX.value) / widthPx.coerceAtLeast(1)).coerceIn(0f, 1f) }
+                .onSizeChanged { widthPx = it.width }
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp)),
+                .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp))
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            val width = widthPx.coerceAtLeast(1)
+                            if (abs(offsetX.value) > width * SWIPE_DISMISS_FRACTION) {
+                                val target = if (offsetX.value > 0f) width.toFloat() else -width.toFloat()
+                                scope.launch {
+                                    offsetX.animateTo(target, tween(SWIPE_OUT_MILLIS))
+                                    dismiss()
+                                }
+                            } else {
+                                scope.launch { offsetX.animateTo(0f) }
+                            }
+                        },
+                        onDragCancel = { scope.launch { offsetX.animateTo(0f) } },
+                    ) { change, dragAmount ->
+                        change.consume()
+                        scope.launch { offsetX.snapTo(offsetX.value + dragAmount) }
+                    }
+                },
             progress = progress.value,
-            indeterminate = running,
+            indeterminate = lastRunning,
+            actionLabel = if (lastRunning) "Hủy" else null,
+            onAction = dismiss,
+            onDismiss = if (lastRunning) null else dismiss,
         )
     }
 }
+
+private const val SWIPE_DISMISS_FRACTION = 0.3f
+
+private const val SWIPE_OUT_MILLIS = 150
 
 private const val BANNER_SLIDE_MILLIS = 300
