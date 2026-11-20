@@ -301,8 +301,18 @@ fun MainScreen(
                                 AnimatedContent(
                                     targetState = windowStart,
                                     transitionSpec = {
-                                        fadeIn(animationSpec = tween(180)) togetherWith
-                                            fadeOut(animationSpec = tween(120))
+                                        val direction = if (targetState > initialState) 1 else -1
+                                        (
+                                            slideInHorizontally(
+                                                animationSpec = tween(280, easing = FastOutSlowInEasing),
+                                                initialOffsetX = { fullWidth -> fullWidth * direction },
+                                            ) + fadeIn(animationSpec = tween(180))
+                                        ) togetherWith (
+                                            slideOutHorizontally(
+                                                animationSpec = tween(240, easing = FastOutSlowInEasing),
+                                                targetOffsetX = { fullWidth -> -fullWidth * direction },
+                                            ) + fadeOut(animationSpec = tween(140))
+                                        )
                                     },
                                     label = "tabWindowTransition",
                                 ) { start ->
