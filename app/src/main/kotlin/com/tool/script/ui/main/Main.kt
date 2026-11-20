@@ -172,8 +172,14 @@ fun MainScreen(
     LaunchedEffect(pendingTab, stack.isEmpty()) {
         val target = pendingTab
         if (target != null && stack.isEmpty()) {
+            // Không đặt pendingTab = null trước khi cuộn: pendingTab là key của effect này,
+            // đổi key sẽ hủy coroutine và pager dừng giữa chừng (nhảy xa thì rơi sai tab).
+            if (kotlin.math.abs(pagerState.currentPage - target) > 1) {
+                pagerState.scrollToPage(target)
+            } else {
+                pagerState.animateScrollToPage(target)
+            }
             pendingTab = null
-            pagerState.animateScrollToPage(target)
         }
     }
 
