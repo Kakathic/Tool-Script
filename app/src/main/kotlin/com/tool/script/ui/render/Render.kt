@@ -65,8 +65,13 @@ class RenderEnv(
     private val scope: CoroutineScope,
     val openTab: (String) -> Unit,
     val openPage: (String) -> Unit,
+    /** true = chỉ truyền biến (trang dialog): item không chạy lệnh, lệnh do nút Xác nhận của dialog chạy. */
+    val varsOnly: Boolean = false,
 ) {
     var confirm by mutableStateOf<ConfirmRequest?>(null)
+
+    /** Bản dùng trong dialog: cùng kho biến, nhưng item chỉ đổi biến, không chạy lệnh. */
+    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true)
 
     /**
      * Chạy [command] của [item] với các biến trong kho cộng [extra]; hiện kết quả theo `shell`.
@@ -78,7 +83,7 @@ class RenderEnv(
         extra: Map<String, String> = emptyMap(),
         onDone: (ExecResult) -> Unit = {},
     ) {
-        if (command.isNullOrBlank()) {
+        if (varsOnly || command.isNullOrBlank()) {
             onDone(ExecResult(0, "", ""))
             return
         }
@@ -333,13 +338,15 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                     keyboardType = if (item.numberInput) KeyboardType.Number else KeyboardType.Text,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = { env.run(item, item.run) },
-                enabled = enabled && !item.run.isNullOrBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Chạy")
+            if (!env.varsOnly) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { env.run(item, item.run) },
+                    enabled = enabled && !item.run.isNullOrBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Chạy")
+                }
             }
         }
     }

@@ -1,72 +1,49 @@
-# Trang demo (tab thứ 4): text, button, switch, checkbox, radio, slider, progress, link.
+# Trang demo (tab thứ 4): trang con, dialog toàn màn hình, biến từ env.sh.
+# Chỉ để làm mẫu tính năng: mọi lệnh đều là echo.
 
 [[item]]
 type    = "text"
 title   = "Tab demo"
-content = "Trang này là tab thứ 4, dùng để thử nhanh các thành phần."
+content = "Thử nhanh trang con, dialog toàn màn hình và biến từ env.sh."
 
 [[group]]
-title = "Nút và công tắc"
+title = "Trang con và dialog"
 
-[[group.item]]
-type  = "button"
-title = "Nút thử"
-desc  = "Chạy echo và hiện thông báo ngắn trong app"
-run   = "echo xin chào từ tab demo"
-shell = "banner"
-
-[[group.item]]
-type  = "switch"
-id    = "demo_switch"
-title = "Công tắc thử"
-desc  = "Không có lệnh, chỉ lưu trạng thái"
-shell = "hidden"
-
-[[group.item]]
-type  = "checkbox"
-id    = "demo_tab_check"
-title = "Ô tick thử"
-shell = "hidden"
-
-[[group]]
-title = "Lựa chọn"
-
-[[group.item]]
-type    = "radio"
-id      = "demo_tab_radio"
-title   = "Chọn một"
-default = "b"
-shell   = "hidden"
-options = ["Tùy chọn A|a", "Tùy chọn B|b", "Tùy chọn C|c"]
-
-[[group.item]]
-type    = "slider"
-id      = "demo_slider"
-title   = "Thanh trượt"
-min     = 0
-max     = 100
-step    = 10
-default = 50
-run     = 'echo "Giá trị: $demo_slider"'
-shell   = "banner"
-
-[[group]]
-title = "Điều hướng"
-
+# page: mở trang mới có nút quay lại
 [[group.item]]
 type  = "link"
-title = "Mở trang con"
+title = "Trang con mẫu"
 desc  = "page = \"pages/demo_sub.toml\""
 page  = "pages/demo_sub.toml"
 
+# style = "dialog": trang trượt từ dưới lên, có nút Hủy / Xác nhận.
+# Item trong dialog chỉ truyền biến; bấm Xác nhận mới chạy `run` của link này.
 [[group.item]]
 type  = "link"
 title = "Mở dialog toàn màn hình"
-desc  = "style = \"dialog\""
+desc  = "style = \"dialog\", Xác nhận mới chạy run"
 page  = "pages/demo_dialog.toml"
 style = "dialog"
+run   = 'echo "note=$demo_dialog_note mode=$demo_dialog_mode level=$demo_dialog_level flag=$demo_dialog_flag"'
+shell = "log"
 
 [[group.item]]
 type  = "link"
-title = "Về trang chủ"
+title = "Về tab Trang chủ"
 tab   = "home"
+
+[[group]]
+title = "Biến từ env.sh"
+
+# Biến trong assets/scripts/env.sh được nạp trước mọi lệnh
+[[group.item]]
+type  = "button"
+title = "Xem các biến đường dẫn"
+desc  = "FILES_DIR, CACHE_DIR, EXT_DIR từ env.sh"
+run   = 'echo "FILES_DIR=$FILES_DIR"; echo "CACHE_DIR=$CACHE_DIR"; echo "EXT_DIR=$EXT_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "Xem biến dựng sẵn"
+desc  = "SDK, ABI, ROOT_MODE"
+run   = 'echo "SDK=$SDK"; echo "ABI=$ABI"; echo "ROOT_MODE=$ROOT_MODE"'

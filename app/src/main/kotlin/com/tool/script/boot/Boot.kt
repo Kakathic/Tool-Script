@@ -11,6 +11,7 @@ import com.tool.script.config.ItemType
 import com.tool.script.config.LoadedConfig
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
+import com.tool.script.util.EnvFile
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
 import com.tool.script.util.formatNumber
@@ -92,7 +93,13 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val script = withContext(Dispatchers.IO) {
                 Util.copyAsset(app, "scripts/init.sh", File(app.filesDir, "scripts/init.sh"))
             }
-            val result = executor.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line ->
+            val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
+            envResult.getOrNull()?.let { prepared ->
+                ExecutorManager.envFile = prepared.file.absolutePath
+                prepared.unknownKeys.forEach { log("env.sh: key lạ $it, giữ nguyên") }
+            }
+            envResult.exceptionOrNull()?.let { log("Không chuẩn bị được env.sh: ${it.message ?: it}") }
+            val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line ->
                 val p = ShellText.parseProgress(line)
                 if (p != null) {
                     _state.update { it.copy(progress = p / 100f) }
@@ -127,6 +134,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // 5. Dựng kho biến rồi vào màn hình chính
+        ExecutorManager.prelude = config.app.env
         val builtin = mapOf(
             "SDK" to Build.VERSION.SDK_INT.toString(),
             "ABI" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),

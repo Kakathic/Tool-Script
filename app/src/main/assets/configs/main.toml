@@ -2,6 +2,8 @@
 name    = "Tool Script"
 version = 1
 lang    = "vi"
+# env: đoạn shell chạy đầu tiên trước mọi lệnh của app (ví dụ đặt PATH). Bỏ dấu # để bật.
+# env  = "export PATH=$PATH:/data/adb/bin"
 
 [[tab]]
 id    = "home"

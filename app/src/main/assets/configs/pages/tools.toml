@@ -1,223 +1,140 @@
-# Trang mẫu: button, input, select (options = "nhãn|giá trị"), slider.
+# Trang mẫu: button, input, select (options = "nhãn|giá trị"), radio, slider, checkbox, progress.
+# Chỉ để làm mẫu tính năng: mọi lệnh đều là echo, không đổi thông số thiết bị.
+# Giá trị của item có id dùng trong lệnh dưới dạng $id (luôn đặt trong nháy kép).
 
 [[group]]
 title = "Nút bấm"
 
-# confirm: hỏi xác nhận trước khi chạy; shell = banner: thông báo ngắn trong app
 [[group.item]]
-type      = "button"
-title     = "Xóa cache hệ thống"
-desc      = "Chỉ hiện khi có root hoặc ROM"
-run       = "pm trim-caches 999G"
-confirm   = "Bạn có chắc muốn xóa cache hệ thống?"
-shell     = "banner"
-lock      = "ROOT_MODE != root && ROOT_MODE != system"
-lock_mode = "hide"
-
-# shell mặc định = log: hiện log đầy đủ; timeout tính bằng giây
-[[group.item]]
-type    = "button"
-title   = "Xem thông tin thiết bị"
-desc    = "Chạy được cả khi không root"
-run     = "getprop ro.product.model; getprop ro.build.version.release"
-timeout = 10
+type  = "button"
+title = "Nút mẫu"
+desc  = "Chạy echo và hiện kết quả trong bảng log"
+run   = 'echo "Nút mẫu đã chạy"'
 
 [[group]]
 title = "Nhập liệu"
 
-# input kiểu chữ: giá trị dùng trong lệnh dưới dạng $ten
+# input kiểu chữ: giá trị dùng trong lệnh dưới dạng $tools_note
 [[group.item]]
 type    = "input"
-id      = "note"
+id      = "tools_note"
 title   = "Ghi chú"
 hint    = "Nhập nội dung"
 default = "xin chào"
-run     = "echo \"$note\""
+run     = 'echo "Ghi chú: $tools_note"'
 shell   = "banner"
 
 # input kiểu số
 [[group.item]]
 type       = "input"
-id         = "port"
-title      = "Cổng"
+id         = "tools_number"
+title      = "Số"
 desc       = "input_type = number"
 hint       = "Ví dụ 5555"
 default    = "5555"
 input_type = "number"
-run        = "echo \"port=$port\""
+run        = 'echo "Số đã nhập: $tools_number"'
 shell      = "log"
 
 [[group]]
 title = "Lựa chọn"
 
-# select: options là chuỗi "nhãn|giá trị"; không có | thì nhãn = giá trị
+# select: options là chuỗi "nhãn|giá trị"; chọn xong chạy lệnh ngay
 [[group.item]]
 type    = "select"
-id      = "governor"
-title   = "Governor"
-desc    = "Giá trị chọn được truyền vào $governor"
-default = "performance"
-run     = "echo $governor > /sys/yyy"
-shell   = "hidden"
-options = [
-  "Hiệu năng|performance",
-  "Tiết kiệm|powersave",
-  "Cân bằng|schedutil",
-]
-
-# select dạng rút gọn (nhãn = giá trị) + khóa readonly khi không root
-[[group.item]]
-type      = "select"
-id        = "scheduler"
-title     = "I/O scheduler"
-default   = "mq-deadline"
-run       = "echo $scheduler > /sys/block/sda/queue/scheduler"
-shell     = "banner"
-lock      = "ROOT_MODE != root"
-options   = ["mq-deadline", "none", "kyber"]
-
-[[group]]
-title = "Thanh trượt"
-
-# slider: gửi lệnh khi thả tay; shell = notice: thông báo hệ thống của Android
-[[group.item]]
-type    = "slider"
-id      = "brightness"
-title   = "Độ sáng"
-min     = 0
-max     = 255
-step    = 5
-default = 128
-run     = "settings put system screen_brightness $brightness"
-shell   = "notice"
-
-[[group]]
-title = "Mạng"
-
-# input: giá trị dùng trong lệnh dưới dạng $host (luôn đặt trong nháy kép)
-[[group.item]]
-type    = "input"
-id      = "host"
-title   = "Ping máy chủ"
-hint    = "Tên miền hoặc địa chỉ IP"
-default = "8.8.8.8"
-run     = 'ping -c 3 -W 2 "$host"'
-timeout = 15
-shell   = "log"
-
-[[group.item]]
-type  = "button"
-title = "Địa chỉ IP của máy"
-desc  = "Lọc dòng inet từ ip addr"
-run   = "ip -4 addr show | grep inet"
-
-[[group]]
-title = "Chế độ ví dụ"
-
-# select + visible_if: mục bên dưới chỉ hiện khi chọn "Hiệu năng"
-[[group.item]]
-type    = "select"
-id      = "profile"
-title   = "Hồ sơ hiệu năng"
-desc    = "Chọn xong là chạy lệnh ngay"
-default = "balanced"
-run     = 'echo "Đã chọn hồ sơ: $profile"'
+id      = "tools_choice"
+title   = "Chọn một mục"
+desc    = "Giá trị chọn được truyền vào $tools_choice"
+default = "b"
+run     = 'echo "Đã chọn: $tools_choice"'
 shell   = "banner"
 options = [
-  "Cân bằng|balanced",
-  "Hiệu năng|performance",
-  "Tiết kiệm|saver",
+  "Mục A|a",
+  "Mục B|b",
+  "Mục C|c",
 ]
+
+# select dạng rút gọn: không có | thì nhãn = giá trị
+[[group.item]]
+type    = "select"
+id      = "tools_short"
+title   = "Select rút gọn"
+default = "một"
+run     = 'echo "Đã chọn: $tools_short"'
+shell   = "banner"
+options = ["một", "hai", "ba"]
+
+# radio: giống select nhưng hiện sẵn mọi lựa chọn
+[[group.item]]
+type    = "radio"
+id      = "tools_radio"
+title   = "Radio"
+default = "x"
+run     = 'echo "Radio: $tools_radio"'
+shell   = "banner"
+options = ["Lựa chọn X|x", "Lựa chọn Y|y", "Lựa chọn Z|z"]
+
+[[group]]
+title = "Thanh trượt, ô tick, tiến trình"
+
+# slider: gửi lệnh khi thả tay
+[[group.item]]
+type    = "slider"
+id      = "tools_slider"
+title   = "Thanh trượt"
+min     = 0
+max     = 100
+step    = 5
+default = 40
+run     = 'echo "Giá trị: $tools_slider"'
+shell   = "banner"
+
+# checkbox: giống switch, hiện ô tick; bấm cả hàng cũng đổi. Lưu vào file tools_check trong $STATE_DIR
+[[group.item]]
+type  = "checkbox"
+id    = "tools_check"
+title = "Ô tick có lưu trạng thái"
+desc  = "Lưu vào file tools_check"
+on    = "state_set tools_check 1"
+off   = "state_set tools_check 0"
+get   = "state_get tools_check"
+shell = "hidden"
+
+# progress: chỉ để xem, đọc số từ get (trong khoảng min..max)
+[[group.item]]
+type  = "progress"
+id    = "tools_progress"
+title = "Thanh tiến trình"
+desc  = "get = echo 65"
+get   = "echo 65"
+
+[[group]]
+title = "Hiện theo lựa chọn"
+
+# select + visible_if: các mục bên dưới chỉ hiện khi chọn "Hiện"
+[[group.item]]
+type    = "select"
+id      = "tools_toggle"
+title   = "Hiện mục phụ"
+default = "hide"
+shell   = "hidden"
+options = ["Ẩn|hide", "Hiện|show"]
 
 [[group.item]]
 type       = "text"
-title      = "Đang ở chế độ hiệu năng"
-content    = "Mục này và thanh trượt bên dưới chỉ hiện khi profile == performance"
-visible_if = "profile == performance"
+title      = "Mục phụ"
+content    = "Mục này chỉ hiện khi chọn \"Hiện\" (tools_toggle == show)"
+visible_if = "tools_toggle == show"
 
 [[group.item]]
 type       = "slider"
-id         = "thermal_limit"
-title      = "Ngưỡng nhiệt (°C)"
-desc       = "Ví dụ: giá trị được truyền vào lệnh qua $thermal_limit"
-min        = 40
-max        = 90
-step       = 5
-default    = 70
-run        = 'echo "Ngưỡng nhiệt: $thermal_limit"'
-shell      = "notice"
-visible_if = "profile == performance"
-
-[[group]]
-title = "Hệ thống (cần root)"
-
-# switch + get: get in ra 1 / 0 để đọc trạng thái hiện tại; không root thì mờ (readonly)
-[[group.item]]
-type      = "switch"
-id        = "stay_awake"
-title     = "Giữ màn hình sáng khi sạc"
-desc      = "svc power stayon - cần root"
-on        = "svc power stayon true"
-off       = "svc power stayon false"
-get       = '[ "$(settings get global stay_on_while_plugged_in)" != "0" ] && echo 1 || echo 0'
-shell     = "hidden"
-lock      = "ROOT_MODE != root"
-lock_mode = "readonly"
-
-# lock + lock_mode = hide + confirm: không root thì ẩn hẳn, có root thì hỏi trước khi chạy
-[[group.item]]
-type      = "button"
-title     = "Giải phóng RAM đệm"
-desc      = "Ghi 3 vào drop_caches"
-run       = "sync; echo 3 > /proc/sys/vm/drop_caches"
-confirm   = "Giải phóng bộ nhớ đệm? Ứng dụng có thể chạy chậm lại trong chốc lát."
-shell     = "banner"
-lock      = "ROOT_MODE != root"
-lock_mode = "hide"
-
-[[group.item]]
-type      = "button"
-title     = "Khởi động lại giao diện hệ thống"
-desc      = "Tắt SystemUI, hệ thống tự mở lại"
-run       = "pkill -f com.android.systemui"
-confirm   = "Khởi động lại SystemUI? Màn hình sẽ nháy trong giây lát."
-shell     = "hidden"
-lock      = "ROOT_MODE != root"
-lock_mode = "hide"
-
-[[group.item]]
-type      = "button"
-title     = "Chụp màn hình"
-desc      = "Lưu vào /sdcard/Pictures"
-run       = 'mkdir -p /sdcard/Pictures; f=/sdcard/Pictures/shot_$(date +%s).png; screencap -p "$f" && echo "Đã lưu: $f"'
-shell     = "banner"
-lock      = "ROOT_MODE != root && ROOT_MODE != system"
-lock_mode = "hide"
-
-[[group]]
-title = "Thành phần mới"
-
-# checkbox: giống switch, hiện ô tick (không có lệnh thì chỉ lưu trạng thái)
-[[group.item]]
-type  = "checkbox"
-id    = "demo_check"
-title = "Ô tick mẫu"
-desc  = "Bấm cả hàng cũng đổi"
-shell = "hidden"
-
-# radio: chọn một, hiện sẵn mọi lựa chọn
-[[group.item]]
-type    = "radio"
-id      = "demo_radio"
-title   = "Lựa chọn mẫu"
-shell   = "hidden"
-options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
-
-# progress: chỉ để xem, đọc số từ get
-[[group.item]]
-type  = "progress"
-id    = "demo_progress"
-title = "Dung lượng pin"
-desc  = "Đọc từ /sys/class/power_supply/battery/capacity"
-get   = "cat /sys/class/power_supply/battery/capacity"
-
+id         = "tools_sub_slider"
+title      = "Thanh trượt phụ"
+desc       = "Cũng chỉ hiện khi chọn \"Hiện\""
+min        = 0
+max        = 10
+step       = 1
+default    = 5
+run        = 'echo "Giá trị phụ: $tools_sub_slider"'
+shell      = "banner"
+visible_if = "tools_toggle == show"

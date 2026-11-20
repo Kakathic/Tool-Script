@@ -12,6 +12,10 @@ title = "Thử trong trang con"
 type  = "switch"
 id    = "demo_sub_switch"
 title = "Công tắc trong trang con"
+desc  = "Lưu vào file demo_sub_switch"
+on    = "state_set demo_sub_switch 1"
+off   = "state_set demo_sub_switch 0"
+get   = "state_get demo_sub_switch"
 shell = "hidden"
 
 [[group.item]]

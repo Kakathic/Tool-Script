@@ -1,4 +1,5 @@
-# Trang mẫu: text, group, switch, visible_if, lock.
+# Trang mẫu: text, group, switch (get / on / off), visible_if, lock, các kiểu hiển thị kết quả.
+# Chỉ để làm mẫu tính năng: mọi lệnh đều vô hại (echo, true, ...), không đổi thông số thiết bị.
 # Item nằm trong group viết bằng [[group.item]] (cú pháp TOML cho bảng lồng nhau).
 # Mọi item chạy lệnh đều có thể dùng shell = log | hidden | banner | notice.
 
@@ -10,25 +11,28 @@ content = "Đây là trang mẫu, chỉnh trong assets/configs/pages/home.toml."
 [[group]]
 title = "Công tắc"
 
-# switch + get: đọc trạng thái hiện tại; khóa dạng readonly (mờ) khi không có root
-[[group.item]]
-type      = "switch"
-id        = "game_mode"
-title     = "Chế độ game"
-desc      = "Tăng xung CPU/GPU (ví dụ) - cần root"
-on        = "echo 1 > /sys/xxx"
-off       = "echo 0 > /sys/xxx"
-get       = "cat /sys/xxx"
-shell     = "log"
-lock      = "ROOT_MODE != root"
-lock_mode = "readonly"
-
-# switch không có lệnh get, chỉ lưu trạng thái; shell = hidden (lỗi mới báo toast)
+# switch + get: đọc trạng thái hiện tại bằng lệnh get (in 1 hoặc 0), on / off chạy khi bật / tắt.
+# Ví dụ lưu trạng thái thành một file trong $STATE_DIR, tên file = id của tính năng (home_switch).
+# state_set / state_get là hàm trong assets/scripts/env.sh.
 [[group.item]]
 type  = "switch"
-id    = "show_more"
+id    = "home_switch"
+title = "Công tắc có lưu trạng thái"
+desc  = "Lưu vào file home_switch, mở lại app vẫn giữ"
+on    = "state_set home_switch 1"
+off   = "state_set home_switch 0"
+get   = "state_get home_switch"
+shell = "banner"
+
+# Cũng lưu trạng thái (file home_show_more); shell = hidden (lỗi mới báo toast)
+[[group.item]]
+type  = "switch"
+id    = "home_show_more"
 title = "Hiện thêm tùy chọn"
-desc  = "Bật để hiện mục bên dưới (visible_if)"
+desc  = "Bật để hiện mục bên dưới (visible_if), lưu vào file home_show_more"
+on    = "state_set home_show_more 1"
+off   = "state_set home_show_more 0"
+get   = "state_get home_show_more"
 shell = "hidden"
 
 # visible_if: chỉ hiện khi công tắc bên trên bật
@@ -36,67 +40,31 @@ shell = "hidden"
 type       = "text"
 title      = "Mục ẩn"
 content    = "Mục này chỉ hiện khi bật \"Hiện thêm tùy chọn\""
-visible_if = "show_more == 1"
+visible_if = "home_show_more == 1"
 
 [[group]]
-title = "Điều kiện"
+title = "Điều kiện hiển thị và khóa"
 
-# lock + lock_mode = "hide": không đủ điều kiện thì ẩn hẳn
+# lock (readonly, mặc định): đúng điều kiện thì item bị mờ, không bấm được
+[[group.item]]
+type      = "button"
+title     = "Nút bị khóa khi không root"
+desc      = "lock = ROOT_MODE != root, mờ khi chạy không root"
+run       = 'echo "Đang có quyền root"'
+shell     = "banner"
+lock      = "ROOT_MODE != root"
+
+# lock + lock_mode = "hide": đúng điều kiện thì ẩn hẳn
 [[group.item]]
 type      = "button"
 title     = "Chỉ hiện khi root hoặc ROM"
-desc      = "Dùng lock + lock_mode = hide"
-run       = "id"
+desc      = "lock + lock_mode = hide"
+run       = 'echo "Chạy với quyền cao"'
 shell     = "banner"
 lock      = "ROOT_MODE != root && ROOT_MODE != system"
 lock_mode = "hide"
 
-# Biến dựng sẵn SDK, ABI, ROOT_MODE; toán tử &&, ||
-[[group.item]]
-type       = "text"
-title      = "Chỉ hiện trên Android 14 trở lên"
-content    = "Biến SDK dùng với ==, !=, &&, || (chưa có so sánh lớn/nhỏ)"
-visible_if = "SDK == 34 || SDK == 35 || SDK == 36 || SDK == 37"
-
-[[group]]
-title = "Thông tin máy"
-
-# shell = log (mặc định): hiện bảng log đầy đủ; lệnh nhiều dòng dùng được `;`
-[[group.item]]
-type  = "button"
-title = "Thông tin thiết bị"
-desc  = "Model, hãng, phiên bản Android (shell = log)"
-run   = 'echo "Model: $(getprop ro.product.model)"; echo "Hãng: $(getprop ro.product.manufacturer)"; echo "Android: $(getprop ro.build.version.release) (SDK $(getprop ro.build.version.sdk))"'
-
-# shell = banner: thông báo ngắn ngay trong app
-[[group.item]]
-type  = "button"
-title = "Phiên bản kernel"
-desc  = "shell = banner"
-run   = "uname -r"
-shell = "banner"
-
-# shell = notice: thông báo hệ thống của Android (xin quyền thông báo lần đầu)
-[[group.item]]
-type  = "button"
-title = "Thời gian bật máy"
-desc  = "shell = notice"
-run   = "uptime"
-shell = "notice"
-
-[[group.item]]
-type  = "button"
-title = "Dung lượng bộ nhớ trong"
-desc  = "df -h trên /data"
-run   = "df -h /data"
-
-[[group.item]]
-type  = "button"
-title = "RAM"
-desc  = "5 dòng đầu của /proc/meminfo"
-run   = "head -n 5 /proc/meminfo"
-
-# visible_if với biến dựng sẵn ABI / ROOT_MODE
+# Biến dựng sẵn SDK, ABI, ROOT_MODE; toán tử ==, !=, &&, || (chưa có so sánh lớn / nhỏ)
 [[group.item]]
 type       = "text"
 title      = "Máy 64-bit ARM"
@@ -106,26 +74,61 @@ visible_if = "ABI == arm64-v8a"
 [[group.item]]
 type       = "text"
 title      = "Đang chạy không root"
-content    = "Chỉ hiện khi ROOT_MODE == any. Một số mục ở tab Công cụ sẽ bị khóa hoặc ẩn."
+content    = "Chỉ hiện khi ROOT_MODE == any"
 visible_if = "ROOT_MODE == any"
 
 [[group]]
-title = "Thử nghiệm kết quả lệnh"
+title = "Các kiểu hiển thị kết quả (shell)"
+
+# shell = log (mặc định): hiện bảng log đầy đủ; lệnh nhiều dòng dùng được `;`
+[[group.item]]
+type  = "button"
+title = "log"
+desc  = "Mặc định: bảng log đầy đủ, có nút sao chép"
+run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
+
+# shell = banner: thông báo ngắn ngay trong app, tự ẩn sau vài giây
+[[group.item]]
+type  = "button"
+title = "banner"
+desc  = "Thông báo ngắn trong app"
+run   = 'echo "Xin chào từ banner"'
+shell = "banner"
+
+# shell = notice: thông báo hệ thống của Android (xin quyền thông báo lần đầu)
+[[group.item]]
+type  = "button"
+title = "notice"
+desc  = "Thông báo hệ thống của Android"
+run   = 'echo "Xin chào từ notice"'
+shell = "notice"
 
 # shell = hidden: chạy ẩn, chỉ khi lỗi mới hiện toast
 [[group.item]]
 type  = "button"
-title = "Chạy ẩn (thành công)"
-desc  = "shell = hidden, không hiện gì"
+title = "hidden (thành công)"
+desc  = "Không hiện gì"
 run   = "true"
 shell = "hidden"
 
 [[group.item]]
 type  = "button"
-title = "Chạy ẩn (lỗi)"
-desc  = "shell = hidden, lệnh lỗi nên hiện toast"
+title = "hidden (lỗi)"
+desc  = "Lệnh lỗi nên hiện toast"
 run   = "ls /thu_muc_khong_ton_tai"
 shell = "hidden"
+
+[[group]]
+title = "Tùy chọn của lệnh"
+
+# confirm: hỏi xác nhận trước khi chạy
+[[group.item]]
+type    = "button"
+title   = "Hỏi xác nhận trước khi chạy"
+desc    = "confirm = \"...\""
+run     = 'echo "Đã xác nhận"'
+confirm = "Chạy lệnh mẫu này?"
+shell   = "banner"
 
 # timeout (giây): quá giờ thì dừng lệnh và báo hết thời gian chờ
 [[group.item]]

@@ -30,6 +30,7 @@ assets/configs/
 name    = "Tool Script"   # hiện làm tiêu đề thanh trên cùng
 version = 1               # phiên bản schema
 lang    = "vi"
+env     = "export PATH=$PATH:/data/adb/bin"   # tùy chọn, xem bên dưới
 
 [[tab]]
 id    = "home"
@@ -38,6 +39,12 @@ icon  = "icons/home.svg"        # bắt buộc, đường dẫn icon tab
 file  = "pages/home.toml"
 ```
 
+- `[app] env` (tùy chọn): đoạn shell chạy **đầu tiên** trước mọi lệnh của app: `run`, `on`, `off`, `get`, lệnh của link dialog và lệnh khởi động lại máy. Dùng để đặt `PATH`, nạp hàm dùng chung, v.v.
+  - Được ghép vào đầu mỗi lệnh (cách bằng xuống dòng), trước cả các biến `export` của item, nên không dùng được `$id` của item trong `env`.
+  - Biến dựng sẵn (`SDK`, `ABI`, `ROOT_MODE`) cũng chưa có khi `env` chạy.
+  - Script khởi động `assets/scripts/init.sh` chạy trước khi nạp TOML nên không áp dụng `env` (nhưng có áp dụng `env.sh`, xem bên dưới).
+  - Thứ tự: `env.sh` → `[app] env` → các biến `export` của item → lệnh.
+  - `env` lỗi cú pháp sẽ làm mọi lệnh lỗi theo; viết nhiều dòng bằng chuỗi ba nháy `"""..."""`.
 - Mỗi `[[tab]]` là một tab ở thanh dưới. `title` và `icon` bắt buộc.
 - Cú pháp cũ `[[page]]` đã bỏ: gặp thì bỏ qua kèm cảnh báo.
 - Thiếu `title` hoặc `icon`: bỏ tab đó và ghi cảnh báo vào log.
@@ -45,6 +52,47 @@ file  = "pages/home.toml"
   - Trong assets: `icons/home.svg` (tính từ thư mục configs).
   - Đường dẫn ngoài: `/sdcard/ToolScript/icons/home.png`.
 - Thanh tab hiện tối đa 4 tab, tối thiểu 2 (xem mục 5).
+
+### env.sh (biến dùng chung cho mọi lệnh)
+
+`assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra thư mục `files/scripts/env.sh` của app; **mọi lệnh shell chạy qua app đều nạp file này trước** (`run`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
+
+| Key | Giá trị |
+|---|---|
+| `@PACKAGE@` | tên gói của app |
+| `@APP_DIR@` | thư mục dữ liệu của app |
+| `@FILES_DIR@` | thư mục `files` của app |
+| `@CACHE_DIR@` | thư mục cache của app |
+| `@SCRIPTS_DIR@` | thư mục chứa script chép từ assets (cùng nơi có `env.sh`) |
+| `@STATE_DIR@` | thư mục lưu trạng thái các tính năng (`files/state`, app tạo sẵn) |
+| `@LIB_DIR@` | thư mục thư viện native của app |
+| `@EXT_ROOT@` | gốc bộ nhớ trong (thường `/storage/emulated/0`) |
+| `@EXT_DIR@` | thư mục làm việc ngoài của app (`@EXT_ROOT@/ToolScript`) |
+
+```sh
+export FILES_DIR="@FILES_DIR@"
+export EXT_DIR="@EXT_DIR@"
+export PATH="$FILES_DIR/bin:$PATH"
+```
+
+- `env.sh` mẫu có sẵn hai hàm lưu trạng thái, tên file = `id` của tính năng trong `$STATE_DIR`:
+  `state_set <id> <giá trị>` và `state_get <id> [mặc định]` (chưa có file thì in giá trị mặc định, mặc định `0`).
+  Dùng với `switch` / `checkbox` để giữ trạng thái giữa các lần mở app:
+
+  ```toml
+  [[item]]
+  type  = "switch"
+  id    = "game_mode"
+  title = "Chế độ mẫu"
+  on    = "state_set game_mode 1"
+  off   = "state_set game_mode 0"
+  get   = "state_get game_mode"
+  ```
+
+- Key lạ (không có trong bảng) giữ nguyên và ghi một dòng vào log khởi động.
+- Giữ nháy kép quanh `@KEY@` để đường dẫn có khoảng trắng vẫn đúng.
+- Không có `env.sh` trong assets thì bỏ qua. File lỗi cú pháp không chặn lệnh, nhưng các biến sau chỗ lỗi sẽ thiếu.
+- Biến trong `env.sh` có thể bị ghi đè bởi biến cùng tên của item (cùng `id`).
 
 ## 4. File trang (pages/*.toml)
 
@@ -167,11 +215,16 @@ type  = "link"
 title = "Nhập nhanh"
 page  = "pages/quick.toml"
 style = "dialog"                 # dialog toàn màn hình
+run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 ```
 
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
 - `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên che kín màn hình, thanh trên có nút đóng (X) thay vì mũi tên.
-- Trong trang dialog không mở được trang con: link `page` bị bỏ qua kèm cảnh báo, link `tab` vẫn dùng được (đóng dialog rồi chuyển tab).
+- Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
+  - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
+  - **Xác nhận**: đóng dialog rồi chạy `run` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `run` thì chỉ lưu biến.
+  - **Hủy**, nút X hoặc Back của máy: đóng dialog và khôi phục biến về giá trị lúc mở.
+- `button` và `link` không dùng được trong dialog: bị bỏ qua kèm cảnh báo.
 - Cùng một file trang con được nhiều link trỏ tới thì dùng `title` và `style` của link đầu tiên.
 - File trang con viết như file trang thường (mục 4); trong đó có thể có link tới trang con khác.
 - Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.

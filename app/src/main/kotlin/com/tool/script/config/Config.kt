@@ -63,7 +63,8 @@ data class Item(
     val children: List<Item>,
 )
 
-data class AppInfo(val name: String, val version: Int, val lang: String)
+/** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
+data class AppInfo(val name: String, val version: Int, val lang: String, val env: String? = null)
 
 data class PageRef(val id: String, val title: String, val icon: String, val file: String)
 
@@ -77,6 +78,8 @@ data class SubPage(
     val items: List<Item>,
     val error: String? = null,
     val dialog: Boolean = false,
+    /** Item link mở trang này; với dialog, `run` / `shell` / `timeout` / `confirm` của nó chạy khi bấm Xác nhận. */
+    val action: Item? = null,
 )
 
 data class LoadedConfig(
@@ -125,6 +128,7 @@ object TomlParser {
             name = app?.str("name") ?: "Tool Script",
             version = app?.str("version")?.toIntOrNull() ?: 1,
             lang = app?.str("lang") ?: "vi",
+            env = app?.str("env")?.takeIf { it.isNotBlank() },
         )
         val pages = mutableListOf<PageRef>()
         val seen = HashSet<String>()
@@ -393,20 +397,16 @@ object ConfigRepository {
     ): Map<String, SubPage> {
         val tabIds = tabs.map { it.ref.id }.toSet()
         val result = LinkedHashMap<String, SubPage>()
-        val queue = ArrayDeque<Triple<String, List<Item>, Boolean>>()
-        tabs.forEach { queue += Triple(it.ref.file, it.items, false) }
+        val queue = ArrayDeque<Pair<String, List<Item>>>()
+        tabs.forEach { queue += it.ref.file to it.items }
         while (queue.isNotEmpty()) {
-            val (owner, items, ownerIsDialog) = queue.removeFirst()
+            val (owner, items) = queue.removeFirst()
             for (link in links(items)) {
                 val tab = link.tab
                 val page = link.page
                 if (tab != null) {
                     if (tab !in tabIds) warnings += "$owner: link \"${link.title}\" trỏ tới tab \"$tab\" không tồn tại"
                 } else if (page != null) {
-                    if (ownerIsDialog) {
-                        warnings += "$owner: link \"${link.title}\" nằm trong trang dialog, không mở được trang con, bỏ qua"
-                        continue
-                    }
                     val existing = result[page]
                     if (existing != null) {
                         if (existing.dialog != link.dialog) {
@@ -415,21 +415,37 @@ object ConfigRepository {
                         continue
                     }
                     val sub = try {
-                        SubPage(page, link.title, TomlParser.parsePage(page, readAsset(context, page), warnings), dialog = link.dialog)
+                        SubPage(page, link.title, dialogItems(page, link, TomlParser.parsePage(page, readAsset(context, page), warnings), warnings), dialog = link.dialog, action = link)
                     } catch (e: ConfigParseException) {
                         warnings += e.message ?: "$page: lỗi parse"
-                        SubPage(page, link.title, emptyList(), error = e.message, dialog = link.dialog)
+                        SubPage(page, link.title, emptyList(), error = e.message, dialog = link.dialog, action = link)
                     } catch (e: java.io.IOException) {
                         val msg = "$page: không đọc được file: ${e.message}"
                         warnings += msg
-                        SubPage(page, link.title, emptyList(), error = msg, dialog = link.dialog)
+                        SubPage(page, link.title, emptyList(), error = msg, dialog = link.dialog, action = link)
                     }
                     result[page] = sub
-                    queue += Triple(page, sub.items, sub.dialog)
+                    queue += page to sub.items
                 }
             }
         }
         return result
+    }
+
+    /** Dialog chỉ để truyền biến: bỏ button và link (không có biến để truyền), cảnh báo từng mục bị bỏ. */
+    private fun dialogItems(file: String, link: Item, items: List<Item>, warnings: MutableList<String>): List<Item> {
+        if (!link.dialog) return items
+        fun filter(list: List<Item>): List<Item> = list.mapNotNull { item ->
+            when (item.type) {
+                ItemType.Button, ItemType.Link -> {
+                    warnings += "$file: ${item.type.key} \"${item.title}\" không dùng được trong dialog (dialog chỉ để truyền biến), bỏ qua"
+                    null
+                }
+                ItemType.Group -> item.copy(children = filter(item.children))
+                else -> item
+            }
+        }
+        return filter(items)
     }
 
     private fun links(items: List<Item>): List<Item> = items.flatMap {

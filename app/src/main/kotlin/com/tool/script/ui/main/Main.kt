@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.tool.script.boot.BootResult
+import com.tool.script.config.Item
 import com.tool.script.config.PageRef
 import com.tool.script.config.SubPage
 import com.tool.script.executor.ExecResult
@@ -65,7 +67,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.min
 
@@ -95,6 +99,8 @@ fun MainScreen(
     // Ngăn xếp trang con (khóa = đường dẫn file); rỗng thì đang ở màn hình chính.
     var stack by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var pendingTab by remember { mutableStateOf<Int?>(null) }
+    // Giá trị biến của dialog lúc mở, để khôi phục khi bấm Hủy.
+    var dialogSnapshot by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
     val env = remember(result) {
         RenderEnv(
@@ -109,11 +115,13 @@ fun MainScreen(
                 }
             },
             openPage = { file ->
-                val current = stack.lastOrNull()?.let { config.subPages[it] }
-                when {
-                    file !in config.subPages || current?.file == file -> Unit
-                    current?.dialog == true -> feedback.toast("Trang dialog không mở được trang con")
-                    else -> stack = stack + file
+                val target = config.subPages[file]
+                if (target != null && stack.lastOrNull() != file) {
+                    if (target.dialog) {
+                        val ids = variableIds(target.items)
+                        dialogSnapshot = result.store.snapshot().filterKeys { it in ids }
+                    }
+                    stack = stack + file
                 }
             },
         )
@@ -128,7 +136,21 @@ fun MainScreen(
         }
     }
 
-    BackHandler(enabled = stack.isNotEmpty()) { stack = stack.dropLast(1) }
+    // Đóng trang trên cùng. Dialog: Xác nhận thì chạy lệnh của link với các biến đã chọn, Hủy thì khôi phục biến.
+    val closeTop: (Boolean) -> Unit = { confirmed ->
+        val top = stack.lastOrNull()?.let { config.subPages[it] }
+        if (top != null && top.dialog) {
+            val action = top.action
+            if (confirmed) {
+                if (action != null) env.run(action, action.run)
+            } else {
+                dialogSnapshot.forEach { (name, value) -> result.store[name] = value }
+            }
+        }
+        stack = stack.dropLast(1)
+    }
+
+    BackHandler(enabled = stack.isNotEmpty()) { closeTop(false) }
 
     // Cửa sổ tab trượt.
     val visibleTabs = min(MAX_VISIBLE_TABS, pages.size)
@@ -172,7 +194,7 @@ fun MainScreen(
     ) { file ->
         val subPage = file?.let { config.subPages[it] }
         if (subPage != null) {
-            SubPageScreen(subPage, env, feedback, onBack = { stack = stack.dropLast(1) })
+            SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
         } else {
             Scaffold(
                 topBar = {
@@ -303,8 +325,19 @@ private fun AppTopBar(
 
 /** Màn hình trang con: thanh trên có nút quay lại (dialog: nút đóng), nội dung nạp từ file TOML của trang con. */
 @Composable
-private fun SubPageScreen(page: SubPage, env: RenderEnv, feedback: FeedbackHost, onBack: () -> Unit) {
-    Scaffold(topBar = { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog) }) { inner ->
+private fun SubPageScreen(
+    page: SubPage,
+    env: RenderEnv,
+    feedback: FeedbackHost,
+    onBack: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    // Dialog chỉ truyền biến: item không chạy lệnh, nút Xác nhận mới chạy lệnh của link.
+    val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
+    Scaffold(
+        topBar = { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog) },
+        bottomBar = { if (page.dialog) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
+    ) { inner ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -313,14 +346,43 @@ private fun SubPageScreen(page: SubPage, env: RenderEnv, feedback: FeedbackHost,
             FeedbackBanner(feedback)
             Box(Modifier.weight(1f)) {
                 PageList(
-                    list = page.items.filter { isShown(it, env.store) },
+                    list = page.items.filter { isShown(it, pageEnv.store) },
                     error = page.error,
-                    env = env,
+                    env = pageEnv,
                     bottomInset = inner.calculateBottomPadding(),
                 )
             }
             FeedbackDialogs(feedback, env)
         }
+    }
+}
+
+/** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). */
+@Composable
+private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MiuixTheme.colorScheme.surface)
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TextButton(text = "Hủy", onClick = onCancel, modifier = Modifier.weight(1f))
+        TextButton(
+            text = "Xác nhận",
+            onClick = onConfirm,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+        )
+    }
+}
+
+/** Tên biến (id) của các item, kể cả item con trong group. */
+private fun variableIds(items: List<Item>): Set<String> = buildSet {
+    for (item in items) {
+        item.id?.let { add(it) }
+        addAll(variableIds(item.children))
     }
 }
 

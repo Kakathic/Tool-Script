@@ -104,10 +104,40 @@ class SuExecutor : ShellExecutor {
 class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 
 /** Dò backend theo thứ tự su -> ROM -> adb -> thường, giữ backend đang dùng. */
+/**
+ * Thêm vào đầu mọi lệnh: nạp env.sh ([ExecutorManager.envFile]) rồi chạy [ExecutorManager.prelude] (nếu có),
+ * để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
+ */
+private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor {
+    override val rootMode: String get() = inner.rootMode
+
+    override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult {
+        val envFile = ExecutorManager.envFile
+        val prelude = ExecutorManager.prelude
+        val full = buildList {
+            if (envFile != null) {
+                val path = com.tool.script.util.ShellText.quote(envFile)
+                add("[ -r $path ] && . $path")
+            }
+            if (!prelude.isNullOrBlank()) add(prelude)
+            add(command)
+        }.joinToString("\n")
+        return inner.exec(full, timeoutSec, onLine)
+    }
+}
+
 object ExecutorManager {
     @Volatile
-    var current: ShellExecutor = LocalExecutor()
+    var current: ShellExecutor = PreludeExecutor(LocalExecutor())
         private set
+
+    /** Đường dẫn env.sh đã thay key (xem EnvFile), được nạp trước mọi lệnh qua [current]. */
+    @Volatile
+    var envFile: String? = null
+
+    /** Đoạn shell (`[app] env` trong main.toml) chạy sau env.sh, trước mọi lệnh qua [current]. */
+    @Volatile
+    var prelude: String? = null
 
     private const val DETECT_TIMEOUT_MS = 5_000L
 
@@ -125,7 +155,7 @@ object ExecutorManager {
         val hasRoot = withTimeoutOrNull(DETECT_TIMEOUT_MS) { probe.await() }
         if (hasRoot == true) {
             notes += "Backend: root (su)"
-            return DetectResult(SuExecutor(), notes).also { current = it.executor }
+            return DetectResult(SuExecutor(), notes).also { current = PreludeExecutor(it.executor) }
         }
         notes += if (hasRoot == null) "su: hết thời gian chờ, hạ cấp" else "su: không có quyền root"
 
@@ -134,6 +164,6 @@ object ExecutorManager {
 
         // 4. Không root.
         notes += "Backend: shell thường (ROOT_MODE = any)"
-        return DetectResult(LocalExecutor("any"), notes).also { current = it.executor }
+        return DetectResult(LocalExecutor("any"), notes).also { current = PreludeExecutor(it.executor) }
     }
 }

@@ -1,31 +1,40 @@
 # Trang dialog: link có style = "dialog" mở trang này trượt từ dưới lên, thanh trên có nút đóng (X).
-# Trong dialog không dùng link page (không mở được trang con); link tab thì đóng dialog rồi chuyển tab.
+# Item trong dialog chỉ để truyền biến, không chạy lệnh khi đổi (run / on / off bị bỏ qua);
+# button và link không dùng được trong dialog. Bấm Xác nhận mới chạy `run` của item link đã mở dialog này,
+# với các biến đã chọn; bấm Hủy, X hoặc Back thì khôi phục biến về lúc mở dialog.
 
 [[item]]
 type    = "text"
 title   = "Dialog toàn màn hình"
-content = "Hợp cho việc làm nhanh rồi đóng. Bấm X hoặc Back của máy để đóng."
+content = "Chọn giá trị rồi bấm Xác nhận để chạy script, hoặc Hủy để bỏ."
 
 [[group]]
-title = "Thử trong dialog"
+title = "Biến truyền vào script"
 
 [[group.item]]
 type    = "input"
 id      = "demo_dialog_note"
 title   = "Ghi chú"
 hint    = "Nhập nội dung"
-default = ""
-run     = 'echo "Ghi chú: $demo_dialog_note"'
-shell   = "banner"
+default = "xin chào"
 
 [[group.item]]
-type  = "button"
-title = "Nút thử"
-run   = "echo xin chào từ dialog"
-shell = "banner"
+type    = "select"
+id      = "demo_dialog_mode"
+title   = "Chế độ"
+default = "balanced"
+options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
 
 [[group.item]]
-type  = "link"
-title = "Đến tab Công cụ"
-desc  = "đóng dialog rồi chuyển tab"
-tab   = "tools"
+type    = "slider"
+id      = "demo_dialog_level"
+title   = "Mức"
+min     = 0
+max     = 100
+step    = 10
+default = 50
+
+[[group.item]]
+type  = "switch"
+id    = "demo_dialog_flag"
+title = "Bật cờ"

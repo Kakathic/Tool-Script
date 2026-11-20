@@ -82,7 +82,7 @@ Giai đoạn 2: giao diện
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`log` / `hidden` / `banner` / `notice`).
 - [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
 - [x] Chủ đề: Theo hệ thống / Sáng / Tối và 3 chế độ Màu động (Monet) có sẵn của Miuix, được lưu lại.
-- [x] Trang mẫu trong `assets/configs/pages` (thông tin máy, mạng, chế độ, lệnh cần root).
+- [x] Trang mẫu trong `assets/configs/pages`: chỉ minh họa tính năng (nút, nhập liệu, lựa chọn, điều kiện, khóa, trang con, dialog, biến env.sh), lệnh chỉ là `echo`, không đổi thông số thiết bị.
 - [x] Build tự động bằng GitHub Actions.
 
 ### Chưa hoàn thành

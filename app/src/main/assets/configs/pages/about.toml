@@ -1,24 +1,41 @@
-# Trang mẫu: link (chuyển sang tab khác), text.
+# Trang mẫu: text, link. Link có hai kiểu:
+#   tab  = id của một [[tab]] trong main.toml (chuyển tab)
+#   page = file trang con (mở trang mới có nút quay lại)
 
 [[item]]
 type    = "text"
 title   = "Tool Script"
-content = "Giao diện được nạp từ file TOML trong assets/configs."
+content = "Giao diện được nạp từ file TOML trong assets/configs. Các trang mẫu chỉ để xem tính năng, không đổi thông số thiết bị."
 
 [[group]]
-title = "Liên kết"
+title = "Chuyển tab"
 
-# link: tab = id của một [[tab]] trong main.toml (chuyển tab); page = file trang con (mở trang mới có nút quay lại)
 [[group.item]]
 type  = "link"
-title = "Đến trang Công cụ"
+title = "Đến tab Trang chủ"
+desc  = "tab = \"home\""
+tab   = "home"
+
+[[group.item]]
+type  = "link"
+title = "Đến tab Công cụ"
 desc  = "tab = \"tools\""
 tab   = "tools"
 
 [[group.item]]
 type  = "link"
-title = "Về trang chủ"
-tab   = "home"
+title = "Đến tab Demo"
+desc  = "tab = \"demo\""
+tab   = "demo"
+
+[[group]]
+title = "Mở trang con"
+
+[[group.item]]
+type  = "link"
+title = "Trang con mẫu"
+desc  = "page = \"pages/demo_sub.toml\""
+page  = "pages/demo_sub.toml"
 
 [[group]]
 title = "Các kiểu hiển thị kết quả"
@@ -42,12 +59,3 @@ content = "Thông báo ngắn ngay trong app, tự ẩn sau vài giây."
 type    = "text"
 title   = "notice"
 content = "Thông báo hệ thống của Android."
-
-[[group]]
-title = "Thử ngay"
-
-[[group.item]]
-type  = "link"
-title = "Thông tin máy và thử nghiệm lệnh"
-desc  = "Tab Trang chủ"
-tab   = "home"
