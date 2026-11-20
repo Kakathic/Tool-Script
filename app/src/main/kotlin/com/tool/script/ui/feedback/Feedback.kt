@@ -20,6 +20,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,9 +29,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,22 +47,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tool.script.R
+import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.copyToClipboard
+import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -348,7 +355,10 @@ fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit
     }
 }
 
-/** Thông báo ngắn trong app (banner). */
+/**
+ * Thông báo ngắn trong app (banner): ô icon tròn bên trái (info / cảnh báo), nội dung ở giữa, nút bên phải.
+ * [progress] khác null thì có thanh đếm ngược mảnh ở cuối. [onDismiss] null = không có nút "Ẩn".
+ */
 @Composable
 fun Banner(
     message: String,
@@ -372,34 +382,58 @@ fun Banner(
             contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
         )
     }
-    // Có nút bên phải thì lề phải 8dp (nút tự có đệm), không có nút thì 16dp cho cân với lề trái.
+    // Có nút bên phải thì lề phải 8dp (nút tự có đệm), không có nút thì 14dp cho cân với lề trái.
     val hasButtons = actionLabel != null || onDismiss != null
-    val endPadding = if (hasButtons) 8.dp else 16.dp
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = colors,
-        insideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = endPadding, bottom = 12.dp),
+        insideMargin = PaddingValues(start = 14.dp, top = 12.dp, end = if (hasButtons) 8.dp else 14.dp, bottom = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(colors.contentColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = Util.iconModel(if (warning) "icons/banner_warning.svg" else "icons/banner_info.svg"),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(colors.contentColor),
+                )
+            }
+            Spacer(Modifier.width(12.dp))
             Text(
                 text = message,
                 modifier = Modifier.weight(1f),
                 color = colors.contentColor,
                 style = MiuixTheme.textStyles.body2,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
             if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
             if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
         }
         if (progress != null) {
-            Spacer(Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = progress,
-                modifier = Modifier.fillMaxWidth().padding(end = if (hasButtons) 8.dp else 0.dp),
-                // Nền thanh sáng (trắng mờ) thay vì màu tối mặc định.
-                colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                    backgroundColor = Color.White.copy(alpha = 0.6f),
-                ),
-            )
+            Spacer(Modifier.height(10.dp))
+            // Thanh đếm ngược mảnh: nền sáng, phần còn lại màu chủ đạo; lề phải bù để hai bên cùng cách mép 14dp.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = if (hasButtons) 6.dp else 0.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.6f)),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .height(3.dp)
+                        .background(MiuixTheme.colorScheme.primary),
+                )
+            }
         }
     }
 }
@@ -437,7 +471,10 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
             message = last,
             warning = false,
             // statusBarsPadding nằm trong phần trượt để banner trượt hẳn ra khỏi mép trên màn hình.
-            modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp)),
             progress = progress.value,
         )
     }
