@@ -12,30 +12,21 @@ android {
         applicationId = "com.tool.script"
         minSdk = 30            // Wireless Debugging (backend adb) và MANAGE_EXTERNAL_STORAGE cần Android 11+
         targetSdk = 37         // Android 17 (API 37)
-        // Workflow phát hành truyền -PversionName (từ tag vX.Y.Z) và -PversionCode (số lần chạy); build thường dùng giá trị mặc định.
+        // CI truyền -PversionCode (số lần chạy workflow); -PversionName tùy chọn. Build local dùng giá trị mặc định.
         versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(1)
         versionName = providers.gradleProperty("versionName").getOrElse("0.1.0")
     }
 
     // Khóa "beta": keystore cố định commit trong repo (app/beta.jks), mật khẩu công khai nên KHÔNG bảo mật.
-    // Dùng tạm cho cả bản debug lẫn bản chính thức: mọi build cùng chữ ký nên cài đè / cập nhật lên nhau được.
-    // Khi có khóa thật, đặt 4 biến môi trường bên dưới (CI lấy từ secret): bản release tự chuyển sang khóa thật.
+    // Dùng tạm cho cả bản debug lẫn bản chính thức (release): mọi build cùng chữ ký nên cài đè / cập nhật lên nhau được.
+    // Khi có khóa thật, thay storeFile / mật khẩu / alias của signingConfig này (hoặc thêm signingConfig mới cho release).
     // Lưu ý: đổi chữ ký thì người dùng phải gỡ app cũ rồi cài lại.
-    val releaseStoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull
     signingConfigs {
         create("beta") {
             storeFile = file("beta.jks")
             storePassword = "android"
             keyAlias = "beta"
             keyPassword = "android"
-        }
-        if (releaseStoreFile != null) {
-            create("release") {
-                storeFile = file(releaseStoreFile)
-                storePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
-                keyAlias = providers.environmentVariable("KEY_ALIAS").orNull
-                keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull
-            }
         }
     }
 
@@ -44,7 +35,7 @@ android {
             signingConfig = signingConfigs.getByName("beta")
         }
         release {
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("beta")
+            signingConfig = signingConfigs.getByName("beta")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
