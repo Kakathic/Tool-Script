@@ -109,6 +109,12 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import kotlin.math.min
 import kotlin.math.max
 
@@ -290,13 +296,28 @@ fun MainScreen(
                     bottomBar = {
                         if (pages.size >= 2) {
                             NavigationBar {
-                                for (index in windowStart until windowStart + visibleTabs) {
-                                    val ref = pages[index].ref
-                                    TabItem(
-                                        ref = ref,
-                                        selected = pagerState.currentPage == index,
-                                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                    )
+                                // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
+                                val slide by animateFloatAsState(
+                                    targetValue = windowStart.toFloat(),
+                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                    label = "tabWindowSlide",
+                                )
+                                BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
+                                    val itemWidth = maxWidth / visibleTabs
+                                    val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
+                                    Row(
+                                        Modifier
+                                            .requiredWidth(itemWidth * pages.size)
+                                            .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
+                                    ) {
+                                        pages.forEachIndexed { index, page ->
+                                            TabItem(
+                                                ref = page.ref,
+                                                selected = pagerState.currentPage == index,
+                                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
