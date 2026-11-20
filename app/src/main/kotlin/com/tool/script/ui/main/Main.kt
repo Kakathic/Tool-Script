@@ -314,6 +314,7 @@ fun MainScreen(
                                             TabItem(
                                                 ref = page.ref,
                                                 selected = pagerState.currentPage == index,
+                                                width = itemWidth,
                                                 onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                                             )
                                         }
@@ -728,11 +729,11 @@ private fun PageList(
 }
 
 @Composable
-private fun RowScope.TabItem(ref: PageRef, selected: Boolean, onClick: () -> Unit) {
+private fun TabItem(ref: PageRef, selected: Boolean, width: Dp, onClick: () -> Unit) {
     val color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantActions
     Column(
         modifier = Modifier
-            .weight(1f)
+            .requiredWidth(width)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
