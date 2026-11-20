@@ -235,7 +235,8 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 
 @Composable
 private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
-    BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = false) { checked, isEnabled, onChange ->
+    // Bấm cả hàng (tiêu đề / mô tả) cũng đổi trạng thái; bấm trực tiếp vào công tắc thì dùng rung riêng của Switch.
+    BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = true, hapticOnControl = false) { checked, isEnabled, onChange ->
         Switch(checked = checked, enabled = isEnabled, onCheckedChange = onChange)
     }
 }
@@ -264,6 +265,7 @@ private fun BinaryItem(
     enabled: Boolean,
     inGroup: Boolean,
     rowClickable: Boolean,
+    hapticOnControl: Boolean = true,
     control: @Composable (checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) -> Unit,
 ) {
     val id = item.id ?: return
@@ -282,10 +284,7 @@ private fun BinaryItem(
         }
     }
 
-    val change: (Boolean) -> Unit = { newValue ->
-        if (rowClickable) {
-            haptic.performHapticFeedback(if (newValue) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-        }
+    val apply: (Boolean) -> Unit = { newValue ->
         val value = if (newValue) "1" else "0"
         val command = if (newValue) item.on else item.off
         // Chỉ đổi trạng thái khi lệnh thành công (hoặc item không có lệnh).
@@ -293,13 +292,18 @@ private fun BinaryItem(
             if (result.ok) env.store[id] = value
         }
     }
+    // Bấm vào hàng: rung rồi đổi trạng thái.
+    val change: (Boolean) -> Unit = { newValue ->
+        haptic.performHapticFeedback(if (newValue) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+        apply(newValue)
+    }
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
             title = item.title,
             summary = item.desc,
             enabled = enabled,
-            endActions = { control(checked, enabled, change) },
+            endActions = { control(checked, enabled, if (hapticOnControl) change else apply) },
             onClick = if (rowClickable) ({ change(!checked) }) else null,
         )
     }
