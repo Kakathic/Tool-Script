@@ -143,17 +143,19 @@ class LogEntry(
 class FeedbackHost(private val context: Context) {
     var log by mutableStateOf<LogEntry?>(null)
     var banner by mutableStateOf<String?>(null)
+    var bannerWarning by mutableStateOf(false)
 
     var bannerToken by mutableIntStateOf(0)
         private set
 
-    fun showBanner(message: String) {
+    fun showBanner(message: String, warning: Boolean = false) {
         banner = message
+        bannerWarning = warning
         bannerToken++
     }
 
     internal var requestNoticePermission: (() -> Unit)? = null
-    private var pendingNotice: Pair<String, String>? = null
+    private var pendingNotice: Triple<String, String, Boolean>? = null
 
     fun toast(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -167,38 +169,39 @@ class FeedbackHost(private val context: Context) {
         when (item.shell) {
             ShellMode.Live, ShellMode.Full -> Unit
             ShellMode.Hidden -> if (!result.ok) toast(summary)
-            ShellMode.Banner -> showBanner(summary)
-            ShellMode.Notice -> notice(item.title, summary)
+            ShellMode.Banner -> showBanner(summary, warning = !result.ok)
+            ShellMode.Notice -> notice(item.title, summary, warning = !result.ok)
         }
     }
 
     private fun summaryOf(title: String, result: ExecResult): String = when {
-        result.timedOut -> "$title: hết thời gian chờ"
-        result.ok -> outputOf(result) ?: "$title: hoàn tất"
-        else -> {
-            val firstLine = result.stderr.lineSequence().firstOrNull { it.isNotBlank() }
-            "$title: lỗi (mã ${result.code})" + (firstLine?.let { " - $it" } ?: "")
-        }
+        result.timedOut -> withOutput("$title: hết thời gian chờ", result)
+        result.ok -> outputOf(result.stdout) ?: "$title: hoàn tất"
+        else -> withOutput("$title: lỗi (mã ${result.code})", result)
     }
 
-    /** Phần lệnh in ra (stdout) để làm nội dung banner / thông báo; null nếu lệnh không in gì. */
-    private fun outputOf(result: ExecResult): String? =
-        result.stdout.lineSequence()
+    /** Tiêu đề lỗi, xuống dòng rồi tới toàn bộ phần lệnh in ra (stdout và stderr) nếu có. */
+    private fun withOutput(head: String, result: ExecResult): String =
+        outputOf(result.combined)?.let { "$head\n$it" } ?: head
+
+    /** Phần lệnh in ra để làm nội dung banner / thông báo (bỏ dòng `@progress`); null nếu không có gì. */
+    private fun outputOf(text: String): String? =
+        text.lineSequence()
             .filterNot { it.startsWith("@progress") }
             .joinToString("\n")
             .trim()
             .takeIf { it.isNotEmpty() }
             ?.take(OUTPUT_MAX_CHARS)
 
-    fun notice(title: String, text: String) {
+    fun notice(title: String, text: String, warning: Boolean = false) {
         if (Build.VERSION.SDK_INT >= 33 &&
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             val ask = requestNoticePermission
             if (ask == null) {
-                showBanner(text)
+                showBanner(text, warning)
             } else {
-                pendingNotice = title to text
+                pendingNotice = Triple(title, text, warning)
                 ask()
             }
             return
@@ -209,7 +212,7 @@ class FeedbackHost(private val context: Context) {
     internal fun onNoticePermissionResult(granted: Boolean) {
         val pending = pendingNotice ?: return
         pendingNotice = null
-        if (granted) post(pending.first, pending.second) else showBanner(pending.second)
+        if (granted) post(pending.first, pending.second) else showBanner(pending.second, pending.third)
     }
 
     private fun post(title: String, text: String) {
@@ -535,7 +538,11 @@ private const val OUTPUT_MAX_CHARS = 300
 fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
     val message = feedback.banner
     var last by remember { mutableStateOf(message.orEmpty()) }
-    if (message != null) last = message
+    var lastWarning by remember { mutableStateOf(false) }
+    if (message != null) {
+        last = message
+        lastWarning = feedback.bannerWarning
+    }
 
     val progress = remember { Animatable(1f) }
     LaunchedEffect(feedback.bannerToken, message != null) {
@@ -554,7 +561,7 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
     ) {
         Banner(
             message = last,
-            warning = false,
+            warning = lastWarning,
             modifier = Modifier
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp)

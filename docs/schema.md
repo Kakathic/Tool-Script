@@ -364,8 +364,8 @@ lock_mode = "hide"
 | `live` (mặc định) | Bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống). Nhãn trạng thái (Đang chạy / Xong / Lỗi / Hết thời gian chờ) và mã thoát nằm riêng phía trên khung log, khung log chỉ chứa phần lệnh in ra; nút Sao chép chép phần đó |
 | `full` | Như `live` nhưng log mở **toàn màn hình** ngay khi bắt đầu chạy. Có nút Thu nhỏ (về bảng log thường), Sao chép, Đóng; Back của máy cũng đóng |
 | `hidden` | Chạy ẩn, không hiện gì |
-| `banner` | Hiện thông báo ngắn trong app (banner): lệnh thành công và có in ra thì hiện đúng phần in ra (stdout, tối đa 300 ký tự), không in gì thì hiện "<title>: hoàn tất"; lỗi thì hiện mã lỗi và dòng lỗi đầu tiên |
-| `notice` | Gửi thông báo hệ thống của Android (chỉ xin quyền thông báo khi dùng tới, Android 13+); nội dung quy tắc như `banner` |
+| `banner` | Hiện thông báo ngắn trong app (banner): lệnh thành công và có in ra thì hiện đúng phần in ra (stdout, tối đa 300 ký tự), không in gì thì hiện "<title>: hoàn tất". Lỗi hoặc hết thời gian chờ thì banner nền đỏ nhạt, dòng đầu là mã lỗi, kèm toàn bộ phần lệnh in ra (stdout và stderr, tối đa 300 ký tự). Bảng log `live` cũng mở khi chạy |
+| `notice` | Gửi thông báo hệ thống của Android (chỉ xin quyền thông báo khi dùng tới, Android 13+); nội dung quy tắc như `banner` (bảng log `live` cũng mở khi chạy) |
 
 Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng.
 

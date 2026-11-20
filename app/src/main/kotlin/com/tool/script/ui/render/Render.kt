@@ -124,7 +124,7 @@ class RenderEnv(
             scope.launch {
                 val vars = store.snapshot() + extra
                 val full = ShellText.withEnv(command, vars)
-                val result = if (item.shell == ShellMode.Live || item.shell == ShellMode.Full) {
+                val result = if (item.shell != ShellMode.Hidden) {
                     val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
                     ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
                         .also { entry.finish(it) }
