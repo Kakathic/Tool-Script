@@ -13,6 +13,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -145,12 +149,35 @@ class FeedbackHost(private val context: Context) {
     var banner by mutableStateOf<String?>(null)
     var bannerWarning by mutableStateOf(false)
 
+    /** true khi banner đang báo "Đang chạy script": thanh chạy vô hạn, chưa đếm ngược. */
+    var bannerRunning by mutableStateOf(false)
+        private set
+
+    private var runningCount by mutableIntStateOf(0)
+
+    /** Có lệnh `banner` / `notice` đang chạy: các item dùng hai kiểu này bị khóa cho tới khi xong. */
+    val busy: Boolean get() = runningCount > 0
+
+    fun beginRun() {
+        runningCount++
+        banner = RUNNING_TEXT
+        bannerWarning = false
+        bannerRunning = true
+        bannerToken++
+    }
+
+    fun endRun() {
+        if (runningCount > 0) runningCount--
+        if (runningCount == 0 && bannerRunning) banner = null
+    }
+
     var bannerToken by mutableIntStateOf(0)
         private set
 
     fun showBanner(message: String, warning: Boolean = false) {
         banner = message
         bannerWarning = warning
+        bannerRunning = false
         bannerToken++
     }
 
@@ -170,7 +197,10 @@ class FeedbackHost(private val context: Context) {
             ShellMode.Live, ShellMode.Full -> Unit
             ShellMode.Hidden -> if (!result.ok) toast(summary)
             ShellMode.Banner -> showBanner(summary, warning = !result.ok)
-            ShellMode.Notice -> notice(item.title, summary, warning = !result.ok)
+            ShellMode.Notice -> {
+                if (bannerRunning) banner = null
+                notice(item.title, summary, warning = !result.ok)
+            }
         }
     }
 
@@ -462,6 +492,7 @@ fun Banner(
     actionLabel: String? = null,
     onAction: () -> Unit = {},
     progress: Float? = null,
+    indeterminate: Boolean = false,
     onDismiss: (() -> Unit)? = null,
 ) {
     val colors = if (warning) {
@@ -509,7 +540,32 @@ fun Banner(
             if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
             if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
         }
-        if (progress != null) {
+        if (indeterminate) {
+            Spacer(Modifier.height(10.dp))
+            val start by rememberInfiniteTransition(label = "banner-run").animateFloat(
+                initialValue = 0f,
+                targetValue = 1f - INDETERMINATE_WIDTH,
+                animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Reverse),
+                label = "banner-run-start",
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = if (hasButtons) 6.dp else 0.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(colors.contentColor.copy(alpha = 0.15f)),
+            ) {
+                Spacer(Modifier.weight(start + 0.001f))
+                Box(
+                    Modifier
+                        .weight(INDETERMINATE_WIDTH)
+                        .height(3.dp)
+                        .background(MiuixTheme.colorScheme.primary),
+                )
+                Spacer(Modifier.weight(1f - INDETERMINATE_WIDTH - start + 0.001f))
+            }
+        } else if (progress != null) {
             Spacer(Modifier.height(10.dp))
             Box(
                 modifier = Modifier
@@ -532,7 +588,11 @@ fun Banner(
 
 const val BANNER_MILLIS = 5_000
 
+private const val INDETERMINATE_WIDTH = 0.35f
+
 private const val OUTPUT_MAX_CHARS = 300
+
+private const val RUNNING_TEXT = "Đang chạy script…"
 
 @Composable
 fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
@@ -545,8 +605,9 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
     }
 
     val progress = remember { Animatable(1f) }
-    LaunchedEffect(feedback.bannerToken, message != null) {
-        if (message != null) {
+    val running = feedback.bannerRunning
+    LaunchedEffect(feedback.bannerToken, message != null, running) {
+        if (message != null && !running) {
             progress.snapTo(1f)
             progress.animateTo(0f, tween(BANNER_MILLIS, easing = LinearEasing))
             feedback.banner = null
@@ -567,6 +628,7 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp)),
             progress = progress.value,
+            indeterminate = running,
         )
     }
 }

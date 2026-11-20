@@ -120,19 +120,28 @@ class RenderEnv(
             onDone(ExecResult(0, "", ""))
             return
         }
-        val action: () -> Unit = {
+        val notifies = item.shell == ShellMode.Banner || item.shell == ShellMode.Notice
+        val action: () -> Unit = action@{
+            if (notifies) {
+                if (feedback.busy) return@action
+                feedback.beginRun()
+            }
             scope.launch {
-                val vars = store.snapshot() + extra
-                val full = ShellText.withEnv(command, vars)
-                val result = if (item.shell != ShellMode.Hidden) {
-                    val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
-                    ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
-                        .also { entry.finish(it) }
-                } else {
-                    ExecutorManager.current.exec(full, item.timeoutSec)
+                try {
+                    val vars = store.snapshot() + extra
+                    val full = ShellText.withEnv(command, vars)
+                    val result = if (item.shell == ShellMode.Live || item.shell == ShellMode.Full) {
+                        val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
+                        ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
+                            .also { entry.finish(it) }
+                    } else {
+                        ExecutorManager.current.exec(full, item.timeoutSec)
+                    }
+                    feedback.report(item, command, result)
+                    onDone(result)
+                } finally {
+                    if (notifies) feedback.endRun()
                 }
-                feedback.report(item, command, result)
-                onDone(result)
             }
         }
         val message = item.confirm
@@ -153,7 +162,7 @@ fun isShown(item: Item, store: VariableStore): Boolean {
 fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     val lock = item.lock
     val locked = lock != null && env.store.evaluate(lock)
-    val enabled = !locked
+    val enabled = !locked && !(env.feedback.busy && (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice))
     val modifier = Modifier
         .fillMaxWidth()
         .alpha(if (enabled) 1f else 0.4f)
