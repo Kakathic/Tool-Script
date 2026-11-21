@@ -71,7 +71,7 @@ app/src/main/
 
 ## Lưu ý kỹ thuật
 
-- `minSdk = 30`: Wireless Debugging (backend adb) và quyền "Truy cập tất cả tệp" cần Android 11+.
+- `minSdk = 24`, `targetSdk = 28`, `compileSdk = 37`: target 28 là chủ ý để exec được file ELF tải về trong `filesDir` (app target >= 29 bị SELinux chặn). Không đưa lên Google Play. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp", kênh thông báo, xin quyền thông báo) được kiểm tra `SDK_INT` lúc chạy. `run_elf` trong `env.sh` chạy ELF tải về.
 - File chép từ assets ra thư mục app không exec trực tiếp được trên Android 10+; chạy bằng `sh init.sh`.
 - Backend adb: chưa chọn thư viện ADB client (xem TODO trong `libs.versions.toml`).
 - Chế độ không root: shell chạy được (`sh -c ...`) nhưng với quyền của chính app (SELinux `untrusted_app`), nên nhiều lệnh hệ thống như `pm`, `settings put`, `dumpsys` có thể bị từ chối. Tài liệu hành vi của Android 17 (`targetSdk = 37`) không nêu thay đổi nào về chạy shell, nhưng nên thử trên máy thật.

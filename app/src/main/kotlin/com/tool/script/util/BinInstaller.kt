@@ -2,6 +2,7 @@ package com.tool.script.util
 
 import android.content.Context
 import android.system.Os
+import android.system.OsConstants
 import java.io.File
 
 /**
@@ -49,8 +50,16 @@ object BinInstaller {
         }
         // Dọn symlink của lệnh đã bị gỡ khỏi jniLibs (file thường do người dùng tự đặt vào thì giữ nguyên).
         binDir.listFiles()?.forEach { f ->
-            if (f.name !in wanted && java.nio.file.Files.isSymbolicLink(f.toPath())) f.delete()
+            if (f.name !in wanted && isSymlink(f)) f.delete()
         }
         return Result(linked, libs.size, failed)
     }
+
+    /** Thay cho java.nio.file.Files.isSymbolicLink (chỉ có từ API 26); Os.lstat có từ API 21. */
+    private fun isSymlink(f: File): Boolean =
+        try {
+            OsConstants.S_ISLNK(Os.lstat(f.absolutePath).st_mode)
+        } catch (_: Exception) {
+            false
+        }
 }

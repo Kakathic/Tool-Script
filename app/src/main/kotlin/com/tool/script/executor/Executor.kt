@@ -1,5 +1,6 @@
 package com.tool.script.executor
 
+import android.os.Build
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.CancellationException
@@ -58,6 +59,30 @@ private fun readLines(stream: java.io.InputStream, onLine: (String) -> Unit) {
     }
 }
 
+// Process.isAlive / destroyForcibly / waitFor(timeout) chỉ có từ API 26; minSdk 24 nên dùng bản tương thích dưới đây.
+private fun Process.alive(): Boolean =
+    try {
+        exitValue()
+        false
+    } catch (_: IllegalThreadStateException) {
+        true
+    }
+
+private fun Process.kill() {
+    if (Build.VERSION.SDK_INT >= 26) destroyForcibly() else destroy()
+}
+
+/** Chờ tối đa [timeoutSec] giây; true = tiến trình đã kết thúc. Có thể ném InterruptedException (runInterruptible xử lý). */
+private fun Process.waitForCompat(timeoutSec: Long): Boolean {
+    if (Build.VERSION.SDK_INT >= 26) return waitFor(timeoutSec, TimeUnit.SECONDS)
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSec)
+    while (alive()) {
+        if (System.nanoTime() >= deadline) return false
+        Thread.sleep(50)
+    }
+    return true
+}
+
 /** Shell thường (`sh -c`), quyền của chính app. */
 class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
     override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult =
@@ -91,17 +116,17 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                                 process.waitFor()
                                 true
                             } else {
-                                process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS)
+                                process.waitForCompat(timeoutSec.toLong())
                             }
                         }
                     } catch (e: CancellationException) {
                         // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để các luồng đọc đầu ra kết thúc ngay.
-                        process.destroyForcibly()
+                        process.kill()
                         throw e
                     }
                     if (!finished) {
                         timedOut = true
-                        process.destroyForcibly()
+                        process.kill()
                     }
                     outJob.await()
                     errJob.await()
@@ -113,7 +138,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                     )
                 }
             } finally {
-                if (process.isAlive) process.destroyForcibly()
+                if (process.alive()) process.kill()
             }
         }
 }

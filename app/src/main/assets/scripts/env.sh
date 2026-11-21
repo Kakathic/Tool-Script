@@ -30,6 +30,21 @@ export EXT_DIR="@EXT_DIR@"
 # $BIN_DIR đứng đầu: `busybox` gọi thẳng bản của app (applet của busybox chưa tạo symlink: dùng `busybox ls`...).
 export PATH="$BIN_DIR:$SCRIPTS_DIR:$PATH"
 
+# Chạy file ELF tải về (không cần root): run_elf <file> [đối số...]
+# App target SDK 28 nên exec thẳng file trong $FILES_DIR được. Nếu máy vẫn chặn (mã 126), chạy lại qua linker hệ thống
+# (chỉ chạy được ELF Android: PIE, liên kết động). Chương trình multi-call (busybox...) nên để trong jniLibs.
+run_elf() {
+  _f="$1"; shift
+  [ -f "$_f" ] || { echo "run_elf: không thấy file: $_f" >&2; return 127; }
+  chmod 755 "$_f" 2>/dev/null
+  "$_f" "$@"
+  _rc=$?
+  [ "$_rc" -eq 126 ] || return "$_rc"
+  # Byte thứ 5 của ELF: 02 = 64-bit, 01 = 32-bit
+  if [ "$(od -An -tx1 -j4 -N1 "$_f" | tr -d ' ')" = "02" ]; then _ld=/system/bin/linker64; else _ld=/system/bin/linker; fi
+  "$_ld" "$_f" "$@"
+}
+
 # Lưu / đọc trạng thái của một tính năng, tên file = tên (id) tính năng trong $STATE_DIR.
 #   state_set <tên> <giá trị>      ví dụ: state_set home_switch 1
 #   state_get <tên> [mặc định]     in giá trị đã lưu; chưa có file thì in giá trị mặc định (mặc định 0)

@@ -1,6 +1,7 @@
 <resources>
     <!-- Giao diện chính: toàn bộ UI do Compose/Miuix vẽ -->
-    <style name="Theme.ToolScript" parent="android:Theme.DeviceDefault.DayNight">
+    <!-- Theme.DeviceDefault.DayNight chỉ có từ API 29 nên tách: values = sáng, values-night = tối (cùng hiệu ứng với DayNight). -->
+    <style name="Theme.ToolScript" parent="android:Theme.DeviceDefault.Light.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
         <item name="android:windowBackground">@color/window_bg</item>

@@ -89,11 +89,17 @@ private fun AppRoot(
     val state by vm.state.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (Util.hasAllFilesAccess()) vm.start() else onExit()
+        if (Util.hasAllFilesAccess(context)) vm.start() else onExit()
+    }
+    // Android 7 đến 10: hộp thoại quyền ghi bộ nhớ thường.
+    val legacyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) vm.start() else onExit()
     }
     LaunchedEffect(Unit) {
-        if (Util.hasAllFilesAccess()) {
+        if (Util.hasAllFilesAccess(context)) {
             vm.start()
+        } else if (Util.needsLegacyStoragePermission()) {
+            legacyLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
             try {
                 permissionLauncher.launch(Util.allFilesAccessIntent(context))

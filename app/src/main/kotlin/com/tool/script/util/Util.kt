@@ -1,9 +1,12 @@
 package com.tool.script.util
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import com.tool.script.MainActivity
@@ -12,8 +15,21 @@ import java.io.File
 // Tiện ích dùng chung: quyền bộ nhớ, đường dẫn icon assets / ngoài, chép file từ assets.
 object Util {
 
-    fun hasAllFilesAccess(): Boolean = Environment.isExternalStorageManager()
+    /**
+     * Đã có quyền bộ nhớ chưa. Android 11+ (API 30): "Truy cập tất cả tệp";
+     * Android 7 đến 10: quyền ghi bộ nhớ ngoài (xin lúc chạy, xem [needsLegacyStoragePermission]).
+     */
+    fun hasAllFilesAccess(context: Context): Boolean =
+        if (Build.VERSION.SDK_INT >= 30) {
+            Environment.isExternalStorageManager()
+        } else {
+            context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
 
+    /** true = máy dưới Android 11, phải xin WRITE_EXTERNAL_STORAGE bằng hộp thoại quyền thường. */
+    fun needsLegacyStoragePermission(): Boolean = Build.VERSION.SDK_INT < 30
+
+    /** Chỉ gọi khi SDK_INT >= 30 (hằng số Settings này mới có từ Android 11). */
     fun allFilesAccessIntent(context: Context): Intent =
         Intent(
             Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,

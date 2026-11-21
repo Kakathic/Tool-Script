@@ -2,19 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Quyền bộ nhớ: xin lúc khởi động, từ chối thì thoát app -->
+    <!-- Quyền bộ nhớ: xin lúc khởi động, từ chối thì thoát app.
+         Android 11+ (API 30+): "Truy cập tất cả tệp" (MANAGE_EXTERNAL_STORAGE).
+         Android 7 đến 10 (API 24-29): READ/WRITE_EXTERNAL_STORAGE xin lúc chạy; từ Android 11 hai quyền này không còn dùng nữa. -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
 
-    <!-- Thông báo hệ thống (shell = "notice"): chỉ xin khi dùng tới, Android 13+ -->
+    <!-- Thông báo hệ thống (shell = "notice"): chỉ xin khi dùng tới, Android 13+ (máy thấp hơn không cần xin) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Backend adb kết nối về chính máy qua localhost -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Android 17 (targetSdk 37): quyền truy cập mạng cục bộ. Chỉ xin lúc runtime khi dùng backend adb.
-         Chưa rõ loopback (127.0.0.1) có bị ảnh hưởng không, cần thử trên máy thật. -->
+    <!-- Quyền truy cập mạng cục bộ của Android 17: chỉ áp dụng cho app target 37 trở lên, với targetSdk 28 hệ thống không đòi.
+         Giữ khai báo để khi nâng targetSdk lại thì không sót. Máy thấp hơn bỏ qua quyền này. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application

@@ -10,8 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "com.tool.script"
-        minSdk = 30            // Wireless Debugging (backend adb) và MANAGE_EXTERNAL_STORAGE cần Android 11+
-        targetSdk = 37         // Android 17 (API 37)
+        minSdk = 24            // Android 7.0. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp"...) được kiểm tra SDK_INT lúc chạy.
+        // targetSdk = 28 là CHỦ Ý: app target >= 29 bị SELinux chặn exec file trong filesDir (W^X), còn target <= 28 thì chạy thẳng được.
+        // App không đưa lên Google Play (Play bắt buộc target mới) nên không vướng. compileSdk vẫn là 37 để dùng API mới khi cần.
+        targetSdk = 28
         // CI truyền -PversionCode (số lần chạy workflow); -PversionName tùy chọn. Build local dùng giá trị mặc định.
         versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(1)
         versionName = providers.gradleProperty("versionName").getOrElse("0.1.0")
@@ -42,6 +44,11 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+
+    lint {
+        // targetSdk thấp là có chủ ý (xem defaultConfig), không để lint báo lỗi làm hỏng build release.
+        disable += setOf("ExpiredTargetSdkVersion", "OldTargetApi")
     }
 
     compileOptions {
