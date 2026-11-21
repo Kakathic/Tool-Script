@@ -132,7 +132,7 @@ Giai đoạn 6: chất lượng
 
 ### Lộ trình thành phần Miuix (xếp từ dễ đến khó)
 
-Danh sách này lấy từ tài liệu Miuix bản mới nhất, chưa đối chiếu riêng bản 0.9.2: khi làm từng mục cần kiểm tra lại API.
+Danh sách này lấy từ tài liệu Miuix bản mới nhất, chưa đối chiếu riêng bản 0.9.4: khi làm từng mục cần kiểm tra lại API.
 Làm lần lượt từ trên xuống. Mức 1 đã xong.
 
 Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
