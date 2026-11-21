@@ -12,7 +12,7 @@ import java.io.IOException
  * `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`.
  * Chạy lúc khởi động, trước `init.sh` (xem Boot). Không chép các mục trong [EXCLUDED] và các thư mục ABI không khớp máy.
  *
- * - `bin/*` được `chmod 755` (script / lệnh dùng chung, `$HOME/bin` = `$BIN_DIR` nằm trong `PATH`, xem env.sh).
+ * - Tệp trong thư mục `bin` được `chmod 755` (script / lệnh dùng chung, `$HOME/bin` = `$BIN_DIR` nằm trong `PATH`, xem env.sh).
  * - `lib/<abi>/libbusybox.so`... chỉ chép ABI có trong `Build.SUPPORTED_ABIS`; việc cài thành lệnh do `init.sh` làm.
  * - Chỉ chép lại khi app được cài mới / cập nhật (so `lastUpdateTime`) hoặc khi tệp bị mất; tệp đã chép mà nay không còn trong assets thì bị xóa.
  * - Ghi ra tệp tạm rồi đổi tên để không dính lỗi "text file busy" khi tệp cũ đang chạy.
