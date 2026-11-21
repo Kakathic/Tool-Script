@@ -9,7 +9,6 @@ on:
 permissions:
   contents: write
 
-# Chỉ hủy lần chạy cũ của pull request; build trên main không bị hủy giữa chừng để release không bị mất.
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -28,21 +27,14 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      # Repo chưa có gradlew nên dùng Gradle do action cài (cùng version với gradle-wrapper.properties).
-      # Khi đã commit gradlew, đổi bước build bên dưới thành ./gradlew và bỏ gradle-version.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: 9.7.0
-
-      - name: Accept Android SDK licenses
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-
-      # Chỉ dựng bản chính thức (release, đã bật R8), ký bằng khóa beta trong app/beta.jks.
+          
       - name: Build release APK
         run: gradle :app:assembleRelease --stacktrace --warning-mode none -PversionCode="$GITHUB_RUN_NUMBER"
 
-      # Đăng APK release lên mục Releases (tag cố định `latest`, mỗi lần build xóa bản cũ rồi tạo lại). Pull request chỉ build, không đăng.
       - name: Publish release
         if: github.event_name != 'pull_request'
         env:
