@@ -723,7 +723,7 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
 @Composable
 private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
     LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
-    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null })
+    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.cancelLog() })
     val confirm = env.confirm
     ConfirmDialog(
         message = confirm?.message,

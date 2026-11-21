@@ -2,6 +2,7 @@ package com.tool.script.executor
 
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -62,7 +63,13 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                     }
                     val errJob = async { process.errorStream.bufferedReader().forEachLine { err.appendLine(it) } }
                     var timedOut = false
-                    val finished = runInterruptible { process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS) }
+                    val finished = try {
+                        runInterruptible { process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS) }
+                    } catch (e: CancellationException) {
+                        // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để các luồng đọc đầu ra kết thúc ngay.
+                        process.destroyForcibly()
+                        throw e
+                    }
                     if (!finished) {
                         timedOut = true
                         process.destroyForcibly()

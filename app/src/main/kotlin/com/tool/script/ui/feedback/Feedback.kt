@@ -1,10 +1,13 @@
 package com.tool.script.ui.feedback
 
 import android.Manifest
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -23,6 +26,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,10 +46,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -110,7 +119,15 @@ class LogEntry(
 
     var full by mutableStateOf(startFull)
 
+    /** Dừng lệnh đang chạy của log này (do nơi chạy lệnh gắn vào); null nếu không hủy được. */
+    var cancelAction: (() -> Unit)? = null
+
     val running: Boolean get() = result == null
+
+    /** Hủy lệnh nếu còn đang chạy. */
+    fun cancel() {
+        if (running) cancelAction?.invoke()
+    }
 
     val status: LogStatus
         get() {
@@ -221,6 +238,14 @@ class FeedbackHost(private val context: Context) {
 
     fun startLive(title: String, command: String, full: Boolean = false): LogEntry =
         LogEntry(title, command, startFull = full).also { log = it }
+
+    /** Nút Hủy của log toàn màn hình: dừng lệnh đang chạy rồi đóng log. */
+    fun cancelLog() {
+        val entry = log ?: return
+        entry.cancel()
+        log = null
+        toast("Đã hủy")
+    }
 
     fun report(item: Item, command: String, result: ExecResult) {
         val summary = summaryOf(item.title, result)
@@ -347,9 +372,18 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit) {
     }
 }
 
-// Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình"; Back của máy hoặc "Đóng" thì đóng hẳn.
+/** Lề ngoài của log toàn màn hình và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
+private val LogMargin = 12.dp
+
+private val LogYellow = Color(0xFFFFC107)
+private val LogGreen = Color(0xFF2EA043)
+private val LogRed = Color(0xFFD93025)
+
+// Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình". Bố cục như màn hình lỗi (crash/CrashActivity):
+// hàng tiêu đề có nút Thu nhỏ, khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát ở dưới.
+// Nút cuối: đang chạy là Hủy (vàng, dừng lệnh), xong là Thoát (xanh), lỗi là "Kết thúc: <mã>" (đỏ). Back của máy thì đóng log, lệnh vẫn chạy tiếp.
 @Composable
-fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit) {
+fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
     if (entry == null || !entry.full) return
     val context = LocalContext.current
     val output = entry.output
@@ -362,42 +396,132 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit) {
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.background)
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(16.dp),
+                .navigationBarsPadding(),
         ) {
-            Text(
-                text = entry.title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(12.dp))
-            LogStatusRow(entry)
-            LogProgress(entry)
-            Spacer(Modifier.height(12.dp))
-            LogBody(entry, output, Modifier.weight(1f))
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(
-                    text = "Sao chép",
-                    onClick = { copyToClipboard(context, "log", output) },
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .padding(horizontal = LogMargin),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = entry.title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(
-                    text = "Thu nhỏ",
-                    onClick = { entry.full = false },
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "Đóng",
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                )
+                LogPillButton(text = "Thu nhỏ", onClick = { entry.full = false })
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(start = LogMargin, end = LogMargin, bottom = LogMargin),
+                verticalArrangement = Arrangement.spacedBy(LogMargin),
+            ) {
+                Column {
+                    LogStatusRow(entry)
+                    // Chạy xong thì ẩn thanh tiến trình.
+                    LogProgress(entry, hideWhenDone = true)
+                }
+                LogSelectableCard(entry, output, Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(LogMargin)) {
+                    TextButton(
+                        text = "Chia sẻ",
+                        onClick = { shareText(context, entry.title, output.ifBlank { "(không có đầu ra)" }) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    val (label, buttonColor, labelColor) = when (entry.status) {
+                        LogStatus.Running -> Triple("Hủy", LogYellow, Color(0xFF1F1F1F))
+                        LogStatus.Done -> Triple("Thoát", LogGreen, Color.White)
+                        LogStatus.Failed -> Triple("Kết thúc: ${entry.exitCode}", LogRed, Color.White)
+                        LogStatus.TimedOut -> Triple("Kết thúc: hết giờ", LogRed, Color.White)
+                    }
+                    TextButton(
+                        text = label,
+                        onClick = if (entry.running) onCancel else onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColors(color = buttonColor, textColor = labelColor),
+                    )
+                }
             }
         }
     }
+}
+
+// Khung log của màn hình toàn màn hình: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang,
+// tự cuộn xuống dòng mới nhất khi đang chạy. Cùng kiểu với khung log của màn hình lỗi.
+@Composable
+private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier) {
+    val vertical = rememberScrollState()
+    LaunchedEffect(output) {
+        if (entry.running) vertical.scrollTo(vertical.maxValue)
+    }
+    Card(modifier = modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
+        val primary = MiuixTheme.colorScheme.primary
+        CompositionLocalProvider(
+            LocalTextSelectionColors provides TextSelectionColors(
+                handleColor = primary,
+                backgroundColor = primary.copy(alpha = 0.3f),
+            ),
+        ) {
+            SelectionContainer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(vertical)
+                    .horizontalScroll(rememberScrollState())
+                    .padding(12.dp),
+            ) {
+                if (output.isBlank()) {
+                    Text(
+                        text = if (entry.running) "Đang chờ đầu ra..." else "Không có đầu ra",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                } else {
+                    Text(
+                        text = output,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        softWrap = false,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Nút dạng viên thuốc ở hàng tiêu đề (cùng kiểu nút Chia sẻ của màn hình lỗi): chữ trong khung bo, nền xám nhạt. */
+@Composable
+private fun LogPillButton(text: String, onClick: () -> Unit) {
+    val content = MiuixTheme.colorScheme.onSurface
+    Box(
+        modifier = Modifier
+            .height(36.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(content.copy(alpha = 0.08f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = content)
+    }
+}
+
+private fun shareText(context: Context, subject: String, text: String) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    val chooser = Intent.createChooser(send, "Chia sẻ log")
+    // Context không phải Activity thì bắt buộc cờ NEW_TASK.
+    val hasActivity = generateSequence(context) { (it as? ContextWrapper)?.baseContext }.any { it is Activity }
+    if (!hasActivity) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(chooser)
 }
 
 // Khung chứa phần lệnh in ra, tự cuộn xuống dòng mới nhất khi đang chạy.
@@ -432,9 +556,11 @@ private fun LogBody(entry: LogEntry?, output: String, modifier: Modifier) {
 }
 
 // Thanh tiến trình: đang chạy chưa có "@progress N" thì chạy vô định, có thì hiện đúng %; xong không lỗi thì đầy.
+// [hideWhenDone] = true: chạy xong (kể cả lỗi, hết giờ) thì ẩn hẳn thanh.
 @Composable
-private fun LogProgress(entry: LogEntry?) {
+private fun LogProgress(entry: LogEntry?, hideWhenDone: Boolean = false) {
     if (entry == null) return
+    if (hideWhenDone && !entry.running) return
     val value = entry.progress
     if (!entry.running && value == null) return
     Spacer(Modifier.height(10.dp))

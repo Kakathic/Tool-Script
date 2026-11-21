@@ -364,14 +364,14 @@ lock_mode = "hide"
 | `shell` | Hành vi |
 |---|---|
 | `live` (mặc định) | Bảng log mở ngay khi bắt đầu chạy và hiện từng dòng ngay khi lệnh in ra (tự cuộn xuống). Nhãn trạng thái (Đang chạy / Xong / Lỗi / Hết thời gian chờ) và mã thoát nằm riêng phía trên khung log, khung log chỉ chứa phần lệnh in ra; nút Sao chép chép phần đó |
-| `full` | Như `live` nhưng log mở **toàn màn hình** ngay khi bắt đầu chạy. Có nút Thu nhỏ (về bảng log thường), Sao chép, Đóng; Back của máy cũng đóng |
+| `full` | Như `live` nhưng log mở **toàn màn hình** ngay khi bắt đầu chạy, bố cục giống màn hình lỗi: nút **Thu nhỏ** (về bảng log thường) ở hàng tiêu đề, khung log nhấn giữ để chọn và sao chép chữ, hàng nút dưới cùng gồm **Chia sẻ** và nút cuối đổi theo trạng thái: đang chạy là **Hủy** (vàng, dừng lệnh và đóng log), xong là **Thoát** (xanh), lỗi là **Kết thúc: <mã thoát>** (đỏ; hết giờ thì "Kết thúc: hết giờ"). Thanh tiến trình chỉ hiện lúc đang chạy, xong thì ẩn. Back của máy đóng log nhưng lệnh vẫn chạy tiếp |
 | `hidden` | Chạy ẩn, không hiện gì |
 | `banner` | Banner trong app. Khi lệnh bắt đầu chạy, banner hiện ngay dòng "Đang chạy script…" kèm thanh chạy vô hạn; lệnh xong thì banner đổi sang kết quả và thanh đếm ngược 5 giây. Thành công có in ra thì hiện đúng phần in ra (stdout, tối đa 300 ký tự), không in gì thì hiện "<title>: hoàn tất". Lỗi hoặc hết thời gian chờ thì banner nền đỏ nhạt, dòng đầu là mã lỗi, kèm phần lệnh in ra (stdout và stderr, tối đa 300 ký tự) |
 | `notice` | Chạy như `banner` (banner "Đang chạy script…" khi đang chạy), xong thì banner ẩn đi và gửi thông báo hệ thống của Android với nội dung như quy tắc của `banner` (chỉ xin quyền thông báo khi dùng tới, Android 13+) |
 
 Khi một lệnh `banner` / `notice` đang chạy, mọi item dùng hai kiểu này bị khóa (mờ, không bấm được) cho tới khi lệnh xong **và banner biến mất** (hết đếm ngược, bấm Ẩn hoặc vuốt). Banner có nút **Hủy** khi đang chạy (dừng lệnh, mở khóa ngay) và nút **Ẩn** khi đã xong; vuốt banner sang trái hoặc phải cũng làm đúng việc đó (đang chạy thì hủy, đã xong thì ẩn).
 
-Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng.
+Bảng log `live` có thêm nút **Toàn màn hình** để mở rộng giữa chừng. Hủy lệnh `live` / `full` dừng hẳn tiến trình với backend thường; với backend root (su) lệnh có thể chạy tiếp ở nền nhưng log bị bỏ.
 
 Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
 

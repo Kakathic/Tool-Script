@@ -52,6 +52,7 @@ import com.tool.script.util.Util
 import com.tool.script.util.ShellText
 import com.tool.script.util.formatNumber
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -138,6 +139,8 @@ class RenderEnv(
                     val full = ShellText.withEnv(command, vars)
                     val result = if (item.shell == ShellMode.Live || item.shell == ShellMode.Full) {
                         val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
+                        // Nút Hủy của log toàn màn hình: hủy coroutine đang chạy lệnh này.
+                        entry.cancelAction = { coroutineContext[Job]?.cancel() }
                         ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
                             .also { entry.finish(it) }
                     } else {
