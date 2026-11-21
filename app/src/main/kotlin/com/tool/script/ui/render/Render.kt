@@ -84,7 +84,7 @@ private const val SELECTED_ALPHA = 0.16f
 private const val UNSELECTED_ALPHA = 0.06f
 
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
-private const val RUN_BUTTON_ALPHA = 0.16f
+internal const val RUN_BUTTON_ALPHA = 0.16f
 
 // Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
 // Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.

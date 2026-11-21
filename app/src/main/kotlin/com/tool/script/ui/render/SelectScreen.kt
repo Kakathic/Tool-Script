@@ -6,7 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.state.ToggleableState
@@ -165,19 +165,16 @@ internal fun SelectFullScreen(
                         modifier = Modifier.weight(1f),
                     )
                     if (multi) {
-                        // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc.
+                        // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc có nền, không viền (cùng kiểu nút Chạy).
                         Text(
                             text = "Đã chọn ${draft.size}/${options.size}",
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            color = MiuixTheme.colorScheme.primary,
                             style = MiuixTheme.textStyles.body2,
                             maxLines = 1,
                             modifier = Modifier
                                 .padding(start = 12.dp)
-                                .border(
-                                    width = 1.dp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
-                                    shape = RoundedCornerShape(8.dp),
-                                )
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA))
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                         )
                     }
