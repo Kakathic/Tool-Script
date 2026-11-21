@@ -13,10 +13,9 @@ import com.tool.script.config.normalizeMulti
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.StateFiles
 import com.tool.script.state.VariableStore
-import com.tool.script.util.BinInstaller
+import com.tool.script.util.AssetInstaller
 import com.tool.script.util.EnvFile
 import com.tool.script.util.ShellText
-import com.tool.script.util.Util
 import com.tool.script.util.formatNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +28,7 @@ import java.io.File
 
 // Khởi động (docs/schema.md mục 11):
 //   1. Xin quyền bộ nhớ (từ chối -> thoát app)        - thanh tiến trình vô hạn   (làm ở UI, xem BootScreen)
-//   2. Dò backend (su -> ROM -> adb -> thường), copy script từ assets
+//   2. Dò backend (su -> ROM -> adb -> thường), chép assets ra $HOME
 //   3. Chạy script, đọc dòng "@progress N"            - thanh tiến trình hiện %
 //   4. Nạp TOML từ assets                             - thanh tiến trình vô hạn trở lại
 //   5. Vào màn hình chính (script lỗi vẫn vào, có banner cảnh báo)
@@ -93,17 +92,14 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { it.copy(stage = BootStage.Script, progress = 0f) }
         var scriptError: String? = null
         try {
-            val script = withContext(Dispatchers.IO) {
-                Util.copyAsset(app, "scripts/init.sh", File(app.filesDir, "scripts/init.sh"))
-            }
-            // Tạo symlink lệnh dựng sẵn (busybox, toybox, 7z) trong files/bin trỏ tới thư viện native, trước khi chạy script.
-            withContext(Dispatchers.IO) { runCatching { BinInstaller.install(app) } }
-                .onSuccess { bin ->
-                    if (bin.total == 0) log("bin: không có lệnh dựng sẵn cho ABI của máy")
-                    else if (bin.linked.isNotEmpty()) log("bin: ${bin.linked.joinToString(", ")}")
-                    bin.failed.forEach { log("bin: lỗi $it") }
+            // Chép toàn bộ assets (trừ mục loại trừ, xem AssetInstaller) ra $HOME (noBackupFilesDir), trước khi chạy script.
+            withContext(Dispatchers.IO) { runCatching { AssetInstaller.install(app) } }
+                .onSuccess { r ->
+                    if (r.copied > 0) log("assets: chép ${r.copied}/${r.total} tệp")
+                    r.failed.forEach { log("assets: lỗi $it") }
                 }
-                .onFailure { log("bin: không chuẩn bị được lệnh dựng sẵn: ${it.message ?: it}") }
+                .onFailure { log("assets: không chép được: ${it.message ?: it}") }
+            val script = File(app.noBackupFilesDir, "scripts/init.sh")
             val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
             envResult.getOrNull()?.let { prepared ->
                 ExecutorManager.envFile = prepared.file.absolutePath

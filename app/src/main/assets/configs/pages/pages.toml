@@ -1,10 +1,10 @@
-# Tab 4 - Demo: trang con, dialog toàn màn hình, icon của item, biến env.sh, busybox.
-# Mọi lệnh chỉ là echo / ls, không đổi thông số thiết bị.
+# Tab 4 - Demo: trang con, dialog toàn màn hình, icon của item, biến env.sh, busybox, hủy lệnh (killtree).
+# Mọi lệnh chỉ là echo / ls / sleep, không đổi thông số thiết bị.
 
 [[item]]
 type    = "text"
 title   = "Trang con và công cụ hệ thống"
-content = "Tab này demo trang con, dialog toàn màn hình, icon bên trái của item, biến từ env.sh và busybox dựng sẵn."
+content = "Tab này demo trang con, dialog toàn màn hình, icon bên trái của item, biến từ env.sh, busybox dựng sẵn và hủy lệnh bằng killtree."
 
 [[group]]
 title = "Trang con và dialog"
@@ -85,17 +85,25 @@ run   = 'ls -l "$STATE_DIR"'
 
 [[group.item]]
 type  = "button"
-title = "Hàm state_get / state_set"
-desc  = "Ghi rồi đọc lại pages_demo_key bằng hàm trong env.sh"
-run   = 'state_set pages_demo_key "xin chào"; echo "pages_demo_key=$(state_get pages_demo_key)"'
+title = "Lệnh slog / glog"
+desc  = "Ghi rồi đọc lại pages_demo_key bằng lệnh slog / glog (assets/bin)"
+run   = 'slog pages_demo_key "xin chào"; echo "pages_demo_key=$(glog pages_demo_key)"'
 
 [[group]]
-title = "Busybox dựng sẵn (bin)"
+title = "Tệp chép từ assets và lệnh dựng sẵn (bin)"
 
+# Lúc mở app, toàn bộ assets (trừ configs...) được chép ra $HOME; assets/bin thành $BIN_DIR ($HOME/bin), assets/lib/<abi> thành $HOME/lib/<abi>.
+[[group.item]]
+type  = "button"
+title = "Xem thư mục lib"
+desc  = "ls -R $HOME/lib: libbusybox.so của ABI máy (assets/lib/<abi>)"
+run   = 'echo "ABIS=$ABIS"; ls -lR "$HOME/lib"'
+
+# init.sh chép libbusybox.so thành $BIN_DIR/busybox; glog, slog, killtree chép thẳng từ assets/bin.
 [[group.item]]
 type  = "button"
 title = "Xem thư mục bin"
-desc  = "ls -l $BIN_DIR: thấy symlink của busybox"
+desc  = "ls -l $BIN_DIR ($HOME/bin): busybox (init.sh cài), glog, slog, killtree"
 run   = 'ls -l "$BIN_DIR"'
 
 [[group.item]]
@@ -103,3 +111,21 @@ type  = "button"
 title = "Kiểm tra busybox"
 desc  = "busybox: in phiên bản và vài applet"
 run   = 'busybox | head -n 3'
+
+[[group]]
+title = "Hủy lệnh (killtree)"
+
+# Bấm Hủy trong bảng log: app chạy killtree giết cả shell lẫn các tiến trình con (sleep ở nền).
+[[group.item]]
+type  = "button"
+title = "Chạy lệnh dài (300 giây)"
+desc  = "Chạy 3 tiến trình sleep (một cái ở nền, một cái trong shell con), bấm Hủy trong log để dừng hết"
+run   = 'echo "shell_progres=$shell_progres"; sleep 300 & sh -c "sleep 300; true" & sleep 300'
+shell = "live"
+
+# Sau khi Hủy, số này phải là 0.
+[[group.item]]
+type  = "button"
+title = "Đếm tiến trình sleep còn chạy"
+desc  = "Sau khi Hủy ở trên phải ra 0 (sleep con không còn mồ côi)"
+run   = 'echo "Số sleep còn chạy: $(busybox ps | grep -c "[s]leep 30[0]")"'

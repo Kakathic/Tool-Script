@@ -52,11 +52,6 @@ android {
         compose = true
     }
 
-    packaging {
-        jniLibs {
-            keepDebugSymbols += "**/lib_*.so"
-        }
-    }
 }
 
 // Tắt các dòng "w: ..." (cảnh báo trình biên dịch Kotlin) khi build. Lỗi (e:) vẫn hiện.

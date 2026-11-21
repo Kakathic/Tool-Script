@@ -45,8 +45,10 @@ Khi có khóa thật, thay thông tin trong `signingConfigs` (hoặc thêm một
 ```
 app/src/main/
 ├─ assets/
-│  ├─ configs/            # main.toml, pages/*.toml, icons/ (mẫu)
-│  └─ scripts/init.sh     # script khởi động (báo tiến trình bằng "@progress N")
+│  ├─ configs/            # main.toml, pages/*.toml, icons/ (mẫu); đọc thẳng từ assets, không chép
+│  ├─ scripts/            # init.sh (khởi động, cài busybox), env.sh (biến dùng chung)
+│  ├─ bin/                # glog, slog, killtree: chép ra $HOME/bin ($BIN_DIR, trong PATH)
+│  └─ lib/<abi>/libbusybox.so  # chép ra $HOME/lib, init.sh cài thành $BIN_DIR/busybox
 ├─ kotlin/com/tool/script/
 │  ├─ App.kt, MainActivity.kt
 │  ├─ boot/               # splash + máy trạng thái khởi động
@@ -71,8 +73,8 @@ app/src/main/
 
 ## Lưu ý kỹ thuật
 
-- `minSdk = 24`, `targetSdk = 28`, `compileSdk = 37`: target 28 là chủ ý để exec được file ELF tải về trong `filesDir` (app target >= 29 bị SELinux chặn). Không đưa lên Google Play. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp", kênh thông báo, xin quyền thông báo) được kiểm tra `SDK_INT` lúc chạy. `run_elf` trong `env.sh` chạy ELF tải về.
-- File chép từ assets ra thư mục app không exec trực tiếp được trên Android 10+; chạy bằng `sh init.sh`.
+- `minSdk = 24`, `targetSdk = 28`, `compileSdk = 37`: target 28 là chủ ý để exec được file ELF tải về trong `filesDir` (app target >= 29 bị SELinux chặn). Không đưa lên Google Play. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp", kênh thông báo, xin quyền thông báo) được kiểm tra `SDK_INT` lúc chạy. Lúc khởi động app chép toàn bộ assets (trừ `configs`...) ra `$HOME` (no_backup); lệnh dựng sẵn (busybox, glog, slog, killtree) nằm trong `$HOME/bin` và exec trực tiếp.
+- Script chép từ assets không phải lúc nào cũng exec trực tiếp được trên Android 10+ (khi app target >= 29); `init.sh` chạy bằng `sh init.sh`.
 - Backend adb: chưa chọn thư viện ADB client (xem TODO trong `libs.versions.toml`).
 - Chế độ không root: shell chạy được (`sh -c ...`) nhưng với quyền của chính app (SELinux `untrusted_app`), nên nhiều lệnh hệ thống như `pm`, `settings put`, `dumpsys` có thể bị từ chối. Tài liệu hành vi của Android 17 (`targetSdk = 37`) không nêu thay đổi nào về chạy shell, nhưng nên thử trên máy thật.
 - Android 17 thêm quyền `ACCESS_LOCAL_NETWORK` cho app target 37 (đã khai báo trong Manifest, chỉ xin lúc runtime khi dùng backend adb). Chưa rõ kết nối loopback tới adbd có cần quyền này không, cần thử trên máy thật.

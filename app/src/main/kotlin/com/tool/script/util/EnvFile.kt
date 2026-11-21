@@ -1,6 +1,7 @@
 package com.tool.script.util
 
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import java.io.File
 import java.io.FileNotFoundException
@@ -30,8 +31,9 @@ object EnvFile {
             "SCRIPTS_DIR" to File(context.filesDir, "scripts").absolutePath,
             "STATE_DIR" to File(context.filesDir, "state").absolutePath,
             "NOBACKUP_DIR" to context.noBackupFilesDir.absolutePath,
-            "BIN_DIR" to File(context.filesDir, "bin").absolutePath,
+            "BIN_DIR" to File(context.noBackupFilesDir, "bin").absolutePath,
             "LIB_DIR" to context.applicationInfo.nativeLibraryDir,
+            "ABIS" to Build.SUPPORTED_ABIS.joinToString(" "),
             "EXT_ROOT" to ext,
             "EXT_DIR" to "$ext/ToolScript",
         )

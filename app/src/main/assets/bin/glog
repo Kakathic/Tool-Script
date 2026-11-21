@@ -1,0 +1,14 @@
+#!/system/bin/sh
+# kakathic
+
+if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ -z "$1" ]; then
+    echo "Use: glog test 1" >&2
+    exit 1
+fi
+
+if [ -f "$STATE_DIR/$1" ]; then
+    cat "$STATE_DIR/$1"
+else
+    [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
+    [ "$2" ] && echo "$2" | tee "$STATE_DIR/$1"
+fi

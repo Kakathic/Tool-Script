@@ -62,11 +62,12 @@ file  = "pages/switches.toml"
 | `@APP_DIR@` | thư mục dữ liệu của app |
 | `@FILES_DIR@` | thư mục `files` của app |
 | `@CACHE_DIR@` | thư mục cache của app |
-| `@SCRIPTS_DIR@` | thư mục chứa script chép từ assets (cùng nơi có `env.sh`) |
+| `@SCRIPTS_DIR@` | thư mục chứa `env.sh` đã thay key (`files/scripts`); các script khác chép từ assets nằm ở `$HOME/scripts` |
 | `@STATE_DIR@` | thư mục lưu trạng thái các tính năng (`files/state`, app tạo sẵn) |
-| `@NOBACKUP_DIR@` | thư mục riêng của app, không bị Auto Backup sao lưu (`no_backup`), để lưu dữ liệu gắn với máy này; hiện chưa có tính năng nào dùng |
-| `@BIN_DIR@` | thư mục lệnh dựng sẵn (`files/bin`, xem "Lệnh dựng sẵn" bên dưới) |
+| `@NOBACKUP_DIR@` | thư mục riêng của app, không bị Auto Backup sao lưu (`no_backup`), env.sh dùng nó làm `$HOME` (shell `cd` vào đây); app chép assets ra đây |
+| `@BIN_DIR@` | thư mục lệnh dựng sẵn (`$HOME/bin`, nằm trong `PATH`, xem "Lệnh dựng sẵn" bên dưới) |
 | `@LIB_DIR@` | thư mục thư viện native của app |
+| `@ABIS@` | ABI của máy theo thứ tự ưu tiên, cách nhau bằng dấu cách (vd `arm64-v8a armeabi-v7a`); `init.sh` dùng để chọn bản busybox |
 | `@EXT_ROOT@` | gốc bộ nhớ trong (thường `/storage/emulated/0`) |
 | `@EXT_DIR@` | thư mục làm việc ngoài của app (`@EXT_ROOT@/ToolScript`) |
 
@@ -76,20 +77,30 @@ export EXT_DIR="@EXT_DIR@"
 export PATH="$FILES_DIR/bin:$PATH"
 ```
 
-- `env.sh` mẫu có sẵn hai hàm để script tự đọc / ghi cùng thư mục `$STATE_DIR` mà app dùng để lưu giá trị item (xem "Lưu giá trị theo id", mục 7):
-  `state_set <id> <giá trị>` và `state_get <id> [mặc định]` (chưa có file thì in giá trị mặc định, mặc định `0`).
-  Item không cần dùng chúng nữa: app tự lưu và tự đọc lại giá trị.
+- Hai lệnh dựng sẵn `slog` và `glog` để script tự ghi / đọc cùng thư mục `$STATE_DIR` mà app dùng để lưu giá trị item (xem "Lưu giá trị theo id", mục 7):
+  `slog <id> <giá trị>` ghi, `slog <id>` tạo file rỗng, `slog -d <id>` xóa; `glog <id>` đọc (chưa có file thì **không in gì**), `glog <id> <giá trị>` ghi nếu chưa có file rồi in giá trị.
+  Khác `state_get` cũ: không có giá trị mặc định `0`. Item không cần dùng chúng: app tự lưu và tự đọc lại giá trị.
 
-### Lệnh dựng sẵn (bin)
+### Chép assets và lệnh dựng sẵn (bin)
 
-Các file chạy được nằm trong thư viện native của app: `app/src/main/jniLibs/<abi>/lib_<tên>.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
-Android cài đúng ABI của máy và giải nén ra `$LIB_DIR` (`useLegacyPackaging = true` trong `app/build.gradle.kts`), nơi app thường không root cũng được chạy file.
-Mỗi lần mở app, app tạo symlink `files/bin/<tên>` (`$BIN_DIR`) trỏ tới `lib_<tên>.so` tương ứng. `$BIN_DIR` đứng đầu `PATH` trong `env.sh`,
-nên mọi lệnh của app gọi thẳng được `busybox`. Thêm lệnh mới: bỏ file `lib_<tên>.so` vào đủ các thư mục ABI.
+**Chép assets.** Lúc khởi động (trước `init.sh`), app chép **toàn bộ tệp trong assets** ra `$HOME` (`no_backup`, không bị Auto Backup sao lưu), giữ nguyên đường dẫn: `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`, `assets/bin/glog` -> `$HOME/bin/glog`, `assets/lib/<abi>/libbusybox.so` -> `$HOME/lib/<abi>/libbusybox.so`.
+
+- Không chép (danh sách `EXCLUDED` trong `util/AssetInstaller.kt`, thêm bớt ở đó): `configs` (app đọc thẳng từ assets), `scripts/env.sh` (có key `@KEY@`, xem trên), và các thư mục hệ thống `images`, `webkit`, `sounds`. Trong `lib/` chỉ chép thư mục ABI có trong `Build.SUPPORTED_ABIS` của máy.
+- Tệp trong `bin/` được `chmod 755`. Tệp được ghi ra tệp tạm rồi đổi tên nên không bị lỗi "text file busy".
+- Chỉ chép lại khi app mới cài / cập nhật hoặc tệp bị mất; tệp đã chép mà nay không còn trong assets thì bị xóa. Lần chép được ghi ở `$HOME/.assets`.
+
+**Lệnh dựng sẵn.** `$HOME/bin` (`$BIN_DIR`) nằm trong `PATH` (xem env.sh), nên:
+
+- `assets/bin/<tên>`: script dùng chung mọi ABI (glog, slog, killtree), chép là gọi được ngay. Script nên có dòng `#!/system/bin/sh`.
+- `assets/lib/<abi>/libbusybox.so` (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`): file ELF theo ABI. `init.sh` chọn ABI đầu tiên có file trong `$ABIS`, chép thành `$BIN_DIR/busybox` rồi `chmod 755` và chạy thử. Thêm lệnh ELF mới: bỏ `lib<tên>.so` vào đủ các thư mục ABI rồi thêm đoạn cài tương tự vào `init.sh`.
+
+Chạy trực tiếp được vì app target SDK 28 (xem README); file ELF phải liên kết tĩnh, không dùng `linker` dự phòng.
 
 | Lệnh | Nội dung |
 |---|---|
 | `busybox` | BusyBox 1.36.1 (bản NDK của osm0sis, qua Magisk-Modules-Repo/busybox-ndk), biên dịch tĩnh. Gọi applet: `busybox ls`, `busybox wget`... (chưa tạo symlink applet để không đè lệnh hệ thống) |
+| `glog`, `slog` | Đọc / ghi giá trị trong `$STATE_DIR` (xem env.sh ở trên) |
+| `killtree` | Giết toàn bộ tiến trình con cháu (và cả tiến trình gốc): `killtree [thông báo] [tệp / thư mục cần xóa]`. Gốc là `$shell_progres`: số = PID, chữ = mẫu cho `pgrep -f`. Nút Hủy của app dùng lệnh này (xem mục 10) |
 
 - Trang `pages.toml` có nhóm nút "Busybox dựng sẵn (bin)" để kiểm tra.
 - Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.
@@ -189,7 +200,7 @@ title = "Chế độ game"
 
 Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `multiselect`, `singleselect`, `slider`, `progress`) được lưu tự động:
 
-- Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `state_set`
+- Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `slog`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
 - Mỗi lần giá trị đổi (với `switch`, `checkbox`, `radio`, `dropdown`: sau khi lệnh chạy thành công) app ghi lại file.
 - Lúc mở app: chưa có file thì app tạo file với giá trị mặc định (`default`, hoặc `0`, `min`, lựa chọn đầu); có file thì lấy giá trị trong đó.
@@ -198,7 +209,7 @@ Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, 
 - `id` chỉ gồm chữ, số, `_`, `.`, `-` (tối đa 128 ký tự, không bắt đầu bằng `.` hoặc `-`); id khác không được lưu.
 - `get` (switch, checkbox, progress) vẫn dùng được nhưng là tùy chọn: có khai báo thì lúc item xuất hiện app chạy `get` và lấy kết quả thay cho
   giá trị đã lưu (rồi lưu lại). Dùng khi trạng thái thật nằm ở hệ thống (vd `cat /sys/xxx`).
-- Script đọc được giá trị bằng `state_get <id>`.
+- Script đọc được giá trị bằng `glog <id>`.
 
 Cách khai báo `options` (dùng cho `radio`, `dropdown`, `multiselect`, `singleselect`):
 
@@ -373,7 +384,7 @@ lock_mode = "hide"
 
 Mỗi lượt chạy `banner` / `notice` có **một banner riêng**; nhiều banner xếp chồng từ trên xuống ở đầu màn hình, nền màu đậm hơn thẻ để không trùng màu thẻ, không tối màn hình. Item bị khóa (mờ, không bấm được) cho tới khi banner của nó **biến mất**: lệnh chạy xong, rồi hết đếm ngược 5 giây (hoặc bấm Ẩn / Hủy, vuốt) mới mở khóa. Các item banner / notice khác vẫn bấm được và chạy cùng lúc, kể cả khi dùng root (mỗi lệnh chạy song song trên một shell root riêng khi đã có lệnh khác đang chạy). Banner có nút **Hủy** khi đang chạy (dừng lệnh, mở khóa item ngay) và nút **Ẩn** khi đã xong; vuốt banner sang trái hoặc phải cũng làm đúng việc đó (đang chạy thì hủy, đã xong thì ẩn).
 
-Bảng log `live` có nút **Toàn màn hình** để mở rộng giữa chừng, `full` có nút **Thu nhỏ** để quay lại; hai bảng dùng chung bố cục và hành vi nút. Hủy lệnh `live` / `full` dừng hẳn tiến trình với backend thường; với backend root (su) lệnh có thể chạy tiếp ở nền nhưng log đã chốt và bỏ kết quả muộn. Mỗi dòng log có mốc thời gian **mili giây** kể từ lúc bắt đầu chạy (`[  1234 ms]`), dòng của **stderr** (`>&2`) hiện màu đỏ, stdout màu thường; stdout và stderr hiện đúng thứ tự đến ngay khi lệnh in ra (không còn dồn stderr xuống cuối), nút Chia sẻ gửi đúng văn bản đang hiện. Dòng `@progress N` không hiện trong log. Khi lệnh còn đang chạy, bảng log `live` không đóng khi chạm ra ngoài (và Back tạm thời cũng không đóng), chỉ đóng bằng nút Hủy rồi Thoát; lệnh xong thì chạm ra ngoài hoặc Back đóng như cũ.
+Bảng log `live` có nút **Toàn màn hình** để mở rộng giữa chừng, `full` có nút **Thu nhỏ** để quay lại; hai bảng dùng chung bố cục và hành vi nút. Hủy lệnh (nút Hủy của log `live` / `full`, nút Hủy hoặc vuốt banner) chạy `killtree`: giết cả shell chạy lệnh lẫn mọi tiến trình con cháu của nó, với backend thường và cả backend root (su, `killtree` chạy bằng shell root riêng). Cách hoạt động: mọi lệnh được đặt sẵn `shell_progres` = PID của shell chạy lệnh và in dòng `@pid N` đầu tiên (app giữ lại, không hiện trong log, không nằm trong kết quả); khi hủy app chạy `shell_progres=N killtree`. Script cũng tự gọi `killtree` được để dừng cả lệnh đang chạy. Hết giờ (`timeout`) cũng chạy `killtree` như khi hủy, rồi báo hết giờ với phần đã in ra. Mỗi dòng log có mốc thời gian **mili giây** kể từ lúc bắt đầu chạy (`[  1234 ms]`), dòng của **stderr** (`>&2`) hiện màu đỏ, stdout màu thường; stdout và stderr hiện đúng thứ tự đến ngay khi lệnh in ra (không còn dồn stderr xuống cuối), nút Chia sẻ gửi đúng văn bản đang hiện. Dòng `@progress N` không hiện trong log. Khi lệnh còn đang chạy, bảng log `live` không đóng khi chạm ra ngoài (và Back tạm thời cũng không đóng), chỉ đóng bằng nút Hủy rồi Thoát; lệnh xong thì chạm ra ngoài hoặc Back đóng như cũ.
 
 Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
 
@@ -381,7 +392,8 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 
 ## 11. Khởi động và xử lý lỗi
 
-- Script khởi động nằm trong assets, báo tiến trình bằng dòng `@progress N` (0-100).
+- Trước khi chạy script, app chép toàn bộ assets ra `$HOME` (xem "Chép assets và lệnh dựng sẵn"), rồi tạo `env.sh`.
+- Script khởi động `assets/scripts/init.sh` báo tiến trình bằng dòng `@progress N` (0-100), đồng thời cài busybox (`$BIN_DIR/busybox`); không cài được thì thoát mã khác 0 (app vẫn vào, có banner cảnh báo).
 - Script lỗi: vẫn vào app, hiện banner cảnh báo, xem lỗi trong Trung tâm lỗi.
 - TOML parse lỗi: hiện file, dòng, mô tả lỗi.
 - Thiếu trường bắt buộc hoặc `type` lạ: bỏ qua mục đó và ghi cảnh báo.

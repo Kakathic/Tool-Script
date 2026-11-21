@@ -1,0 +1,63 @@
+#!/system/bin/sh
+# Kakathic
+# Giết toàn bộ tiến trình con cháu (và cả tiến trình gốc).
+# Dùng: killtree [thông báo] [tệp / thư mục cần xóa]
+#
+# $shell_progres là tiến trình gốc:
+#   - số: PID của tiến trình gốc. App đặt sẵn biến này = PID của shell chạy lệnh (xem Executor),
+#     nên script gọi `killtree` là tự dừng cả lệnh đang chạy; nút Hủy của app cũng gọi theo cách này.
+#   - chữ: mẫu cho `pgrep -f` để tìm tiến trình gốc.
+
+# xử lý
+[ -z "$1" ] || printf '%s\n\n' "$1" >&2
+[ -e "$2" ] && rm -fr "$2"
+
+if [ -z "$shell_progres" ]; then
+    echo "killtree: biến shell_progres chưa được đặt" >&2
+    exit 1
+fi
+
+case "$shell_progres" in
+    *[!0-9]*) roots="$(pgrep -f "$shell_progres")" ;;
+    *) roots="$shell_progres" ;;
+esac
+[ -n "$roots" ] || exit 0
+
+# Bảng "pid ppid" của mọi tiến trình, đọc từ /proc (không phụ thuộc `ps` của từng bản Android).
+table="$(
+    for d in /proc/[0-9]*; do
+        { read -r line < "$d/stat"; } 2>/dev/null || continue
+        line="${line##*) }" # bỏ phần "pid (tên) "
+        set -- $line        # $1 = trạng thái, $2 = ppid
+        echo "${d#/proc/} $2"
+    done
+)"
+
+# Gom tiến trình gốc và mọi con cháu, theo từng tầng.
+tree=""
+frontier="$roots"
+while [ -n "$frontier" ]; do
+    next=""
+    for p in $frontier; do
+        case " $tree " in *" $p "*) continue ;; esac
+        tree="$tree $p"
+        kids="$(echo "$table" | while read -r pid ppid; do [ "$ppid" = "$p" ] && echo "$pid"; done)"
+        next="$next $kids"
+    done
+    frontier="$next"
+done
+
+# Chính killtree nằm trong cây (script tự gọi) thì để giết sau cùng.
+self=""
+list=""
+for p in $tree; do
+    if [ "$p" = "$$" ]; then self=1; else list="$list $p"; fi
+done
+
+# Dừng hết trước để chúng không kịp đẻ thêm tiến trình, rồi mới KILL.
+if [ -n "$list" ]; then
+    kill -STOP $list 2>/dev/null
+    kill -KILL $list 2>/dev/null
+fi
+[ -n "$self" ] && kill -KILL $$
+exit 0

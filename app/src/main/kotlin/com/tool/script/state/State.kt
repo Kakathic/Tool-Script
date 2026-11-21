@@ -6,8 +6,8 @@ import java.util.concurrent.Executors
 
 /**
  * Lưu giá trị item ra file: mỗi item có `id` một file, tên file = id, nằm trong [dir] (`files/state`, cũng là
- * `$STATE_DIR` trong script nên `state_get <id>` đọc được). Nội dung = giá trị + xuống dòng, cùng định dạng với
- * `state_set`. Ghi chạy nền trên một luồng riêng (giữ đúng thứ tự); ghi lỗi thì bỏ qua, không chặn app.
+ * `$STATE_DIR` trong script nên `glog <id>` đọc được). Nội dung = giá trị + xuống dòng, cùng định dạng với
+ * `slog`. Ghi chạy nền trên một luồng riêng (giữ đúng thứ tự); ghi lỗi thì bỏ qua, không chặn app.
  */
 class StateFiles(private val dir: File) {
     private val writer = Executors.newSingleThreadExecutor { r -> Thread(r, "state-files").apply { isDaemon = true } }

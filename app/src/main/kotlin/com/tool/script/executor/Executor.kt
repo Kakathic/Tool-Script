@@ -5,8 +5,10 @@ import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runInterruptible
@@ -16,6 +18,7 @@ import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 // Backend thực thi, thứ tự ưu tiên: su -> ROM -> adb -> thường.
 // Giá trị biến ROOT_MODE: root / system / adb / any.
@@ -195,16 +198,66 @@ class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 
 /** Dò backend theo thứ tự su -> ROM -> adb -> thường, giữ backend đang dùng. */
 /**
- * Thêm vào đầu mọi lệnh: nạp env.sh ([ExecutorManager.envFile]) rồi chạy [ExecutorManager.prelude] (nếu có),
- * để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
+ * Thêm vào đầu mọi lệnh: đặt `shell_progres` (PID của shell chạy lệnh), nạp env.sh ([ExecutorManager.envFile]),
+ * rồi chạy [ExecutorManager.prelude] (nếu có), để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
+ *
+ * Hủy lệnh (nút Hủy của log / banner) và hết giờ: shell chạy lệnh in dòng `@pid N` đầu tiên (không đưa ra log, không nằm trong kết quả);
+ * khi coroutine bị hủy hoặc hết giờ, `killtree` được chạy bằng chính backend đó để giết cả cây tiến trình con trước, rồi lệnh gốc mới kết thúc.
  */
 private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor {
     override val rootMode: String get() = inner.rootMode
 
-    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult {
+    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult = coroutineScope {
+        val pid = AtomicReference<String?>(null)
+        // NonCancellable: không để bên trong tự kill tiến trình gốc trước, nếu không các tiến trình con mồ côi (ppid = 1)
+        // sẽ không còn tìm thấy từ gốc. Thứ tự đúng: killtree giết cả cây, rồi lệnh gốc tự kết thúc.
+        // Hết giờ cũng do đây tính (bên trong chạy không giới hạn) để dùng được killtree.
+        val run = async(NonCancellable) {
+            inner.exec(withHead(command, withPid = true), null) { line, isError ->
+                val p = if (isError) null else parsePid(line)
+                if (p != null) pid.compareAndSet(null, p) else onLine?.invoke(line, isError)
+            }
+        }
+        try {
+            val finished = if (timeoutSec == null) {
+                run.join()
+                true
+            } else {
+                withTimeoutOrNull(timeoutSec * 1000L) { run.join(); true } == true
+            }
+            if (finished) {
+                run.await().withoutPidLine()
+            } else {
+                stop(run, pid.get())
+                // Lấy phần đã in ra; không lấy được thì để trống.
+                val partial = runCatching { withTimeoutOrNull(STOP_WAIT_MS) { run.await() } }.getOrNull()
+                (partial ?: ExecResult(-1, "", "")).copy(code = -1, timedOut = true).withoutPidLine()
+            }
+        } catch (e: CancellationException) {
+            stop(run, pid.get())
+            throw e
+        }
+    }
+
+    /** Giết cả cây tiến trình bằng killtree, rồi chờ lệnh gốc kết thúc; chưa kết thúc (killtree lỗi...) thì dừng theo cách của backend. */
+    private suspend fun stop(run: Deferred<ExecResult>, pid: String?) {
+        withContext(NonCancellable) {
+            killTree(pid)
+            if (withTimeoutOrNull(STOP_WAIT_MS) { run.join(); true } != true) run.cancel()
+        }
+    }
+
+    /** Chạy `killtree` với `shell_progres` = [pid] bằng cùng backend (root thì giết được tiến trình root). */
+    private suspend fun killTree(pid: String?) {
+        if (pid == null) return
+        runCatching { inner.exec(withHead("shell_progres=$pid killtree", withPid = false), KILL_TIMEOUT_SEC) }
+    }
+
+    private fun withHead(command: String, withPid: Boolean): String {
         val envFile = ExecutorManager.envFile
         val prelude = ExecutorManager.prelude
-        val full = buildList {
+        return buildList {
+            if (withPid) add(PID_HEAD)
             if (envFile != null) {
                 val path = com.tool.script.util.ShellText.quote(envFile)
                 add("[ -r $path ] && . $path")
@@ -212,7 +265,19 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
             if (!prelude.isNullOrBlank()) add(prelude)
             add(command)
         }.joinToString("\n")
-        return inner.exec(full, timeoutSec, onLine)
+    }
+
+    private fun parsePid(line: String): String? =
+        if (line.startsWith(PID_MARK)) line.removePrefix(PID_MARK).trim().takeIf { it.isNotEmpty() && it.all(Char::isDigit) } else null
+
+    private fun ExecResult.withoutPidLine(): ExecResult =
+        if (stdout.startsWith(PID_MARK)) copy(stdout = stdout.substringAfter('\n', "")) else this
+
+    private companion object {
+        const val PID_MARK = "@pid "
+        const val PID_HEAD = "shell_progres=\$\$; export shell_progres; echo \"$PID_MARK\$shell_progres\""
+        const val KILL_TIMEOUT_SEC = 5
+        const val STOP_WAIT_MS = 2000L
     }
 }
 
