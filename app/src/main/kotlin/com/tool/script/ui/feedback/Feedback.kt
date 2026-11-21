@@ -10,6 +10,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -77,9 +78,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,7 +125,11 @@ class LogEntry(
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
 ) {
-    private val lines = mutableStateListOf<String>()
+    /** Một dòng log: [millis] là số mili giây kể từ lúc bắt đầu chạy, [isError] = true là stderr (hiện màu đỏ). */
+    class Line(val text: String, val isError: Boolean, val millis: Long)
+
+    private val lines = mutableStateListOf<Line>()
+    private val startedAt = SystemClock.elapsedRealtime()
     var result by mutableStateOf(initialResult)
         private set
 
@@ -142,7 +151,7 @@ class LogEntry(
         if (!running) return
         cancelled = true
         cancelAction?.invoke()
-        result = ExecResult(code = -1, stdout = lines.joinToString("\n"), stderr = "")
+        result = ExecResult(code = -1, stdout = lines.joinToString("\n") { it.text }, stderr = "")
     }
 
     /** true khi người dùng bấm Hủy: log chốt lại ngay, giữ phần đã in ra. */
@@ -162,23 +171,46 @@ class LogEntry(
 
     val exitCode: Int? get() = result?.takeIf { !it.timedOut && !cancelled }?.code
 
+    /** Các dòng đang hiện, theo đúng thứ tự đến (stdout và stderr xen kẽ), bỏ dòng trống ở cuối. */
+    private fun shownLines(): List<Line> = lines.toList().dropLastWhile { it.text.isBlank() }
+
+    private fun prefix(line: Line): String = "[" + line.millis.toString().padStart(6) + " ms] "
+
+    /** Văn bản log mỗi dòng có mốc thời gian mili giây ở đầu; dùng cho khung log và nút Chia sẻ. */
     val output: String
         get() {
-            val r = result
-            if (r == null) return lines.joinToString("\n")
+            val shown = shownLines()
+            if (shown.isNotEmpty()) return shown.joinToString("\n") { prefix(it) + it.text }
+            // Không có dòng nào được phát trực tiếp: dùng đầu ra gom lại khi xong.
+            val r = result ?: return ""
             return r.combined.lineSequence()
                 .filter { ShellText.parseProgress(it) == null }
                 .joinToString("\n")
                 .trimEnd('\n', '\r')
         }
 
-    fun append(line: String) {
+    /** Cùng nội dung với [output]: mốc thời gian màu [timeColor], dòng stderr màu [errorColor]. */
+    fun styled(timeColor: Color, errorColor: Color): AnnotatedString {
+        val shown = shownLines()
+        if (shown.isEmpty()) return AnnotatedString(output)
+        return buildAnnotatedString {
+            shown.forEachIndexed { i, line ->
+                if (i > 0) append('\n')
+                withStyle(SpanStyle(color = timeColor)) { append(prefix(line)) }
+                if (line.isError) withStyle(SpanStyle(color = errorColor)) { append(line.text) } else append(line.text)
+            }
+        }
+    }
+
+    /** [isError] = true: dòng stderr. Hai luồng đọc stdout / stderr cùng gọi nên cần khóa để giữ đúng thứ tự. */
+    @Synchronized
+    fun append(line: String, isError: Boolean = false) {
         val p = ShellText.parseProgress(line)
         if (p != null) {
             progress = p / 100f
             return
         }
-        lines += line
+        lines += Line(line, isError, SystemClock.elapsedRealtime() - startedAt)
         while (lines.size > MAX_LIVE_LINES) lines.removeAt(0)
     }
 
@@ -368,6 +400,9 @@ private val LogMargin = 12.dp
 
 private val LogYellow = Color(0xFFFFC107)
 
+/** Màu dòng stderr trong log. */
+private val LogRed = Color(0xFFE5534B)
+
 // Bảng log thường (shell = "live", hoặc Thu nhỏ từ toàn màn hình). Bố cục y hệt toàn màn hình: hàng tiêu đề có nút Toàn màn hình,
 // nhãn trạng thái + thanh tiến trình (chỉ khi đang chạy hoặc lỗi), khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát.
 @Composable
@@ -528,7 +563,10 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                     )
                 } else {
                     Text(
-                        text = output,
+                        text = entry.styled(
+                            timeColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            errorColor = LogRed,
+                        ),
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
                         softWrap = false,

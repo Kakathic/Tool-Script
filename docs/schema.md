@@ -142,7 +142,7 @@ lock_mode = "readonly"
 | `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
 | `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `live` |
 | `confirm` | không | Nội dung hộp thoại xác nhận trước khi chạy |
-| `timeout` | không | Giây, mặc định 30 |
+| `timeout` | không | Giây. Không khai báo thì lệnh `run` chạy **không giới hạn thời gian**; có khai báo thì quá số giây đó bị dừng và báo hết giờ. Riêng lệnh `get` không khai báo vẫn giới hạn 30 giây để không treo giao diện |
 
 ## 7. Các loại item (type)
 
@@ -373,7 +373,7 @@ lock_mode = "hide"
 
 Mỗi lượt chạy `banner` / `notice` có **một banner riêng**; nhiều banner xếp chồng từ trên xuống ở đầu màn hình, nền màu đậm hơn thẻ để không trùng màu thẻ, không tối màn hình. Item bị khóa (mờ, không bấm được) cho tới khi banner của nó **biến mất**: lệnh chạy xong, rồi hết đếm ngược 5 giây (hoặc bấm Ẩn / Hủy, vuốt) mới mở khóa. Các item banner / notice khác vẫn bấm được và chạy cùng lúc, kể cả khi dùng root (mỗi lệnh chạy song song trên một shell root riêng khi đã có lệnh khác đang chạy). Banner có nút **Hủy** khi đang chạy (dừng lệnh, mở khóa item ngay) và nút **Ẩn** khi đã xong; vuốt banner sang trái hoặc phải cũng làm đúng việc đó (đang chạy thì hủy, đã xong thì ẩn).
 
-Bảng log `live` có nút **Toàn màn hình** để mở rộng giữa chừng, `full` có nút **Thu nhỏ** để quay lại; hai bảng dùng chung bố cục và hành vi nút. Hủy lệnh `live` / `full` dừng hẳn tiến trình với backend thường; với backend root (su) lệnh có thể chạy tiếp ở nền nhưng log đã chốt và bỏ kết quả muộn. Khi lệnh còn đang chạy, bảng log `live` không đóng khi chạm ra ngoài (và Back tạm thời cũng không đóng), chỉ đóng bằng nút Hủy rồi Thoát; lệnh xong thì chạm ra ngoài hoặc Back đóng như cũ.
+Bảng log `live` có nút **Toàn màn hình** để mở rộng giữa chừng, `full` có nút **Thu nhỏ** để quay lại; hai bảng dùng chung bố cục và hành vi nút. Hủy lệnh `live` / `full` dừng hẳn tiến trình với backend thường; với backend root (su) lệnh có thể chạy tiếp ở nền nhưng log đã chốt và bỏ kết quả muộn. Mỗi dòng log có mốc thời gian **mili giây** kể từ lúc bắt đầu chạy (`[  1234 ms]`), dòng của **stderr** (`>&2`) hiện màu đỏ, stdout màu thường; stdout và stderr hiện đúng thứ tự đến ngay khi lệnh in ra (không còn dồn stderr xuống cuối), nút Chia sẻ gửi đúng văn bản đang hiện. Dòng `@progress N` không hiện trong log. Khi lệnh còn đang chạy, bảng log `live` không đóng khi chạm ra ngoài (và Back tạm thời cũng không đóng), chỉ đóng bằng nút Hủy rồi Thoát; lệnh xong thì chạm ra ngoài hoặc Back đóng như cũ.
 
 Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
 

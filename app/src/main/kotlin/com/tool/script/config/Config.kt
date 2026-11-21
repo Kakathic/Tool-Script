@@ -41,7 +41,8 @@ data class Item(
     val lockMode: LockMode,
     val shell: ShellMode,
     val confirm: String?,
-    val timeoutSec: Int,
+    // null = không giới hạn thời gian chạy (không khai báo timeout); có giá trị thì quá số giây đó lệnh bị dừng
+    val timeoutSec: Int?,
     // text
     val content: String?,
     // button / input / slider
@@ -395,7 +396,7 @@ object TomlParser {
             lockMode = lockMode,
             shell = shell,
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
-            timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 } ?: 30,
+            timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },
             content = t.str("content"),
             run = t.str("run"),
             on = t.str("on"),

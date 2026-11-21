@@ -110,7 +110,8 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 prepared.unknownKeys.forEach { log("env.sh: key lạ $it, giữ nguyên") }
             }
             envResult.exceptionOrNull()?.let { log("Không chuẩn bị được env.sh: ${it.message ?: it}") }
-            val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line ->
+            val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line, isError ->
+                if (isError) return@exec
                 val p = ShellText.parseProgress(line)
                 if (p != null) {
                     _state.update { it.copy(progress = p / 100f) }

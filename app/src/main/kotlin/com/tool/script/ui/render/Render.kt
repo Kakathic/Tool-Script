@@ -86,6 +86,9 @@ private const val UNSELECTED_ALPHA = 0.06f
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 internal const val RUN_BUTTON_ALPHA = 0.16f
 
+// Lệnh `get` (đọc trạng thái) không khai báo timeout vẫn giới hạn 30 giây để không treo giao diện; lệnh run thì không giới hạn.
+private const val GET_TIMEOUT_SEC = 30
+
 // Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
 // Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.
 private val RUN_BUTTON_HEIGHT = 40.dp
@@ -147,7 +150,7 @@ class RenderEnv(
                         val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
                         // Nút Hủy của log toàn màn hình: hủy coroutine đang chạy lệnh này.
                         entry.cancelAction = { coroutineContext[Job]?.cancel() }
-                        ExecutorManager.current.exec(full, item.timeoutSec) { line -> entry.append(line) }
+                        ExecutorManager.current.exec(full, item.timeoutSec) { line, isError -> entry.append(line, isError) }
                             .also { entry.finish(it) }
                     } else {
                         ExecutorManager.current.exec(full, item.timeoutSec)
@@ -315,7 +318,7 @@ private fun BinaryItem(
     LaunchedEffect(id) {
         val get = item.get
         if (!get.isNullOrBlank()) {
-            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec)
+            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec ?: GET_TIMEOUT_SEC)
             if (result.ok) {
                 val out = result.stdout.trim().lowercase()
                 env.store[id] = if (out == "1" || out == "true" || out == "on") "1" else "0"
@@ -390,7 +393,7 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
     LaunchedEffect(id) {
         val get = item.get
         if (!get.isNullOrBlank()) {
-            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec)
+            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec ?: GET_TIMEOUT_SEC)
             val number = result.stdout.trim().toFloatOrNull()
             if (result.ok && number != null) env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
         }

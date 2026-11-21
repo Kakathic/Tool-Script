@@ -38,8 +38,12 @@ interface ShellExecutor {
     /** Giá trị của biến `ROOT_MODE` khi dùng backend này. */
     val rootMode: String
 
-    /** Chạy [command]; [onLine] nhận từng dòng stdout (có thể gọi từ luồng nền). */
-    suspend fun exec(command: String, timeoutSec: Int = 30, onLine: ((String) -> Unit)? = null): ExecResult
+    /**
+     * Chạy [command]; [onLine] nhận từng dòng đầu ra ngay khi lệnh in ra, theo thứ tự đến:
+     * `isError` = false là stdout, true là stderr (có thể gọi từ luồng nền).
+     * [timeoutSec] = null là không giới hạn thời gian; có giá trị thì quá số giây đó lệnh bị dừng và báo hết giờ.
+     */
+    suspend fun exec(command: String, timeoutSec: Int? = null, onLine: ((line: String, isError: Boolean) -> Unit)? = null): ExecResult
 }
 
 /**
@@ -56,7 +60,7 @@ private fun readLines(stream: java.io.InputStream, onLine: (String) -> Unit) {
 
 /** Shell thường (`sh -c`), quyền của chính app. */
 class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
-    override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult =
+    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
             val process = try {
                 ProcessBuilder("sh", "-c", command).start()
@@ -71,13 +75,25 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                     val outJob = async {
                         readLines(process.inputStream) {
                             out.appendLine(it)
-                            onLine?.invoke(it)
+                            onLine?.invoke(it, false)
                         }
                     }
-                    val errJob = async { readLines(process.errorStream) { err.appendLine(it) } }
+                    val errJob = async {
+                        readLines(process.errorStream) {
+                            err.appendLine(it)
+                            onLine?.invoke(it, true)
+                        }
+                    }
                     var timedOut = false
                     val finished = try {
-                        runInterruptible { process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS) }
+                        runInterruptible {
+                            if (timeoutSec == null) {
+                                process.waitFor()
+                                true
+                            } else {
+                                process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS)
+                            }
+                        }
                     } catch (e: CancellationException) {
                         // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để các luồng đọc đầu ra kết thúc ngay.
                         process.destroyForcibly()
@@ -102,7 +118,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
         }
 }
 
-/** Shell root qua libsu. [onLine] nhận từng dòng stdout ngay khi lệnh in ra. */
+/** Shell root qua libsu. [onLine] nhận từng dòng stdout và stderr ngay khi lệnh in ra. */
 class SuExecutor : ShellExecutor {
     override val rootMode: String = "root"
 
@@ -110,16 +126,23 @@ class SuExecutor : ShellExecutor {
     // lệnh mới mở một shell root riêng để chạy song song (không phải chờ), xong thì đóng.
     private val inFlight = AtomicInteger(0)
 
-    override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult =
+    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
             val out = mutableListOf<String>()
             val err = mutableListOf<String>()
             // `timeout` của toybox (Android 6+) giữ giới hạn thời gian cho từng lệnh; mã 124 = hết giờ.
-            val wrapped = "timeout $timeoutSec sh -c " + com.tool.script.util.ShellText.quote(command)
+            val quoted = com.tool.script.util.ShellText.quote(command)
+            val wrapped = if (timeoutSec == null) "sh -c $quoted" else "timeout $timeoutSec sh -c $quoted"
             val outLines = object : CallbackList<String>(Executor { it.run() }) {
                 override fun onAddElement(e: String) {
                     out += e
-                    onLine?.invoke(e)
+                    onLine?.invoke(e, false)
+                }
+            }
+            val errLines = object : CallbackList<String>(Executor { it.run() }) {
+                override fun onAddElement(e: String) {
+                    err += e
+                    onLine?.invoke(e, true)
                 }
             }
             val parallel = inFlight.getAndIncrement() > 0
@@ -127,12 +150,12 @@ class SuExecutor : ShellExecutor {
                 // Không mở được shell riêng thì dùng shell chính (xếp hàng chờ như trước).
                 val extra = if (parallel) runCatching { Shell.Builder.create().build("su") }.getOrNull() else null
                 try {
-                    val result = (extra ?: Shell.getShell()).newJob().add(wrapped).to(outLines, err).exec()
+                    val result = (extra ?: Shell.getShell()).newJob().add(wrapped).to(outLines, errLines).exec()
                     ExecResult(
                         code = result.code,
                         stdout = out.joinToString("\n"),
                         stderr = err.joinToString("\n"),
-                        timedOut = result.code == 124,
+                        timedOut = timeoutSec != null && result.code == 124,
                     )
                 } finally {
                     extra?.close()
@@ -153,7 +176,7 @@ class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor {
     override val rootMode: String get() = inner.rootMode
 
-    override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult {
+    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult {
         val envFile = ExecutorManager.envFile
         val prelude = ExecutorManager.prelude
         val full = buildList {
