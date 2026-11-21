@@ -1,0 +1,16 @@
+# Trang này CỐ Ý sai cú pháp TOML để xem thẻ "Không đọc được trang này" (kèm tên file và số dòng).
+# Muốn trang đọc được: thêm dấu nháy đóng cho dòng title của group bên dưới.
+
+[[item]]
+type    = "text"
+title   = "Trang bình thường"
+content = "Nếu thấy dòng này nghĩa là file đã hết lỗi cú pháp."
+
+[[group]]
+title = "Nhóm mẫu
+
+[[group.item]]
+type  = "button"
+title = "Nút mẫu"
+run   = 'echo "xin chào"'
+shell = "banner"

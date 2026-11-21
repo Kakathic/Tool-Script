@@ -388,6 +388,10 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
   - `@crash`: ném lỗi trên luồng chính.
   - `@crash-thread`: ném lỗi trong luồng nền.
   Cả hai hiện Trung tâm lỗi "Ứng dụng bị lỗi" với stack trace rồi kill tiến trình. Mẫu có sẵn ở nhóm "Crash app" cuối `pages/output.toml`.
+- **Demo lỗi cấu hình**: nhóm "Lỗi cấu hình (demo)" trong `pages/output.toml` có hai link tới trang con cố ý sai:
+  - `pages/demo_error_syntax.toml`: sai cú pháp TOML, trang hiện thẻ "Không đọc được trang này" kèm file và dòng lỗi.
+  - `pages/demo_error_warn.toml`: đúng cú pháp nhưng khai báo sai trường; mục thiếu trường bắt buộc bị bỏ qua, giá trị sai dùng mặc định, mỗi lỗi là một dòng trong "Cảnh báo cấu hình".
+  App nạp mọi trang con khi khởi động nên các demo này luôn làm banner cảnh báo hiện lên khi mở app; xóa nhóm và hai file để tắt.
 
 ## 12. Để lại sau
 

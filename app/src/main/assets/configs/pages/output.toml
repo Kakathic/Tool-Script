@@ -1,7 +1,7 @@
 # Tab 3 - Demo: các kiểu hiển thị kết quả lệnh.
 # shell = live | full | hidden | banner | notice (mặc định live), thanh tiến trình @progress,
 # progress, confirm, timeout.
-# Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị (riêng nhóm cuối cố ý làm app crash để xem màn hình lỗi).
+# Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị (riêng hai nhóm cuối cố ý gây lỗi: lỗi cấu hình và crash app).
 
 [[item]]
 type    = "text"
@@ -149,6 +149,24 @@ desc  = "min = 0, max = 10, get = echo 3"
 min   = 0
 max   = 10
 get   = "echo 3"
+
+[[group]]
+title = "Lỗi cấu hình (demo)"
+
+# Hai trang con dưới đây cố ý sai. App nạp trước mọi trang con khi khởi động,
+# nên mỗi lần mở app sẽ có banner "N cảnh báo cấu hình" (bấm Xem để đọc chi tiết).
+# Muốn tắt banner này thì xóa nhóm này (và hai file demo_error_*.toml).
+[[group.item]]
+type  = "link"
+title = "Trang sai cú pháp TOML"
+desc  = 'Hiện thẻ "Không đọc được trang này" kèm file và dòng lỗi'
+page  = "pages/demo_error_syntax.toml"
+
+[[group.item]]
+type  = "link"
+title = "Trang có mục sai"
+desc  = "Mục sai bị bỏ qua, giá trị sai dùng mặc định, kèm cảnh báo"
+page  = "pages/demo_error_warn.toml"
 
 [[group]]
 title = "Crash app (demo màn hình lỗi)"

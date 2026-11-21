@@ -70,6 +70,22 @@ on    = 'echo "Ô tick: bật"'
 off   = 'echo "Ô tick: tắt"'
 shell = "banner"
 
+# [[group]] không cần title: thẻ chỉ vẽ phần item, không có tiêu đề phía trên.
+# Hợp để gộp vài item liên quan vào một thẻ. Item khác (button, switch...) vẫn bắt buộc có title.
+[[group]]
+
+[[group.item]]
+type  = "switch"
+id    = "switches_notitle_switch"
+title = "Công tắc trong group không title"
+desc  = "[[group]] không khai báo title"
+
+[[group.item]]
+type  = "checkbox"
+id    = "switches_notitle_check"
+title = "Ô tick cùng thẻ"
+desc  = "Hai item này nằm chung một thẻ, thẻ không có tiêu đề"
+
 [[group]]
 title = "Khóa theo điều kiện (lock)"
 

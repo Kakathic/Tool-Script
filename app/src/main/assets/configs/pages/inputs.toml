@@ -92,16 +92,6 @@ run     = 'echo "Đã chọn: $inputs_multi_full"'
 shell   = "banner"
 options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage"]
 
-# radio: hiện sẵn mọi lựa chọn
-[[group.item]]
-type    = "radio"
-id      = "inputs_radio"
-title   = "Radio"
-default = "x"
-run     = 'echo "Radio: $inputs_radio"'
-shell   = "banner"
-options = ["Lựa chọn X|x", "Lựa chọn Y|y", "Lựa chọn Z|z"]
-
 # dropdown: menu thả xuống ngay dưới hàng
 [[group.item]]
 type    = "dropdown"
@@ -112,6 +102,19 @@ default = "0"
 run     = 'echo "Đã chọn: $inputs_dropdown"'
 shell   = "banner"
 options = ["Không giới hạn|0", "1", "2", "3", "4", "5", "6"]
+
+[[group]]
+title = "Radio"
+
+# radio: hiện sẵn mọi lựa chọn
+[[group.item]]
+type    = "radio"
+id      = "inputs_radio"
+title   = "Radio"
+default = "x"
+run     = 'echo "Radio: $inputs_radio"'
+shell   = "banner"
+options = ["Lựa chọn X|x", "Lựa chọn Y|y", "Lựa chọn Z|z"]
 
 [[group]]
 title = "Thanh trượt"

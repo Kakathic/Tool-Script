@@ -1,0 +1,115 @@
+# Trang này đúng cú pháp TOML nhưng CỐ Ý khai báo sai một số trường.
+# Mục thiếu trường bắt buộc thì bị bỏ qua, giá trị sai thì dùng mặc định; mỗi lỗi thêm một dòng vào "Cảnh báo cấu hình".
+# Xem đủ danh sách ở nút Xem trên banner cảnh báo (hoặc mục "Cảnh báo cấu hình" trong Trung tâm lỗi).
+
+[[item]]
+type    = "text"
+title   = "Mục sai cấu hình"
+content = "Chỉ các mục khai báo đúng mới hiện bên dưới. Mục sai không hiện, giá trị sai thì dùng mặc định."
+
+[[group]]
+title = "Mục bị bỏ qua"
+
+# thiếu title: bỏ qua
+[[group.item]]
+type = "button"
+run  = 'echo "không có title"'
+
+# type lạ: bỏ qua
+[[group.item]]
+type  = "khong_co"
+title = "Type không tồn tại"
+
+# switch / input / radio... bắt buộc có id: thiếu id thì bỏ qua
+[[group.item]]
+type  = "switch"
+title = "Công tắc thiếu id"
+
+# id chỉ gồm chữ, số, gạch dưới và không bắt đầu bằng số: sai thì bỏ qua
+[[group.item]]
+type  = "switch"
+id    = "1abc"
+title = "Công tắc id không hợp lệ"
+
+# id đầu tiên được giữ, id trùng ở mục sau bị bỏ qua
+[[group.item]]
+type  = "switch"
+id    = "demo_error_dup"
+title = "Công tắc id hợp lệ"
+desc  = "Mục này hiện, mục trùng id ngay bên dưới thì không"
+
+[[group.item]]
+type  = "switch"
+id    = "demo_error_dup"
+title = "Công tắc trùng id"
+
+# link phải có tab hoặc page: thiếu cả hai thì bỏ qua
+[[group.item]]
+type  = "link"
+title = "Link thiếu đích"
+
+[[group]]
+title = "Giá trị sai, dùng mặc định"
+
+# shell không hợp lệ: dùng live
+[[group.item]]
+type  = "button"
+title = "shell sai"
+desc  = 'shell = "abc", dùng live'
+run   = 'echo "chạy với shell mặc định"'
+shell = "abc"
+
+# columns chỉ nhận 1 hoặc 2: dùng 1
+[[group.item]]
+type    = "singleselect"
+id      = "demo_error_columns"
+title   = "columns sai"
+desc    = "columns = 3, dùng 1"
+default = "a"
+columns = 3
+run     = 'echo "Đã chọn: $demo_error_columns"'
+shell   = "banner"
+options = ["Mục A|a", "Mục B|b"]
+
+# icon_size phải là số dương: dùng 24
+[[group.item]]
+type      = "button"
+title     = "icon_size sai"
+desc      = 'icon_size = "abc", dùng 24'
+icon      = "icons/about.svg"
+icon_size = "abc"
+run       = 'echo "icon_size sai"'
+shell     = "banner"
+
+# lock_mode chỉ nhận readonly hoặc hide: dùng readonly
+[[group.item]]
+type      = "button"
+title     = "lock_mode sai"
+desc      = 'lock_mode = "abc", dùng readonly'
+run       = 'echo "lock_mode sai"'
+shell     = "banner"
+lock_mode = "abc"
+
+# max nhỏ hơn min: app đổi chỗ hai số
+[[group.item]]
+type    = "slider"
+id      = "demo_error_slider"
+title   = "min, max ngược"
+desc    = "min = 10, max = 0, app đổi chỗ thành 0..10"
+min     = 10
+max     = 0
+step    = 1
+default = 5
+run     = 'echo "Giá trị: $demo_error_slider"'
+shell   = "banner"
+
+# option rỗng giá trị: bỏ option đó, các option còn lại vẫn dùng được
+[[group.item]]
+type    = "dropdown"
+id      = "demo_error_option"
+title   = "options có mục sai"
+desc    = 'options #2 = "|" bị bỏ qua'
+default = "a"
+run     = 'echo "Đã chọn: $demo_error_option"'
+shell   = "banner"
+options = ["Mục A|a", "|", "Mục C|c"]
