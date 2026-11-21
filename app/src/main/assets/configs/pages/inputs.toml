@@ -70,6 +70,28 @@ run     = 'echo "Đã chọn: $inputs_single"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
+# Từ 6 mục trở lên: chọn toàn màn hình, có ô tìm (không phân biệt hoa thường và dấu)
+[[group.item]]
+type    = "singleselect"
+id      = "inputs_single_full"
+title   = "Chọn một, toàn màn hình"
+desc    = "8 mục nên mở toàn màn hình, có ô tìm"
+default = "danang"
+run     = 'echo "Đã chọn: $inputs_single_full"'
+shell   = "banner"
+options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho"]
+
+# multiselect toàn màn hình: có ô Chọn tất cả, chỉ áp dụng cho các mục trong kết quả tìm
+[[group.item]]
+type    = "multiselect"
+id      = "inputs_multi_full"
+title   = "Chọn nhiều, toàn màn hình"
+desc    = "Thử gõ \"m\" rồi bấm Chọn tất cả"
+default = "audio\nnet"
+run     = 'echo "Đã chọn: $inputs_multi_full"'
+shell   = "banner"
+options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage"]
+
 # radio: hiện sẵn mọi lựa chọn
 [[group.item]]
 type    = "radio"

@@ -214,7 +214,7 @@ options = [
 ]
 ```
 
-- `columns` (tùy chọn, chỉ với `multiselect` và `singleselect`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng). Giá trị khác thì cảnh báo và dùng `1`.
+- `columns` (tùy chọn, chỉ với `multiselect` và `singleselect`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng). Giá trị khác thì cảnh báo và dùng `1`. `columns` chỉ có tác dụng với hộp thoại nhỏ (dưới 6 mục), chế độ toàn màn hình luôn một cột.
 - Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
@@ -291,6 +291,14 @@ run     = 'echo "Đã chọn: $mode"'
 - `options` khai báo như mục 7. Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục là một thẻ có khung bo, chữ bên trái, ô tích có khung bên phải (chỉ tích được một mục).
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
+
+`multiselect` / `singleselect` – chế độ toàn màn hình:
+
+- Có **từ 6 mục trở lên** trong `options` thì bấm hàng sẽ mở **toàn màn hình** thay cho hộp thoại nhỏ. Dưới 6 mục giữ hộp thoại như cũ. Ngưỡng cố định trong code (`FULLSCREEN_MIN_OPTIONS`, `ui/render/SelectScreen.kt`), không cấu hình trong TOML.
+- Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Cách lưu và chạy `run` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
+- Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
+- `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Chân màn hình hiện `Đã chọn x/y` tính trên toàn bộ danh sách.
+- `singleselect` bấm một dòng để chọn (nút tròn), chưa lưu cho tới khi bấm Xác nhận.
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
