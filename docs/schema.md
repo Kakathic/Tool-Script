@@ -270,7 +270,7 @@ separator = ","              # tùy chọn: dấu phân tách trong $id, mặc �
 run       = 'echo "Đã chọn: $features"'
 ```
 
-- `options` khai báo như mục 7. Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ bo góc không viền (chưa chọn: nền xám nhạt; đã chọn: nền và chữ màu chủ đạo), chữ bên trái, ô tích bên phải.
+- `options` khai báo như mục 7. Hàng hiện nhãn các mục đã chọn (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ bo góc không viền (chưa chọn: nền xám nhạt; đã chọn: nền và chữ màu chủ đạo), chữ bên trái, ô tích bên phải. Riêng khi `columns = 1` (mặc định) thì bỏ nền thẻ, chỉ còn chữ và ô tích (mục đã chọn vẫn đổi màu chữ); `columns = 2` giữ thẻ có nền.
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.

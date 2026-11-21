@@ -35,6 +35,7 @@ import com.tool.script.config.SelectOption
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.RadioButton
@@ -132,12 +133,14 @@ internal fun SelectFullScreen(
             )
             Spacer(Modifier.height(12.dp))
 
-            // Vùng danh sách: nền surface chạy hết ngang, ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
-            Column(
+            // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền với các thẻ trong app, cả sáng lẫn tối) nhưng
+            // không bo góc và chạy hết ngang. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+            // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
+            Card(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .background(MiuixTheme.colorScheme.surface),
+                    .fillMaxWidth(),
+                cornerRadius = 0.dp,
             ) {
                 if (multi) {
                     BasicComponent(

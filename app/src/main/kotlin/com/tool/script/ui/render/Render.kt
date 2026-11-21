@@ -498,7 +498,8 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                             haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
                             draft = if (checked) draft - option.value else draft + option.value
                         }
-                        ChoiceCard(option.label, checked, toggle, Modifier.weight(1f))
+                        // 1 cột: không nền (chỉ chữ + ô tích); 2 cột: giữ thẻ có nền như cũ.
+                        ChoiceCard(option.label, checked, toggle, Modifier.weight(1f), framed = item.columns > 1)
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -528,15 +529,22 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 /**
  * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: thẻ bo góc không viền, chữ bên trái,
  * ô tích bên phải. Mục chưa chọn có nền xám nhạt; mục đã chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo.
+ * [framed] = false: bỏ nền (chỉ còn chữ và ô tích, mục đã chọn vẫn đổi màu chữ); `multiselect` dùng khi 1 cột.
  */
 @Composable
-private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, framed: Boolean = true) {
     val shape = RoundedCornerShape(12.dp)
     val primary = MiuixTheme.colorScheme.primary
     Row(
         modifier = modifier
             .clip(shape)
-            .background(if (checked) primary.copy(alpha = SELECTED_ALPHA) else MiuixTheme.colorScheme.onSurface.copy(alpha = UNSELECTED_ALPHA))
+            .background(
+                when {
+                    !framed -> Color.Transparent
+                    checked -> primary.copy(alpha = SELECTED_ALPHA)
+                    else -> MiuixTheme.colorScheme.onSurface.copy(alpha = UNSELECTED_ALPHA)
+                },
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
