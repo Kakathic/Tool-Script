@@ -475,7 +475,8 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     val haptic = LocalHapticFeedback.current
     val current = env.store[id]
     val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
-    val summary = item.options.filter { it.value in currentSet }.joinToString(", ") { it.label }.ifEmpty { "Chưa chọn" }
+    val selectedCount = item.options.count { it.value in currentSet }
+    val summary = if (selectedCount == 0) "Chưa chọn" else "Đã chọn $selectedCount"
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
