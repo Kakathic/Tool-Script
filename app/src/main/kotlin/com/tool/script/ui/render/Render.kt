@@ -216,8 +216,8 @@ private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
     }
 }
 
-/** Cắt bớt phần hở phía trên tiêu đề group (hở với thẻ ở trên). Tăng số này để hở nhỏ hơn nữa. */
-private val GroupTitleTrimTop = 8.dp
+/** Cắt bớt phần hở phía trên tiêu đề group: khoảng cách thẻ giữa các mục là 16dp, cắt 12dp để tiêu đề cách thẻ phía trên 12dp. */
+private val GroupTitleTrimTop = 12.dp
 
 /** Dời tiêu đề group sang trái, để thẳng hàng với chữ trong thẻ. */
 private val GroupTitleShiftLeft = 12.dp
