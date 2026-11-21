@@ -1,7 +1,7 @@
 # Tab 3 - Demo: các kiểu hiển thị kết quả lệnh.
 # shell = live | full | hidden | banner | notice (mặc định live), thanh tiến trình @progress,
 # progress, confirm, timeout.
-# Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị.
+# Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị (riêng nhóm cuối cố ý làm app crash để xem màn hình lỗi).
 
 [[item]]
 type    = "text"
@@ -149,3 +149,23 @@ desc  = "min = 0, max = 10, get = echo 3"
 min   = 0
 max   = 10
 get   = "echo 3"
+
+[[group]]
+title = "Crash app (demo màn hình lỗi)"
+
+# run = "@crash": ném lỗi trên luồng chính. App thoát thật và mở Trung tâm lỗi (tiến trình :crash).
+# Luôn kèm confirm để khỏi bấm nhầm.
+[[group.item]]
+type    = "button"
+title   = "Crash trên luồng chính"
+desc    = 'run = "@crash"'
+run     = "@crash"
+confirm = "App sẽ bị crash để xem màn hình lỗi. Tiếp tục?"
+
+# run = "@crash-thread": ném lỗi trong luồng nền, cùng kết quả.
+[[group.item]]
+type    = "button"
+title   = "Crash trên luồng nền"
+desc    = 'run = "@crash-thread"'
+run     = "@crash-thread"
+confirm = "App sẽ bị crash để xem màn hình lỗi. Tiếp tục?"

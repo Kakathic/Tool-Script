@@ -39,6 +39,7 @@ import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
 import com.tool.script.config.LockMode
 import com.tool.script.config.ShellMode
+import com.tool.script.crash.CrashDemo
 import com.tool.script.executor.ExecResult
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
@@ -127,6 +128,8 @@ class RenderEnv(
         }
         val notifies = item.shell == ShellMode.Banner || item.shell == ShellMode.Notice
         val action: () -> Unit = action@{
+            // Lệnh demo `@crash` / `@crash-thread`: cố ý làm app crash để xem Trung tâm lỗi (xem crash/CrashDemo.kt).
+            if (CrashDemo.trigger(command)) return@action
             if (notifies && feedback.busy) return@action
             val runId = if (notifies) feedback.beginRun() else 0
             val job = scope.launch {

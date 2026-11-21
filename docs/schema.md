@@ -384,6 +384,10 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - TOML parse lỗi: hiện file, dòng, mô tả lỗi.
 - Thiếu trường bắt buộc hoặc `type` lạ: bỏ qua mục đó và ghi cảnh báo.
 - Lỗi không lưu ra file, chỉ giữ trong bộ nhớ của phiên chạy.
+- **Demo crash**: để thử màn hình lỗi, đặt `run` của một `button` là một trong hai lệnh dựng sẵn dưới đây (nên kèm `confirm` vì app thoát thật):
+  - `@crash`: ném lỗi trên luồng chính.
+  - `@crash-thread`: ném lỗi trong luồng nền.
+  Cả hai hiện Trung tâm lỗi "Ứng dụng bị lỗi" với stack trace rồi kill tiến trình. Mẫu có sẵn ở nhóm "Crash app" cuối `pages/output.toml`.
 
 ## 12. Để lại sau
 
