@@ -242,11 +242,13 @@ object TomlParser {
             warnings += "$label có type lạ \"${typeKey ?: ""}\", bỏ qua"
             return null
         }
-        val title = t.str("title")
-        if (title.isNullOrBlank()) {
+        val rawTitle = t.str("title")
+        // `[[group]]` không bắt buộc title: không có thì thẻ group hiện không kèm tiêu đề. Item khác vẫn bắt buộc.
+        if (rawTitle.isNullOrBlank() && !isGroup) {
             warnings += "$label (${type.key}) thiếu title, bỏ qua"
             return null
         }
+        val title = rawTitle.orEmpty()
         val id = t.str("id")?.takeIf { it.isNotBlank() }
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Slider ||

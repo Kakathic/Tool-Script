@@ -131,7 +131,7 @@ lock_mode = "readonly"
 |---|---|---|
 | `type` | có | Loại thành phần |
 | `id` | tùy loại | Định danh, dùng làm tên biến |
-| `title` | có | Tiêu đề hiển thị |
+| `title` | có (riêng `[[group]]` không bắt buộc) | Tiêu đề hiển thị |
 | `desc` | không | Mô tả phụ |
 | `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Mặc định tô màu theo theme (xem `icon_tint`). Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
 | `icon_size` | không | Kích thước icon (dp), số dương, mặc định `24` |
@@ -170,7 +170,7 @@ title   = "Chào mừng"
 content = "Nội dung"
 
 [[group]]
-title = "Công tắc"            # bắt buộc; hiện sát phía trên thẻ đầu tiên
+title = "Công tắc"            # tùy chọn; hiện sát phía trên thẻ. Bỏ trống thì group chỉ có thẻ, không có tiêu đề
 
 [[group.item]]
 type  = "switch"
@@ -178,10 +178,10 @@ id    = "game_mode"
 title = "Chế độ game"
 ```
 
-- `[[group]]` dùng được `title`, `visible_if`, `lock`, `lock_mode`; không có `type`.
+- `[[group]]` dùng được `title` (không bắt buộc), `visible_if`, `lock`, `lock_mode`; không có `type`.
 - Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
 - Các item con trong một `[[group]]` nằm chung trong một thẻ lớn. `[[item]]` đứng ngoài group thì mỗi item một thẻ riêng.
-- Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả tiêu đề.
+- Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả group (kể cả tiêu đề nếu có).
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).
 
 ### Lưu giá trị theo id

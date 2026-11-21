@@ -569,8 +569,14 @@ fun Banner(
                 maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
-            if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
+            if (hasButtons) {
+                // Các nút (Xem, Ẩn, Hủy...) cách chữ và cách nhau 8dp; Banner dùng chung cho thông báo script và lỗi cấu hình.
+                Spacer(Modifier.width(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
+                    if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
+                }
+            }
         }
         if (indeterminate) {
             Spacer(Modifier.height(10.dp))

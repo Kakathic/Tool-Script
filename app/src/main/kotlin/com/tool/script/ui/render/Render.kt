@@ -227,16 +227,19 @@ private fun GroupItem(item: Item, env: RenderEnv) {
     val children = item.children.filter { isShown(it, env.store) }
     if (children.isEmpty()) return // group trống (con bị ẩn hết) thì ẩn luôn cả tiêu đề
     Column {
-        SmallTitle(
-            text = item.title,
-            modifier = Modifier.layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints)
-                val trim = GroupTitleTrimTop.roundToPx().coerceAtMost(placeable.height)
-                val shift = GroupTitleShiftLeft.roundToPx()
-                val trimBottom = GroupTitleTrimBottom.roundToPx().coerceAtMost((placeable.height - trim).coerceAtLeast(0))
-                layout(placeable.width, placeable.height - trim - trimBottom) { placeable.place(-shift, -trim) }
-            },
-        )
+        // Group không có title thì không vẽ tiêu đề, chỉ còn thẻ.
+        if (item.title.isNotBlank()) {
+            SmallTitle(
+                text = item.title,
+                modifier = Modifier.layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val trim = GroupTitleTrimTop.roundToPx().coerceAtMost(placeable.height)
+                    val shift = GroupTitleShiftLeft.roundToPx()
+                    val trimBottom = GroupTitleTrimBottom.roundToPx().coerceAtMost((placeable.height - trim).coerceAtLeast(0))
+                    layout(placeable.width, placeable.height - trim - trimBottom) { placeable.place(-shift, -trim) }
+                },
+            )
+        }
         // Mọi item con gộp chung trong một thẻ lớn, tiêu đề dính sát thẻ.
         Card(Modifier.fillMaxWidth()) {
             children.forEach { ItemRenderer(it, env, inGroup = true) }
