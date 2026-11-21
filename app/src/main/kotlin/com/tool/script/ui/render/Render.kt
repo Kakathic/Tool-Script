@@ -529,7 +529,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 /**
  * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: thẻ bo góc không viền, chữ bên trái,
  * ô tích bên phải. Mục chưa chọn có nền xám nhạt; mục đã chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo.
- * [framed] = false: bỏ nền (chỉ còn chữ và ô tích, mục đã chọn vẫn đổi màu chữ); `multiselect` dùng khi 1 cột.
+ * [framed] = false: bỏ nền, chỉ còn chữ và ô tích, màu chữ không đổi khi chọn; `multiselect` dùng khi 1 cột.
  */
 @Composable
 private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, framed: Boolean = true) {
@@ -552,7 +552,8 @@ private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, mod
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            color = if (checked) primary else MiuixTheme.colorScheme.onSurface,
+            // Thẻ có nền: mục đã chọn đổi chữ sang màu chủ đạo. Không nền (multiselect 1 cột): giữ nguyên màu chữ.
+            color = if (checked && framed) primary else MiuixTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.width(8.dp))
         Checkbox(

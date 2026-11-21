@@ -1,5 +1,10 @@
 package com.tool.script.ui.render
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +40,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.tool.script.config.SelectOption
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -102,122 +109,152 @@ internal fun SelectFullScreen(
         }
     }
 
+    // Trượt từ dưới lên khi mở; khi đóng (Hủy, Xác nhận, Back) thì trượt xuống xong mới gọi onDismiss / onConfirm
+    // để màn hình không biến mất đột ngột.
+    val transition = remember { MutableTransitionState(false).apply { targetState = true } }
+    var afterClose by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val close: (() -> Unit) -> Unit = { after ->
+        if (afterClose == null) {
+            afterClose = after
+            transition.targetState = false
+        }
+    }
+    LaunchedEffect(afterClose, transition.currentState) {
+        val after = afterClose
+        if (after != null && !transition.currentState && transition.isIdle) after()
+    }
+
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { close(onDismiss) },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        // Cột ngoài không có lề ngang: các dòng chọn chạy hết chiều rộng màn hình, vùng bấm và hiệu ứng nhấn
-        // phủ trọn dòng, không bị thẻ bo góc cắt. Lề 16dp chỉ áp cho tiêu đề, ô tìm và hai nút.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding(),
+        AnimatedVisibility(
+            visibleState = transition,
+            enter = slideInVertically(animationSpec = tween(300)) { it },
+            exit = slideOutVertically(animationSpec = tween(220)) { it },
         ) {
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
-            )
-            TextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                label = "Tìm kiếm",
-                singleLine = true,
-            )
-            Spacer(Modifier.height(12.dp))
-
-            // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền với các thẻ trong app, cả sáng lẫn tối) nhưng
-            // không bo góc và chạy hết ngang. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
-            // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
-            Card(
+            // Cột ngoài không có lề ngang: các dòng chọn chạy hết chiều rộng màn hình, vùng bấm và hiệu ứng nhấn
+            // phủ trọn dòng, không bị thẻ bo góc cắt. Lề 16dp chỉ áp cho tiêu đề, ô tìm và hai nút.
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                cornerRadius = 0.dp,
+                    .fillMaxSize()
+                    .background(MiuixTheme.colorScheme.background)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding(),
             ) {
-                if (multi) {
-                    BasicComponent(
-                        modifier = Modifier.fillMaxWidth(),
-                        title = if (query.isBlank()) "Chọn tất cả (${visible.size})" else "Chọn tất cả kết quả tìm (${visible.size})",
-                        enabled = visible.isNotEmpty(),
-                        endActions = {
-                            Checkbox(
-                                state = allState,
-                                enabled = visible.isNotEmpty(),
-                                onClick = { toggleAll() },
-                            )
-                        },
-                        onClick = { toggleAll() },
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                }
-                if (visible.isEmpty()) {
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Không có mục nào khớp",
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            style = MiuixTheme.textStyles.body2,
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
+                )
+                TextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    label = "Tìm kiếm",
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(12.dp))
+
+                // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền với các thẻ trong app, cả sáng lẫn tối) nhưng
+                // không bo góc và chạy hết ngang. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+                // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    cornerRadius = 0.dp,
+                ) {
+                    if (multi) {
+                        BasicComponent(
+                            modifier = Modifier.fillMaxWidth(),
+                            title = if (query.isBlank()) "Chọn tất cả (${visible.size})" else "Chọn tất cả kết quả tìm (${visible.size})",
+                            enabled = visible.isNotEmpty(),
+                            endActions = {
+                                Checkbox(
+                                    state = allState,
+                                    enabled = visible.isNotEmpty(),
+                                    onClick = { toggleAll() },
+                                )
+                            },
+                            onClick = { toggleAll() },
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
-                } else {
-                    LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-                        items(visible) { option ->
-                            val checked = option.value in draft
-                            val click = {
-                                if (multi) {
-                                    haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
-                                    draft = if (checked) draft - option.value else draft + option.value
-                                } else {
-                                    if (!checked) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                    draft = setOf(option.value)
-                                }
-                            }
-                            BasicComponent(
-                                modifier = Modifier.fillMaxWidth(),
-                                title = option.label,
-                                endActions = {
-                                    if (multi) {
-                                        Checkbox(
-                                            state = if (checked) ToggleableState.On else ToggleableState.Off,
-                                            onClick = { click() },
-                                        )
-                                    } else {
-                                        RadioButton(selected = checked, onClick = { click() })
-                                    }
-                                },
-                                onClick = { click() },
+                    if (visible.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "Không có mục nào khớp",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                style = MiuixTheme.textStyles.body2,
                             )
+                        }
+                    } else {
+                        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                            items(visible) { option ->
+                                val checked = option.value in draft
+                                val click = {
+                                    if (multi) {
+                                        haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
+                                        draft = if (checked) draft - option.value else draft + option.value
+                                    } else {
+                                        if (!checked) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        draft = setOf(option.value)
+                                    }
+                                }
+                                BasicComponent(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    title = option.label,
+                                    // Chọn một: dòng đã chọn đổi chữ sang màu chủ đạo; chọn nhiều giữ nguyên màu chữ.
+                                    titleColor = if (!multi && checked) {
+                                        BasicComponentDefaults.titleColor(color = MiuixTheme.colorScheme.primary)
+                                    } else {
+                                        BasicComponentDefaults.titleColor()
+                                    },
+                                    endActions = {
+                                        if (multi) {
+                                            Checkbox(
+                                                state = if (checked) ToggleableState.On else ToggleableState.Off,
+                                                onClick = { click() },
+                                            )
+                                        } else {
+                                            RadioButton(selected = checked, onClick = { click() })
+                                        }
+                                    },
+                                    onClick = { click() },
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            if (multi) {
-                Text(
-                    text = "Đã chọn ${draft.size}/${options.size}",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.body2,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                )
-            }
-            Row(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextButton(text = "Hủy", onClick = onDismiss, modifier = Modifier.weight(1f))
-                TextButton(
-                    text = "Xác nhận",
-                    onClick = { onConfirm(draft) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                )
+                if (multi) {
+                    Text(
+                        text = "Đã chọn ${draft.size}/${options.size}",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.body2,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                    )
+                }
+                Row(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(text = "Hủy", onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
+                    TextButton(
+                        text = "Xác nhận",
+                        onClick = {
+                            val result = draft
+                            close { onConfirm(result) }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                    )
+                }
             }
         }
     }
