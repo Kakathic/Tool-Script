@@ -118,7 +118,7 @@ lock_mode = "readonly"
 - Thanh trên cùng: tiêu đề là tên app (`[app] name`).
   Bên phải có 2 icon riêng biệt: Thông tin (menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix,
   lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
-- Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp.
+- Lề 4 hướng 12dp (trái, phải, trên, dưới), khoảng cách giữa các thẻ 16dp.
 - Thanh tab dưới cùng, mỗi trang một tab (icon + title).
 - Cửa sổ tab trượt: hiện tối đa 4 tab. Từ 5 tab trở lên, vuốt tới tab thứ 4
   của cửa sổ thì tab kế tiếp hiện ra bên phải và tab đầu ẩn đi; vuốt ngược
