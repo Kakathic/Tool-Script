@@ -86,6 +86,12 @@ private const val UNSELECTED_ALPHA = 0.06f
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 private const val RUN_BUTTON_ALPHA = 0.16f
 
+// Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
+// Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.
+private val RUN_BUTTON_HEIGHT = 40.dp
+private val RUN_BUTTON_GAP = 8.dp
+private val RUN_BUTTON_GAP_START = 12.dp
+
 // Bọc onClick của item: rung nhẹ khi chạm rồi mới chạy hành động.
 @Composable
 private fun withTapHaptic(onClick: () -> Unit): () -> Unit {
@@ -193,8 +199,8 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     }
 }
 
-/** Đệm bên trong thẻ (từ mép thẻ tới nội dung), dùng cho mọi item và màn hình chọn: trái, phải, dưới 16dp, trên 12dp. */
-internal val CardInsideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp)
+/** Đệm bên trong thẻ (từ mép thẻ tới nội dung), dùng cho mọi item: trái, phải 16dp, trên và dưới 12dp. */
+internal val CardInsideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 12.dp)
 
 /**
  * Nền của một item. Item đứng riêng (ngoài group) có thẻ của mình;
@@ -438,12 +444,13 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                         val onRun = withTapHaptic { env.run(item, item.run) }
                         Box(
                             modifier = Modifier
-                                .padding(end = 8.dp)
+                                .padding(start = RUN_BUTTON_GAP_START, end = RUN_BUTTON_GAP)
+                                .height(RUN_BUTTON_HEIGHT)
                                 .alpha(if (runEnabled) 1f else 0.4f)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA))
                                 .clickable(enabled = runEnabled, onClick = onRun)
-                                .padding(horizontal = 12.dp, vertical = 5.dp),
+                                .padding(horizontal = 14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
