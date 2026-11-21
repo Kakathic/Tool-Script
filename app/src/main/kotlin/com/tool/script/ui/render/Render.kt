@@ -1,7 +1,6 @@
 package com.tool.script.ui.render
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,6 +77,9 @@ import kotlin.math.roundToInt
 // Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
 
 private const val SELECTED_ALPHA = 0.16f
+
+// Nền nhạt của thẻ chưa chọn trong hộp thoại chọn (thẻ không viền).
+private const val UNSELECTED_ALPHA = 0.06f
 
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 private const val RUN_BUTTON_ALPHA = 0.16f
@@ -524,8 +526,8 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 }
 
 /**
- * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: khung bo quanh (cả mục đã chọn lẫn chưa chọn),
- * chữ bên trái, ô tích có khung bên phải. Mục đã chọn có viền và nền màu chủ đạo, chữ màu chủ đạo.
+ * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: thẻ bo góc không viền, chữ bên trái,
+ * ô tích bên phải. Mục chưa chọn có nền xám nhạt; mục đã chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo.
  */
 @Composable
 private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -534,12 +536,7 @@ private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, mod
     Row(
         modifier = modifier
             .clip(shape)
-            .background(if (checked) primary.copy(alpha = SELECTED_ALPHA) else Color.Transparent)
-            .border(
-                width = if (checked) 1.5.dp else 1.dp,
-                color = if (checked) primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                shape = shape,
-            )
+            .background(if (checked) primary.copy(alpha = SELECTED_ALPHA) else MiuixTheme.colorScheme.onSurface.copy(alpha = UNSELECTED_ALPHA))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
