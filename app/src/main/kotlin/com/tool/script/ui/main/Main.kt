@@ -748,7 +748,7 @@ private fun PageList(
     LazyColumn(
         modifier = Modifier.fillMaxSize().imePadding(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomInset),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Banner nằm trong danh sách nên cuộn cùng nội dung, không che mục nào.
         if (showWarnings) {
