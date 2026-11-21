@@ -8,8 +8,8 @@ import java.io.File
 import java.io.IOException
 
 /**
- * Chép toàn bộ tệp trong assets ra `$HOME` (= `noBackupFilesDir`, không bị Auto Backup sao lưu), giữ nguyên đường dẫn:
- * `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`.
+ * Chép các thư mục cần thiết trong assets ([INCLUDED]) ra `$HOME` (= `no_backup/home`, xem [Util.homeDir], không bị Auto Backup sao lưu),
+ * giữ nguyên đường dẫn: `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`.
  * Chạy lúc khởi động, trước `init.sh` (xem Boot). Không chép các mục trong [EXCLUDED] và các thư mục ABI không khớp máy.
  *
  * - Tệp trong thư mục `bin` được `chmod 755` (script / lệnh dùng chung, `$HOME/bin` = `$BIN_DIR` nằm trong `PATH`, xem env.sh).
@@ -19,11 +19,12 @@ import java.io.IOException
  */
 object AssetInstaller {
 
-    /** Đường dẫn (tính từ gốc assets), tệp hoặc thư mục, không chép. Sửa danh sách này để loại thêm. */
+    /** Thư mục ở gốc assets được chép ra `$HOME`; thư mục khác (configs, images, webkit...) bỏ qua. Thêm tên vào đây khi cần thêm thư mục. */
+    private val INCLUDED = setOf("scripts", "bin", "lib")
+
+    /** Đường dẫn (tính từ gốc assets), tệp hoặc thư mục nằm trong [INCLUDED], không chép. */
     private val EXCLUDED = setOf(
-        "configs", // app đọc thẳng từ assets (ConfigRepository, icon), không cần bản chép
-        "scripts/env.sh", // có key @KEY@: EnvFile thay key rồi tự ghi ra files/scripts/env.sh
-        "images", "webkit", "sounds", // thư mục hệ thống / WebView thêm vào assets của một số máy
+        "scripts/env.sh", // có key @KEY@: EnvFile thay key rồi tự ghi ra $HOME/scripts/env.sh
     )
 
     private const val MODE_755 = 493 // 0755 (hệ bát phân)
@@ -34,7 +35,7 @@ object AssetInstaller {
 
     fun install(context: Context): Result {
         val assets = context.assets
-        val root = context.noBackupFilesDir
+        val root = Util.homeDir(context)
         val sources = mutableListOf<String>()
         walk(assets, "", Build.SUPPORTED_ABIS.toSet(), sources)
 
@@ -78,10 +79,11 @@ object AssetInstaller {
         return Result(copied, sources.size, failed)
     }
 
-    /** Liệt kê mọi tệp dưới [dir] (đệ quy) vào [out], bỏ mục loại trừ và `lib/<abi>` không khớp [abis]. */
+    /** Liệt kê mọi tệp dưới [dir] (đệ quy) vào [out]: ở gốc chỉ lấy thư mục trong [INCLUDED], bỏ mục loại trừ và `lib/<abi>` không khớp [abis]. */
     private fun walk(assets: AssetManager, dir: String, abis: Set<String>, out: MutableList<String>) {
         for (name in assets.list(dir).orEmpty()) {
             val path = if (dir.isEmpty()) name else "$dir/$name"
+            if (dir.isEmpty() && name !in INCLUDED) continue
             if (path in EXCLUDED) continue
             if (dir == "lib" && name !in abis) continue
             if (assets.list(path).orEmpty().isNotEmpty()) walk(assets, path, abis, out) else out += path

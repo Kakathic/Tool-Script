@@ -49,6 +49,9 @@ object Util {
         Runtime.getRuntime().exit(0)
     }
 
+    /** `$HOME` của app: `no_backup/home` (không bị Auto Backup sao lưu), nơi chép assets cần thiết và đặt env.sh cạnh init.sh. */
+    fun homeDir(context: Context): File = File(context.noBackupFilesDir, "home").apply { mkdirs() }
+
     /** Chép một file trong assets ra [dest], tạo thư mục cha nếu cần. */
     fun copyAsset(context: Context, assetPath: String, dest: File): File {
         dest.parentFile?.mkdirs()

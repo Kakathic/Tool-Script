@@ -16,6 +16,7 @@ import com.tool.script.state.VariableStore
 import com.tool.script.util.AssetInstaller
 import com.tool.script.util.EnvFile
 import com.tool.script.util.ShellText
+import com.tool.script.util.Util
 import com.tool.script.util.formatNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,14 +93,14 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { it.copy(stage = BootStage.Script, progress = 0f) }
         var scriptError: String? = null
         try {
-            // Chép toàn bộ assets (trừ mục loại trừ, xem AssetInstaller) ra $HOME (noBackupFilesDir), trước khi chạy script.
+            // Chép các thư mục cần thiết của assets (xem AssetInstaller) ra $HOME (no_backup/home), trước khi chạy script.
             withContext(Dispatchers.IO) { runCatching { AssetInstaller.install(app) } }
                 .onSuccess { r ->
                     if (r.copied > 0) log("assets: chép ${r.copied}/${r.total} tệp")
                     r.failed.forEach { log("assets: lỗi $it") }
                 }
                 .onFailure { log("assets: không chép được: ${it.message ?: it}") }
-            val script = File(app.noBackupFilesDir, "scripts/init.sh")
+            val script = File(Util.homeDir(app), "scripts/init.sh")
             val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
             envResult.getOrNull()?.let { prepared ->
                 ExecutorManager.envFile = prepared.file.absolutePath

@@ -12,7 +12,7 @@ class PreparedEnv(val file: File, val unknownKeys: List<String>)
 /**
  * `assets/scripts/env.sh`: file biến dùng chung cho mọi lệnh shell của app.
  * Mỗi lần mở app, các key dạng `@KEY@` trong file được thay bằng đường dẫn thật rồi ghi ra
- * `filesDir/scripts/env.sh`; mọi lệnh chạy qua app nạp file này trước (xem ExecutorManager).
+ * `$HOME/scripts/env.sh` (cạnh `init.sh`, `$HOME` = `no_backup/home`); mọi lệnh chạy qua app nạp file này trước (xem ExecutorManager).
  */
 object EnvFile {
 
@@ -23,15 +23,17 @@ object EnvFile {
     /** Các key có sẵn và đường dẫn tương ứng. */
     fun keys(context: Context): Map<String, String> {
         val ext = Environment.getExternalStorageDirectory().absolutePath
+        val home = Util.homeDir(context)
         return linkedMapOf(
             "PACKAGE" to context.packageName,
             "APP_DIR" to context.applicationInfo.dataDir,
             "FILES_DIR" to context.filesDir.absolutePath,
             "CACHE_DIR" to context.cacheDir.absolutePath,
-            "SCRIPTS_DIR" to File(context.filesDir, "scripts").absolutePath,
+            "HOME_DIR" to home.absolutePath,
+            "SCRIPTS_DIR" to File(home, "scripts").absolutePath,
             "STATE_DIR" to File(context.filesDir, "state").absolutePath,
             "NOBACKUP_DIR" to context.noBackupFilesDir.absolutePath,
-            "BIN_DIR" to File(context.noBackupFilesDir, "bin").absolutePath,
+            "BIN_DIR" to File(home, "bin").absolutePath,
             "LIB_DIR" to context.applicationInfo.nativeLibraryDir,
             "ABIS" to Build.SUPPORTED_ABIS.joinToString(" "),
             "EXT_ROOT" to ext,
@@ -59,7 +61,7 @@ object EnvFile {
             return null
         }
         val (rendered, unknown) = render(text, keys(context))
-        val dest = File(context.filesDir, "scripts/env.sh")
+        val dest = File(Util.homeDir(context), "scripts/env.sh")
         dest.parentFile?.mkdirs()
         dest.writeText(rendered, Charsets.UTF_8)
         File(context.filesDir, "state").mkdirs()

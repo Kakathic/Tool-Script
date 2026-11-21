@@ -92,7 +92,7 @@ run   = 'slog pages_demo_key "xin chào"; echo "pages_demo_key=$(glog pages_demo
 [[group]]
 title = "Tệp chép từ assets và lệnh dựng sẵn (bin)"
 
-# Lúc mở app, toàn bộ assets (trừ configs...) được chép ra $HOME; assets/bin thành $BIN_DIR ($HOME/bin), assets/lib/<abi> thành $HOME/lib/<abi>.
+# Lúc mở app, các thư mục scripts, bin, lib của assets được chép ra $HOME (no_backup/home); assets/bin thành $BIN_DIR ($HOME/bin), assets/lib/<abi> thành $HOME/lib/<abi>.
 [[group.item]]
 type  = "button"
 title = "Xem thư mục lib"

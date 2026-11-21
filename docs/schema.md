@@ -54,7 +54,7 @@ file  = "pages/switches.toml"
 
 ### env.sh (biến dùng chung cho mọi lệnh)
 
-`assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra thư mục `files/scripts/env.sh` của app; **mọi lệnh shell chạy qua app đều nạp file này trước** (`run`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
+`assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra `$HOME/scripts/env.sh` (cùng thư mục với `init.sh`); **mọi lệnh shell chạy qua app đều nạp file này trước** (`run`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
 
 | Key | Giá trị |
 |---|---|
@@ -62,9 +62,10 @@ file  = "pages/switches.toml"
 | `@APP_DIR@` | thư mục dữ liệu của app |
 | `@FILES_DIR@` | thư mục `files` của app |
 | `@CACHE_DIR@` | thư mục cache của app |
-| `@SCRIPTS_DIR@` | thư mục chứa `env.sh` đã thay key (`files/scripts`); các script khác chép từ assets nằm ở `$HOME/scripts` |
+| `@HOME_DIR@` | `$HOME` của app: `no_backup/home`, nơi app chép assets cần thiết ra; env.sh dùng nó làm `$HOME` (shell `cd` vào đây) |
+| `@SCRIPTS_DIR@` | `$HOME/scripts`: chứa `init.sh` (chép từ assets) và `env.sh` đã thay key |
 | `@STATE_DIR@` | thư mục lưu trạng thái các tính năng (`files/state`, app tạo sẵn) |
-| `@NOBACKUP_DIR@` | thư mục riêng của app, không bị Auto Backup sao lưu (`no_backup`), env.sh dùng nó làm `$HOME` (shell `cd` vào đây); app chép assets ra đây |
+| `@NOBACKUP_DIR@` | thư mục `no_backup` của app (không bị Auto Backup sao lưu), chứa thư mục `home` |
 | `@BIN_DIR@` | thư mục lệnh dựng sẵn (`$HOME/bin`, nằm trong `PATH`, xem "Lệnh dựng sẵn" bên dưới) |
 | `@LIB_DIR@` | thư mục thư viện native của app |
 | `@ABIS@` | ABI của máy theo thứ tự ưu tiên, cách nhau bằng dấu cách (vd `arm64-v8a armeabi-v7a`); `init.sh` dùng để chọn bản busybox |
@@ -83,9 +84,9 @@ export PATH="$FILES_DIR/bin:$PATH"
 
 ### Chép assets và lệnh dựng sẵn (bin)
 
-**Chép assets.** Lúc khởi động (trước `init.sh`), app chép **toàn bộ tệp trong assets** ra `$HOME` (`no_backup`, không bị Auto Backup sao lưu), giữ nguyên đường dẫn: `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`, `assets/bin/glog` -> `$HOME/bin/glog`, `assets/lib/<abi>/libbusybox.so` -> `$HOME/lib/<abi>/libbusybox.so`.
+**Chép assets.** Lúc khởi động (trước `init.sh`), app chép **các thư mục cần thiết trong assets** (`scripts`, `bin`, `lib`) ra `$HOME` (`no_backup/home`, không bị Auto Backup sao lưu), giữ nguyên đường dẫn: `assets/scripts/init.sh` -> `$HOME/scripts/init.sh`, `assets/bin/glog` -> `$HOME/bin/glog`, `assets/lib/<abi>/libbusybox.so` -> `$HOME/lib/<abi>/libbusybox.so`.
 
-- Không chép (danh sách `EXCLUDED` trong `util/AssetInstaller.kt`, thêm bớt ở đó): `configs` (app đọc thẳng từ assets), `scripts/env.sh` (có key `@KEY@`, xem trên), và các thư mục hệ thống `images`, `webkit`, `sounds`. Trong `lib/` chỉ chép thư mục ABI có trong `Build.SUPPORTED_ABIS` của máy.
+- Chỉ chép thư mục trong danh sách `INCLUDED` của `util/AssetInstaller.kt` (thêm tên vào đó khi cần thêm thư mục); các thư mục khác như `configs` (app đọc thẳng từ assets) không chép. Trong đó `scripts/env.sh` cũng không chép (có key `@KEY@`, app tự ghi bản đã thay key, xem trên). Trong `lib/` chỉ chép thư mục ABI có trong `Build.SUPPORTED_ABIS` của máy.
 - Tệp trong `bin/` được `chmod 755`. Tệp được ghi ra tệp tạm rồi đổi tên nên không bị lỗi "text file busy".
 - Chỉ chép lại khi app mới cài / cập nhật hoặc tệp bị mất; tệp đã chép mà nay không còn trong assets thì bị xóa. Lần chép được ghi ở `$HOME/.assets`.
 
@@ -392,7 +393,7 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 
 ## 11. Khởi động và xử lý lỗi
 
-- Trước khi chạy script, app chép toàn bộ assets ra `$HOME` (xem "Chép assets và lệnh dựng sẵn"), rồi tạo `env.sh`.
+- Trước khi chạy script, app chép các thư mục cần thiết của assets ra `$HOME` (xem "Chép assets và lệnh dựng sẵn"), rồi tạo `env.sh`.
 - Script khởi động `assets/scripts/init.sh` báo tiến trình bằng dòng `@progress N` (0-100), đồng thời cài busybox (`$BIN_DIR/busybox`); không cài được thì thoát mã khác 0 (app vẫn vào, có banner cảnh báo).
 - Script lỗi: vẫn vào app, hiện banner cảnh báo, xem lỗi trong Trung tâm lỗi.
 - TOML parse lỗi: hiện file, dòng, mô tả lỗi.
