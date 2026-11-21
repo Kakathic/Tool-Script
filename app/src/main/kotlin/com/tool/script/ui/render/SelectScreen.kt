@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -148,14 +150,38 @@ internal fun SelectFullScreen(
                     .navigationBarsPadding()
                     .imePadding(),
             ) {
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 16.dp, bottom = 12.dp),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 16.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (multi) {
+                        // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc.
+                        Text(
+                            text = "Đã chọn ${draft.size}/${options.size}",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            style = MiuixTheme.textStyles.body2,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .border(
+                                    width = 1.dp,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(8.dp),
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
+                }
                 TextField(
                     value = query,
                     onValueChange = { query = it },
@@ -184,7 +210,7 @@ internal fun SelectFullScreen(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
                                 ) { toggleAll() },
-                            title = if (query.isBlank()) "Chọn tất cả (${visible.size})" else "Chọn tất cả kết quả tìm (${visible.size})",
+                            title = if (query.isBlank()) "Chọn tất cả" else "Chọn tất cả kết quả tìm",
                             enabled = visible.isNotEmpty(),
                             endActions = {
                                 Checkbox(
@@ -249,14 +275,6 @@ internal fun SelectFullScreen(
                     }
                 }
 
-                if (multi) {
-                    Text(
-                        text = "Đã chọn ${draft.size}/${options.size}",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        style = MiuixTheme.textStyles.body2,
-                        modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 12.dp),
-                    )
-                }
                 Row(
                     modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 12.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
