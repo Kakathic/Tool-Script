@@ -569,7 +569,14 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
  * [framed] = false: bỏ nền, chỉ còn chữ và ô tích, màu chữ không đổi khi chọn; `multiselect` dùng khi 1 cột.
  */
 @Composable
-private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, framed: Boolean = true) {
+private fun ChoiceCard(
+    label: String,
+    checked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    framed: Boolean = true,
+    radio: Boolean = false,
+) {
     val shape = RoundedCornerShape(12.dp)
     val primary = MiuixTheme.colorScheme.primary
     Row(
@@ -593,14 +600,18 @@ private fun ChoiceCard(label: String, checked: Boolean, onClick: () -> Unit, mod
             color = if (checked && framed) primary else MiuixTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.width(8.dp))
-        Checkbox(
-            state = if (checked) ToggleableState.On else ToggleableState.Off,
-            onClick = onClick,
-        )
+        if (radio) {
+            RadioButton(selected = checked, onClick = onClick)
+        } else {
+            Checkbox(
+                state = if (checked) ToggleableState.On else ToggleableState.Off,
+                onClick = onClick,
+            )
+        }
     }
 }
 
-// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại (hoặc toàn màn hình khi từ 6 mục) có ô tích bên phải mỗi dòng, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại (hoặc toàn màn hình khi từ 6 mục) có nút tròn bên phải mỗi dòng, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
 @Composable
 private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -667,7 +678,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
                         }
-                        ChoiceCard(option.label, selected, pick, Modifier.weight(1f))
+                        ChoiceCard(option.label, selected, pick, Modifier.weight(1f), radio = true)
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
