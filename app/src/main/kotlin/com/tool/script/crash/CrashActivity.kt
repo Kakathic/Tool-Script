@@ -8,6 +8,24 @@ import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.tool.script.R
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,8 +45,6 @@ import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
 import com.tool.script.util.copyToClipboard
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 
@@ -114,6 +130,13 @@ class CrashActivity : ComponentActivity() {
     }
 }
 
+/** Lề ngoài của màn hình lỗi (trái, phải, dưới) và khoảng cách giữa log với hàng nút. */
+private val CrashMargin = 12.dp
+
+/**
+ * Màn hình lỗi: hàng tiêu đề (tiêu đề sát lề trái, hai icon Sao chép và Chia sẻ ở góc phải), khung log, rồi hai nút
+ * Khởi động lại và Thoát / Đóng ở dưới.
+ */
 @Composable
 private fun CrashScreen(
     title: String,
@@ -124,33 +147,76 @@ private fun CrashScreen(
     onRestart: () -> Unit,
     onExit: () -> Unit,
 ) {
-    Scaffold(topBar = { SmallTopAppBar(title = title) }) { inner ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(start = CrashMargin, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            HeaderIconButton(R.drawable.ic_copy, "Sao chép", onCopy)
+            HeaderIconButton(R.drawable.ic_share, "Chia sẻ", onShare)
+        }
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(inner)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(start = CrashMargin, end = CrashMargin, bottom = CrashMargin),
+            verticalArrangement = Arrangement.spacedBy(CrashMargin),
         ) {
-            Card(modifier = Modifier.weight(1f).fillMaxWidth(), insideMargin = PaddingValues(12.dp)) {
+            // insideMargin = 0 và đệm 12dp đặt trong vùng cuộn: vuốt ở đâu trong khung (kể cả chỗ trống, sát mép)
+            // cũng cuộn được cả dọc lẫn ngang. fillMaxSize đứng trước hai modifier cuộn để vùng cuộn phủ kín khung.
+            Card(modifier = Modifier.weight(1f).fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
                 Text(
                     text = text,
                     modifier = Modifier
+                        .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .horizontalScroll(rememberScrollState()),
+                        .horizontalScroll(rememberScrollState())
+                        .padding(12.dp),
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,
                     softWrap = false,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = "Sao chép", onClick = onCopy, modifier = Modifier.weight(1f))
-                TextButton(text = "Chia sẻ", onClick = onShare, modifier = Modifier.weight(1f))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CrashMargin)) {
                 TextButton(text = "Khởi động lại", onClick = onRestart, modifier = Modifier.weight(1f))
                 TextButton(text = if (fatal) "Thoát" else "Đóng", onClick = onExit, modifier = Modifier.weight(1f))
             }
         }
+    }
+}
+
+/** Nút icon tròn 40dp ở hàng tiêu đề. */
+@Composable
+private fun HeaderIconButton(@DrawableRes icon: Int, description: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = ImageVector.vectorResource(icon),
+            contentDescription = description,
+            tint = MiuixTheme.colorScheme.onSurface,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
