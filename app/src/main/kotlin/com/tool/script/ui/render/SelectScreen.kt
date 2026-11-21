@@ -6,6 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +58,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Số mục tối thiểu để chuyển từ hộp thoại nhỏ sang toàn màn hình. */
 internal const val FULLSCREEN_MIN_OPTIONS = 6
+
+/** Lề hai bên của mọi thành phần trong màn hình chọn toàn màn hình. */
+private val SCREEN_MARGIN = 12.dp
 
 private val COMBINING_MARKS = Regex("\\p{M}+")
 
@@ -133,7 +138,7 @@ internal fun SelectFullScreen(
             enter = slideInVertically(animationSpec = tween(300)) { it },
             exit = slideOutVertically(animationSpec = tween(220)) { it },
         ) {
-            // Lề hai bên 16dp (cùng lề với các thẻ trong app) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
+            // Lề hai bên 12dp (SCREEN_MARGIN) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
             // Mỗi dòng trong thẻ vẫn bấm được trên toàn chiều ngang thẻ.
             Column(
                 modifier = Modifier
@@ -149,29 +154,35 @@ internal fun SelectFullScreen(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 16.dp, bottom = 12.dp),
                 )
                 TextField(
                     value = query,
                     onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN),
                     label = "Tìm kiếm",
                     singleLine = true,
                 )
                 Spacer(Modifier.height(12.dp))
 
                 // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền và bo góc với các thẻ trong app, cả sáng lẫn tối),
-                // lề 16dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+                // lề 12dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
                 // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
                 Card(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = SCREEN_MARGIN),
                 ) {
                     if (multi) {
                         BasicComponent(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    enabled = visible.isNotEmpty(),
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { toggleAll() },
                             title = if (query.isBlank()) "Chọn tất cả (${visible.size})" else "Chọn tất cả kết quả tìm (${visible.size})",
                             enabled = visible.isNotEmpty(),
                             endActions = {
@@ -181,7 +192,6 @@ internal fun SelectFullScreen(
                                     onClick = { toggleAll() },
                                 )
                             },
-                            onClick = { toggleAll() },
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
@@ -207,7 +217,13 @@ internal fun SelectFullScreen(
                                     }
                                 }
                                 BasicComponent(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    // Bấm cả dòng nhưng không có hiệu ứng nhấn (indication = null, không dùng onClick của BasicComponent).
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { click() },
                                     title = option.label,
                                     // Chọn một: dòng đã chọn đổi chữ sang màu chủ đạo; chọn nhiều giữ nguyên màu chữ.
                                     titleColor = if (!multi && checked) {
@@ -225,7 +241,6 @@ internal fun SelectFullScreen(
                                             RadioButton(selected = checked, onClick = { click() })
                                         }
                                     },
-                                    onClick = { click() },
                                 )
                             }
                         }
@@ -237,11 +252,11 @@ internal fun SelectFullScreen(
                         text = "Đã chọn ${draft.size}/${options.size}",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.body2,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                        modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 12.dp),
                     )
                 }
                 Row(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                    modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 12.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TextButton(text = "Hủy", onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
