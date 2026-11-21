@@ -434,16 +434,24 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 // Nút Chạy nằm ngay trong ô nhập, sát mép phải (trang dialog không có nút).
                 trailingIcon = if (env.varsOnly) null else {
                     {
-                        TextButton(
-                            text = "Chạy",
-                            onClick = withTapHaptic { env.run(item, item.run) },
-                            enabled = enabled && !item.run.isNullOrBlank(),
-                            modifier = Modifier.padding(end = 6.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                color = MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA),
-                                textColor = MiuixTheme.colorScheme.primary,
-                            ),
-                        )
+                        val runEnabled = enabled && !item.run.isNullOrBlank()
+                        val onRun = withTapHaptic { env.run(item, item.run) }
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .alpha(if (runEnabled) 1f else 0.4f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA))
+                                .clickable(enabled = runEnabled, onClick = onRun)
+                                .padding(horizontal = 12.dp, vertical = 5.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "Chạy",
+                                color = MiuixTheme.colorScheme.primary,
+                                style = MiuixTheme.textStyles.body2,
+                            )
+                        }
                     }
                 },
             )
