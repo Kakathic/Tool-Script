@@ -351,7 +351,9 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
     OverlayDialog(
         show = entry != null && !entry.full,
         title = null,
-        onDismissRequest = onDismiss,
+        // Đang chạy: chạm ra ngoài không đóng log (Miuix dùng chung một callback cho chạm ngoài và Back, nên Back cũng tạm không đóng);
+        // chỉ đóng bằng nút Hủy rồi Thoát. Lệnh xong thì chạm ngoài / Back đóng như cũ.
+        onDismissRequest = if (last?.running == true) null else onDismiss,
     ) {
         last?.let { shown ->
             val output = shown.output

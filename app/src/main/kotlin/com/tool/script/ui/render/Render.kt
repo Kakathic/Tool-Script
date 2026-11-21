@@ -2,6 +2,7 @@ package com.tool.script.ui.render
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
@@ -178,24 +180,32 @@ fun isShown(item: Item, store: VariableStore): Boolean {
 fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     val lock = item.lock
     val locked = lock != null && env.store.evaluate(lock)
-    val enabled = !locked && !(env.feedback.busy && (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice))
+    // Chỉ lock mới làm item mờ. Khi banner đang hiện, item dùng banner / notice vẫn sáng như thường nhưng bị chặn chạm (xem tấm chắn bên dưới).
+    val enabled = !locked
+    val blocked = env.feedback.busy && (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice)
     val modifier = Modifier
         .fillMaxWidth()
         .alpha(if (enabled) 1f else 0.4f)
-    when (item.type) {
-        ItemType.Text -> TextItem(item, modifier, inGroup)
-        ItemType.Group -> GroupItem(item, env)
-        ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
-        ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
-        ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
-        ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
-        ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
-        ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
-        ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
-        ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
-        ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
-        ItemType.Radio -> RadioItem(item, env, modifier, enabled, inGroup)
-        ItemType.Progress -> ProgressItem(item, env, modifier, inGroup)
+    Box {
+        when (item.type) {
+            ItemType.Text -> TextItem(item, modifier, inGroup)
+            ItemType.Group -> GroupItem(item, env)
+            ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
+            ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
+            ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
+            ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
+            ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
+            ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
+            ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
+            ItemType.Radio -> RadioItem(item, env, modifier, enabled, inGroup)
+            ItemType.Progress -> ProgressItem(item, env, modifier, inGroup)
+        }
+        // Tấm chắn trong suốt: nuốt cú chạm để không chạy thêm lệnh, nhưng không làm mờ; vuốt cuộn trang vẫn đi qua.
+        if (blocked) {
+            Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { } })
+        }
     }
 }
 
