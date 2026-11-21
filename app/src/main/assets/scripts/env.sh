@@ -8,6 +8,7 @@
 #   @CACHE_DIR@    thư mục cache của app
 #   @SCRIPTS_DIR@  thư mục chứa script chép từ assets (cùng nơi có file này)
 #   @STATE_DIR@    thư mục lưu trạng thái các tính năng (app tạo sẵn)
+#   @NOBACKUP_DIR@ thư mục riêng của app, không bị Auto Backup sao lưu (dữ liệu gắn với máy này, dùng khi cần)
 #   @BIN_DIR@      thư mục lệnh dựng sẵn (busybox): symlink tới thư viện native của app ($LIB_DIR)
 #   @LIB_DIR@      thư mục thư viện native của app
 #   @EXT_ROOT@     gốc bộ nhớ trong (thường /storage/emulated/0)
@@ -20,6 +21,7 @@ export FILES_DIR="@FILES_DIR@"
 export CACHE_DIR="@CACHE_DIR@"
 export SCRIPTS_DIR="@SCRIPTS_DIR@"
 export STATE_DIR="@STATE_DIR@"
+export NOBACKUP_DIR="@NOBACKUP_DIR@"
 export BIN_DIR="@BIN_DIR@"
 export LIB_DIR="@LIB_DIR@"
 export EXT_ROOT="@EXT_ROOT@"

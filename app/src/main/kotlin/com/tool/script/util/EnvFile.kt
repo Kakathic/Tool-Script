@@ -29,6 +29,7 @@ object EnvFile {
             "CACHE_DIR" to context.cacheDir.absolutePath,
             "SCRIPTS_DIR" to File(context.filesDir, "scripts").absolutePath,
             "STATE_DIR" to File(context.filesDir, "state").absolutePath,
+            "NOBACKUP_DIR" to context.noBackupFilesDir.absolutePath,
             "BIN_DIR" to File(context.filesDir, "bin").absolutePath,
             "LIB_DIR" to context.applicationInfo.nativeLibraryDir,
             "EXT_ROOT" to ext,

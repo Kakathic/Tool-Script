@@ -566,7 +566,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 /**
  * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: thẻ bo góc không viền, chữ bên trái,
  * ô tích bên phải. Mục chưa chọn có nền xám nhạt; mục đã chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo.
- * [framed] = false: bỏ nền, chỉ còn chữ và ô tích, màu chữ không đổi khi chọn; `multiselect` dùng khi 1 cột.
+ * [framed] = false: bỏ nền, chỉ còn chữ và ô tích / nút tròn; dùng khi 1 cột. [radio] = true (chọn một): nút tròn thay ô tích, dòng đã chọn đổi chữ sang màu chủ đạo.
  */
 @Composable
 private fun ChoiceCard(
@@ -596,8 +596,8 @@ private fun ChoiceCard(
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            // Thẻ có nền: mục đã chọn đổi chữ sang màu chủ đạo. Không nền (multiselect 1 cột): giữ nguyên màu chữ.
-            color = if (checked && framed) primary else MiuixTheme.colorScheme.onSurface,
+            // Mục đã chọn đổi chữ sang màu chủ đạo (thẻ có nền, hoặc chọn một dùng nút tròn). Chỉ multiselect 1 cột không nền giữ nguyên màu chữ.
+            color = if (checked && (framed || radio)) primary else MiuixTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.width(8.dp))
         if (radio) {
@@ -678,7 +678,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
                         }
-                        ChoiceCard(option.label, selected, pick, Modifier.weight(1f), radio = true)
+                        ChoiceCard(option.label, selected, pick, Modifier.weight(1f), framed = item.columns > 1, radio = true)
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
