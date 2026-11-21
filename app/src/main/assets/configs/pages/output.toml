@@ -153,9 +153,9 @@ get   = "echo 3"
 [[group]]
 title = "Lỗi cấu hình (demo)"
 
-# Hai trang con dưới đây cố ý sai. App nạp trước mọi trang con khi khởi động,
-# nên mỗi lần mở app sẽ có banner "N cảnh báo cấu hình" (bấm Xem để đọc chi tiết).
-# Muốn tắt banner này thì xóa nhóm này (và hai file demo_error_*.toml).
+# Hai trang con dưới đây cố ý sai. Cảnh báo chỉ hiện trong chính trang có lỗi:
+# trang "Trang có mục sai" có banner "N cảnh báo cấu hình ở trang này" (bấm Xem để đọc chi tiết),
+# các trang khác không hiện gì. Muốn bỏ demo thì xóa nhóm này và hai file demo_error_*.toml.
 [[group.item]]
 type  = "link"
 title = "Trang sai cú pháp TOML"

@@ -50,6 +50,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -60,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -214,158 +216,173 @@ fun MainScreen(
         windowStart = nextWindowStart(pagerState.currentPage, windowStart, visibleTabs, pages.size)
     }
 
-    // Banner cảnh báo khởi động / cấu hình, ẩn được.
+    // Banner chung chỉ cho lỗi toàn app (script khởi động, main.toml), ẩn được.
+    // Cảnh báo cấu hình của từng trang hiện riêng trong trang đó (xem PageWarningBanner).
     var warningDismissed by rememberSaveable { mutableStateOf(false) }
     val warningText = buildList {
         result.scriptError?.let { add("Script khởi động lỗi.") }
-        if (config.warnings.isNotEmpty()) add("${config.warnings.size} cảnh báo cấu hình.")
+        if (config.appWarnings.isNotEmpty()) add("${config.appWarnings.size} cảnh báo cấu hình (main.toml).")
     }.joinToString(" ")
+
+    // "Ẩn" của banner từng trang nhớ theo file (các file ngăn cách bằng xuống dòng).
+    var dismissedPages by rememberSaveable { mutableStateOf("") }
+    val pageWarningHost = remember(dismissedPages, onShowDetails) {
+        PageWarningHost(
+            dismissed = dismissedPages.split('\n'),
+            onDismiss = { file -> dismissedPages += file + "\n" },
+            onShow = { file, list -> onShowDetails("Cảnh báo cấu hình", buildPageDetails(file, list)) },
+        )
+    }
 
     // Dialog luôn nằm trên cùng ngăn xếp và là lớp phủ riêng (xem DialogLayer): trang bên dưới giữ nguyên, không chạy chuyển trang.
     val dialogFile = stack.lastOrNull()?.takeIf { config.subPages[it]?.dialog == true }
     val lastDialog = remember { LastDialog() }
     if (dialogFile != null) lastDialog.file = dialogFile
     val top = if (dialogFile != null) stack.getOrNull(stack.size - 2) else stack.lastOrNull()
-    Box(Modifier.fillMaxSize()) {
-        AnimatedContent(
-            targetState = top,
-            transitionSpec = {
-                val from = initialState
-                val to = targetState
-                when {
-                    // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
-                    // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
-                    // Trang bị gỡ khỏi stack = đang đóng (kể cả khi bấm link về tab và đóng hết một lượt).
-                    to != null && (from == null || from in stack) ->
-                        (
-                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
-                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
-                            ).also { it.targetContentZIndex = 1f }
-                    from != null && from !in stack ->
-                        (
-                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
-                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
-                            ).also { it.targetContentZIndex = -1f }
-                    else -> EnterTransition.None togetherWith ExitTransition.None
-                }
-            },
-            label = "subPage",
-        ) { file ->
-            val subPage = file?.let { config.subPages[it] }
-            if (subPage != null) {
-                SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
-            } else {
-                Scaffold(
-                    topBar = {
-                        AppTopBar(
-                            title = config.app.name,
-                            actions = {
-                                // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
-                                ThemeMenu(
-                                    expanded = showThemeMenu,
-                                    current = themeMode,
-                                    onOpen = { showThemeMenu = true },
-                                    onDismiss = { showThemeMenu = false },
-                                    onSelect = {
-                                        showThemeMenu = false
-                                        onThemeChange(it)
-                                    },
-                                    haptic = hapticEnabled,
-                                    onHapticChange = onHapticChange,
-                                )
-                                // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
-                                PowerMenu(
-                                    expanded = showRestartMenu,
-                                    onOpen = { showRestartMenu = true },
-                                    onDismiss = { showRestartMenu = false },
-                                    onRestartApp = {
-                                        showRestartMenu = false
-                                        env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-                                    },
-                                    onRebootDevice = {
-                                        showRestartMenu = false
-                                        env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                                            scope.launch {
-                                                val result = ExecutorManager.current.exec("reboot", 10)
-                                                if (!result.ok) feedback.toast(rebootErrorText(result))
+    CompositionLocalProvider(LocalPageWarnings provides pageWarningHost) {
+        Box(Modifier.fillMaxSize()) {
+            AnimatedContent(
+                targetState = top,
+                transitionSpec = {
+                    val from = initialState
+                    val to = targetState
+                    when {
+                        // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
+                        // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
+                        // Trang bị gỡ khỏi stack = đang đóng (kể cả khi bấm link về tab và đóng hết một lượt).
+                        to != null && (from == null || from in stack) ->
+                            (
+                                slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
+                                    slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
+                                ).also { it.targetContentZIndex = 1f }
+                        from != null && from !in stack ->
+                            (
+                                slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
+                                    slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
+                                ).also { it.targetContentZIndex = -1f }
+                        else -> EnterTransition.None togetherWith ExitTransition.None
+                    }
+                },
+                label = "subPage",
+            ) { file ->
+                val subPage = file?.let { config.subPages[it] }
+                if (subPage != null) {
+                    SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+                } else {
+                    Scaffold(
+                        topBar = {
+                            AppTopBar(
+                                title = config.app.name,
+                                actions = {
+                                    // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
+                                    ThemeMenu(
+                                        expanded = showThemeMenu,
+                                        current = themeMode,
+                                        onOpen = { showThemeMenu = true },
+                                        onDismiss = { showThemeMenu = false },
+                                        onSelect = {
+                                            showThemeMenu = false
+                                            onThemeChange(it)
+                                        },
+                                        haptic = hapticEnabled,
+                                        onHapticChange = onHapticChange,
+                                    )
+                                    // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                                    PowerMenu(
+                                        expanded = showRestartMenu,
+                                        onOpen = { showRestartMenu = true },
+                                        onDismiss = { showRestartMenu = false },
+                                        onRestartApp = {
+                                            showRestartMenu = false
+                                            env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                                        },
+                                        onRebootDevice = {
+                                            showRestartMenu = false
+                                            env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                                scope.launch {
+                                                    val result = ExecutorManager.current.exec("reboot", 10)
+                                                    if (!result.ok) feedback.toast(rebootErrorText(result))
+                                                }
                                             }
-                                        }
-                                    },
-                                )
-                            },
-                        )
-                    },
-                    bottomBar = {
-                        if (pages.size >= 2) {
-                            NavigationBar {
-                                // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
-                                val slide by animateFloatAsState(
-                                    targetValue = windowStart.toFloat(),
-                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                                    label = "tabWindowSlide",
-                                )
-                                BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
-                                    val itemWidth = maxWidth / visibleTabs
-                                    val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
-                                    Row(
-                                        Modifier
-                                            // Không dùng requiredWidth: khi rộng hơn khung cha nó tự căn GIỮA, làm cả hàng tab lệch nửa ô.
-                                            // Căn từ mép trái (unbounded) để windowStart = 0 khớp đúng ô đầu tiên.
-                                            .wrapContentWidth(Alignment.Start, unbounded = true)
-                                            .width(itemWidth * pages.size)
-                                            .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
-                                    ) {
-                                        pages.forEachIndexed { index, page ->
-                                            TabItem(
-                                                ref = page.ref,
-                                                selected = pagerState.currentPage == index,
-                                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        },
+                        bottomBar = {
+                            if (pages.size >= 2) {
+                                NavigationBar {
+                                    // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
+                                    val slide by animateFloatAsState(
+                                        targetValue = windowStart.toFloat(),
+                                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                        label = "tabWindowSlide",
+                                    )
+                                    BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
+                                        val itemWidth = maxWidth / visibleTabs
+                                        val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
+                                        Row(
+                                            Modifier
+                                                // Không dùng requiredWidth: khi rộng hơn khung cha nó tự căn GIỮA, làm cả hàng tab lệch nửa ô.
+                                                // Căn từ mép trái (unbounded) để windowStart = 0 khớp đúng ô đầu tiên.
+                                                .wrapContentWidth(Alignment.Start, unbounded = true)
+                                                .width(itemWidth * pages.size)
+                                                .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
+                                        ) {
+                                            pages.forEachIndexed { index, page ->
+                                                TabItem(
+                                                    ref = page.ref,
+                                                    selected = pagerState.currentPage == index,
+                                                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
+                        },
+                    ) { inner ->
+                        Column(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(top = inner.calculateTopPadding()),
+                        ) {
+                            if (warningText.isNotEmpty() && !warningDismissed) {
+                                Banner(
+                                    message = warningText,
+                                    warning = true,
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                                    actionLabel = "Xem",
+                                    onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                                    onDismiss = { warningDismissed = true },
+                                )
+                            }
+                                HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                                val page = pages[pageIndex]
+                                PageList(
+                                    list = page.items.filter { isShown(it, env.store) },
+                                    error = page.error,
+                                    file = page.ref.file,
+                                    warnings = page.warnings,
+                                    env = env,
+                                    bottomInset = inner.calculateBottomPadding(),
+                                )
+                            }
+                            FeedbackDialogs(feedback, env)
                         }
-                    },
-                ) { inner ->
-                    Column(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(top = inner.calculateTopPadding()),
-                    ) {
-                        if (warningText.isNotEmpty() && !warningDismissed) {
-                            Banner(
-                                message = warningText,
-                                warning = true,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-                                actionLabel = "Xem",
-                                onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
-                                onDismiss = { warningDismissed = true },
-                            )
-                        }
-                            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
-                            val page = pages[pageIndex]
-                            PageList(
-                                list = page.items.filter { isShown(it, env.store) },
-                                error = page.error,
-                                env = env,
-                                bottomInset = inner.calculateBottomPadding(),
-                            )
-                        }
-                        FeedbackDialogs(feedback, env)
                     }
                 }
             }
-        }
-        // Dialog: nền mờ + sheet trượt từ dưới lên (giữ trang cuối trong lúc chạy hiệu ứng đóng).
-        AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
-            val sheetPage = lastDialog.file?.let { config.subPages[it] }
-            if (sheetPage != null) {
-                DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+            // Dialog: nền mờ + sheet trượt từ dưới lên (giữ trang cuối trong lúc chạy hiệu ứng đóng).
+            AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
+                val sheetPage = lastDialog.file?.let { config.subPages[it] }
+                if (sheetPage != null) {
+                    DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+                }
             }
+            // Banner thông báo hiện đè lên cả thanh trên, trượt xuống / lên.
+            BannerOverlay(feedback, Modifier.align(Alignment.TopCenter))
         }
-        // Banner thông báo hiện đè lên cả thanh trên, trượt xuống / lên.
-        BannerOverlay(feedback, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -441,6 +458,8 @@ private fun SubPageScreen(
                 PageList(
                     list = page.items.filter { isShown(it, pageEnv.store) },
                     error = page.error,
+                    file = page.file,
+                    warnings = page.warnings,
                     env = pageEnv,
                     bottomInset = inner.calculateBottomPadding(),
                 )
@@ -502,6 +521,7 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
             Spacer(Modifier.height(DIALOG_TOP_BAR_HEIGHT))
             // Lề 16dp và khoảng cách 12dp phải khớp với PageList để chiều cao đo được bằng chiều cao thật.
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (shouldShowPageWarnings(page.file, page.warnings)) PageWarningBanner(page.file, page.warnings)
                 page.error?.let { PageErrorCard(it) }
                 page.items.filter { isShown(it, pageEnv.store) }.forEach { ItemRenderer(it, pageEnv) }
             }
@@ -719,19 +739,59 @@ private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
 private fun PageList(
     list: List<com.tool.script.config.Item>,
     error: String?,
+    file: String,
+    warnings: List<String>,
     env: RenderEnv,
     bottomInset: androidx.compose.ui.unit.Dp,
 ) {
+    val showWarnings = shouldShowPageWarnings(file, warnings)
     LazyColumn(
         modifier = Modifier.fillMaxSize().imePadding(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // Banner nằm trong danh sách nên cuộn cùng nội dung, không che mục nào.
+        if (showWarnings) {
+            item { PageWarningBanner(file, warnings) }
+        }
         if (error != null) {
             item { PageErrorCard(error) }
         }
         items(list) { item -> ItemRenderer(item, env) }
     }
+}
+
+/** Banner cảnh báo cấu hình của từng trang: "Ẩn" nhớ theo file, "Xem" mở Trung tâm lỗi với danh sách cảnh báo của trang đó. */
+private class PageWarningHost(
+    val dismissed: List<String>,
+    val onDismiss: (file: String) -> Unit,
+    val onShow: (file: String, warnings: List<String>) -> Unit,
+)
+
+private val LocalPageWarnings = staticCompositionLocalOf<PageWarningHost?> { null }
+
+/** Chỉ trang có cảnh báo (và chưa bị ẩn) mới hiện banner. */
+@Composable
+private fun shouldShowPageWarnings(file: String, warnings: List<String>): Boolean {
+    val host = LocalPageWarnings.current ?: return false
+    return warnings.isNotEmpty() && file !in host.dismissed
+}
+
+@Composable
+private fun PageWarningBanner(file: String, warnings: List<String>) {
+    val host = LocalPageWarnings.current ?: return
+    Banner(
+        message = "${warnings.size} cảnh báo cấu hình ở trang này.",
+        warning = true,
+        actionLabel = "Xem",
+        onAction = { host.onShow(file, warnings) },
+        onDismiss = { host.onDismiss(file) },
+    )
+}
+
+private fun buildPageDetails(file: String, warnings: List<String>): String = buildString {
+    appendLine("== Cảnh báo cấu hình: $file ==")
+    warnings.forEach { appendLine("- $it") }
 }
 
 @Composable
@@ -766,9 +826,9 @@ private fun buildDetails(result: BootResult): String = buildString {
         appendLine(it)
         appendLine()
     }
-    if (result.config.warnings.isNotEmpty()) {
-        appendLine("== Cảnh báo cấu hình ==")
-        result.config.warnings.forEach { appendLine("- $it") }
+    if (result.config.appWarnings.isNotEmpty()) {
+        appendLine("== Cảnh báo cấu hình (main.toml) ==")
+        result.config.appWarnings.forEach { appendLine("- $it") }
         appendLine()
     }
     appendLine("== Log khởi động ==")

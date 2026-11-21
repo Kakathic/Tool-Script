@@ -383,6 +383,7 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - Script lỗi: vẫn vào app, hiện banner cảnh báo, xem lỗi trong Trung tâm lỗi.
 - TOML parse lỗi: hiện file, dòng, mô tả lỗi.
 - Thiếu trường bắt buộc hoặc `type` lạ: bỏ qua mục đó và ghi cảnh báo.
+- Cảnh báo cấu hình hiện thành banner ở đầu danh sách của **trang có lỗi** (tab hoặc trang con), cuộn cùng nội dung; trang không có cảnh báo thì không hiện. Bấm Xem để đọc danh sách của trang đó, Ẩn để ẩn banner. Trang bị lỗi cú pháp TOML chỉ hiện thẻ lỗi, không kèm banner. Banner chung phía trên chỉ còn cho lỗi toàn app: script khởi động lỗi hoặc cảnh báo của `main.toml`.
 - Lỗi không lưu ra file, chỉ giữ trong bộ nhớ của phiên chạy.
 - **Demo crash**: để thử màn hình lỗi, đặt `run` của một `button` là một trong hai lệnh dựng sẵn dưới đây (nên kèm `confirm` vì app thoát thật):
   - `@crash`: ném lỗi trên luồng chính.
@@ -391,7 +392,7 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - **Demo lỗi cấu hình**: nhóm "Lỗi cấu hình (demo)" trong `pages/output.toml` có hai link tới trang con cố ý sai:
   - `pages/demo_error_syntax.toml`: sai cú pháp TOML, trang hiện thẻ "Không đọc được trang này" kèm file và dòng lỗi.
   - `pages/demo_error_warn.toml`: đúng cú pháp nhưng khai báo sai trường; mục thiếu trường bắt buộc bị bỏ qua, giá trị sai dùng mặc định, mỗi lỗi là một dòng trong "Cảnh báo cấu hình".
-  App nạp mọi trang con khi khởi động nên các demo này luôn làm banner cảnh báo hiện lên khi mở app; xóa nhóm và hai file để tắt.
+  Cảnh báo chỉ hiện trong chính trang có lỗi, nên các trang khác không bị ảnh hưởng; xóa nhóm và hai file để bỏ demo.
 
 ## 12. Để lại sau
 

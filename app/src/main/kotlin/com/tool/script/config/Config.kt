@@ -78,8 +78,16 @@ data class AppInfo(val name: String, val version: Int, val lang: String, val env
 
 data class PageRef(val id: String, val title: String, val icon: String, val file: String)
 
-/** Một trang đã nạp. [error] khác null nghĩa là file trang bị lỗi parse (trang hiện thông báo lỗi). */
-data class LoadedPage(val ref: PageRef, val items: List<Item>, val error: String? = null)
+/**
+ * Một trang đã nạp. [error] khác null nghĩa là file trang bị lỗi parse (trang hiện thông báo lỗi).
+ * [warnings] là cảnh báo cấu hình của riêng file này (không gồm lỗi parse, vì [error] đã hiện thành thẻ lỗi).
+ */
+data class LoadedPage(
+    val ref: PageRef,
+    val items: List<Item>,
+    val error: String? = null,
+    val warnings: List<String> = emptyList(),
+)
 
 /** Trang con mở từ item `link` có `page`. [file] là khóa; [title] lấy từ item link đầu tiên trỏ tới nó. */
 data class SubPage(
@@ -90,13 +98,16 @@ data class SubPage(
     val dialog: Boolean = false,
     /** Item link mở trang này; với dialog, `run` / `shell` / `timeout` / `confirm` của nó chạy khi bấm Xác nhận. */
     val action: Item? = null,
+    /** Cảnh báo cấu hình của riêng file này (không gồm lỗi parse). */
+    val warnings: List<String> = emptyList(),
 )
 
 data class LoadedConfig(
     val app: AppInfo,
     val pages: List<LoadedPage>,
     val subPages: Map<String, SubPage>,
-    val warnings: List<String>,
+    /** Cảnh báo của `main.toml` (không thuộc trang nào). Cảnh báo của từng trang nằm trong [LoadedPage.warnings] / [SubPage.warnings]. */
+    val appWarnings: List<String>,
 )
 
 /** Lỗi parse TOML: có tên file, số dòng (nếu parser cung cấp) và mô tả. */
@@ -426,37 +437,44 @@ object ConfigRepository {
 
     /** Ném [ConfigParseException] nếu `main.toml` lỗi cú pháp; file trang lỗi chỉ làm trang đó hiện lỗi. */
     fun load(context: Context): LoadedConfig {
-        val warnings = mutableListOf<String>()
+        val appWarnings = mutableListOf<String>()
+        // Cảnh báo gom theo file để mỗi trang chỉ hiện cảnh báo của chính nó.
+        val byFile = LinkedHashMap<String, MutableList<String>>()
         val mainText = try {
             readAsset(context, "main.toml")
         } catch (e: java.io.IOException) {
             throw ConfigParseException("main.toml", null, "không đọc được file: ${e.message}")
         }
-        val (app, refs) = TomlParser.parseMain("main.toml", mainText, warnings)
+        val (app, refs) = TomlParser.parseMain("main.toml", mainText, appWarnings)
         if (refs.isEmpty()) {
             throw ConfigParseException("main.toml", null, "không có [[tab]] hợp lệ nào để hiển thị")
         }
         val pages = refs.map { ref ->
             try {
-                LoadedPage(ref, TomlParser.parsePage(ref.file, readAsset(context, ref.file), warnings))
+                LoadedPage(ref, TomlParser.parsePage(ref.file, readAsset(context, ref.file), byFile.warningsOf(ref.file)))
             } catch (e: ConfigParseException) {
-                warnings += e.message ?: "${ref.file}: lỗi parse"
-                LoadedPage(ref, emptyList(), error = e.message)
+                LoadedPage(ref, emptyList(), error = e.message ?: "${ref.file}: lỗi parse")
             } catch (e: java.io.IOException) {
-                val msg = "${ref.file}: không đọc được file: ${e.message}"
-                warnings += msg
-                LoadedPage(ref, emptyList(), error = msg)
+                LoadedPage(ref, emptyList(), error = "${ref.file}: không đọc được file: ${e.message}")
             }
         }
-        val subPages = loadSubPages(context, pages, warnings)
-        return LoadedConfig(app, pages, subPages, warnings)
+        val subPages = loadSubPages(context, pages, byFile)
+        return LoadedConfig(
+            app = app,
+            pages = pages.map { it.copy(warnings = byFile[it.ref.file].orEmpty().toList()) },
+            subPages = subPages.mapValues { (file, sub) -> sub.copy(warnings = byFile[file].orEmpty().toList()) },
+            appWarnings = appWarnings,
+        )
     }
+
+    private fun MutableMap<String, MutableList<String>>.warningsOf(file: String): MutableList<String> =
+        getOrPut(file) { mutableListOf() }
 
     /** Nạp mọi trang con được link `page` trỏ tới (kể cả link nằm trong trang con), mỗi file một lần. */
     private fun loadSubPages(
         context: Context,
         tabs: List<LoadedPage>,
-        warnings: MutableList<String>,
+        byFile: MutableMap<String, MutableList<String>>,
     ): Map<String, SubPage> {
         val tabIds = tabs.map { it.ref.id }.toSet()
         val result = LinkedHashMap<String, SubPage>()
@@ -468,24 +486,22 @@ object ConfigRepository {
                 val tab = link.tab
                 val page = link.page
                 if (tab != null) {
-                    if (tab !in tabIds) warnings += "$owner: link \"${link.title}\" trỏ tới tab \"$tab\" không tồn tại"
+                    if (tab !in tabIds) byFile.warningsOf(owner).add("$owner: link \"${link.title}\" trỏ tới tab \"$tab\" không tồn tại")
                 } else if (page != null) {
                     val existing = result[page]
                     if (existing != null) {
                         if (existing.dialog != link.dialog) {
-                            warnings += "$owner: link \"${link.title}\" khác style với link đầu tiên trỏ tới $page, dùng style của link đầu tiên"
+                            byFile.warningsOf(owner).add("$owner: link \"${link.title}\" khác style với link đầu tiên trỏ tới $page, dùng style của link đầu tiên")
                         }
                         continue
                     }
+                    val pageWarnings = byFile.warningsOf(page)
                     val sub = try {
-                        SubPage(page, link.title, dialogItems(page, link, TomlParser.parsePage(page, readAsset(context, page), warnings), warnings), dialog = link.dialog, action = link)
+                        SubPage(page, link.title, dialogItems(page, link, TomlParser.parsePage(page, readAsset(context, page), pageWarnings), pageWarnings), dialog = link.dialog, action = link)
                     } catch (e: ConfigParseException) {
-                        warnings += e.message ?: "$page: lỗi parse"
-                        SubPage(page, link.title, emptyList(), error = e.message, dialog = link.dialog, action = link)
+                        SubPage(page, link.title, emptyList(), error = e.message ?: "$page: lỗi parse", dialog = link.dialog, action = link)
                     } catch (e: java.io.IOException) {
-                        val msg = "$page: không đọc được file: ${e.message}"
-                        warnings += msg
-                        SubPage(page, link.title, emptyList(), error = msg, dialog = link.dialog, action = link)
+                        SubPage(page, link.title, emptyList(), error = "$page: không đọc được file: ${e.message}", dialog = link.dialog, action = link)
                     }
                     result[page] = sub
                     queue += page to sub.items
