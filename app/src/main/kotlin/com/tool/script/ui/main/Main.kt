@@ -722,8 +722,8 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
 /** OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện. */
 @Composable
 private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
-    LogDialog(entry = feedback.log, onDismiss = { feedback.log = null })
-    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.cancelLog() })
+    LogDialog(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.log?.cancel() })
+    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.log?.cancel() })
     val confirm = env.confirm
     ConfirmDialog(
         message = confirm?.message,
