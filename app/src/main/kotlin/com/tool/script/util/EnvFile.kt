@@ -1,7 +1,6 @@
 package com.tool.script.util
 
 import android.content.Context
-import android.os.Build
 import android.os.Environment
 import java.io.File
 import java.io.FileNotFoundException
@@ -12,7 +11,7 @@ class PreparedEnv(val file: File, val unknownKeys: List<String>)
 /**
  * `assets/scripts/env.sh`: file biến dùng chung cho mọi lệnh shell của app.
  * Mỗi lần mở app, các key dạng `@KEY@` trong file được thay bằng đường dẫn thật rồi ghi ra
- * `$HOME/scripts/env.sh` (cạnh `init.sh`, `$HOME` = `no_backup/home`); mọi lệnh chạy qua app nạp file này trước (xem ExecutorManager).
+ * `no_backup/scripts/env.sh` (cạnh `init.sh`, nằm cạnh `$HOME` = `no_backup/home`); mọi lệnh chạy qua app nạp file này trước (xem ExecutorManager).
  */
 object EnvFile {
 
@@ -30,12 +29,13 @@ object EnvFile {
             "FILES_DIR" to context.filesDir.absolutePath,
             "CACHE_DIR" to context.cacheDir.absolutePath,
             "HOME_DIR" to home.absolutePath,
-            "SCRIPTS_DIR" to File(home, "scripts").absolutePath,
+            "SCRIPTS_DIR" to Util.scriptsDir(context).absolutePath,
             "STATE_DIR" to File(context.filesDir, "state").absolutePath,
             "NOBACKUP_DIR" to context.noBackupFilesDir.absolutePath,
             "BIN_DIR" to File(home, "bin").absolutePath,
             "LIB_DIR" to context.applicationInfo.nativeLibraryDir,
-            "ABIS" to Build.SUPPORTED_ABIS.joinToString(" "),
+            "ABI" to Util.abi(),
+            "ARCH" to Util.arch(),
             "EXT_ROOT" to ext,
             "EXT_DIR" to "$ext/ToolScript",
         )
@@ -61,7 +61,7 @@ object EnvFile {
             return null
         }
         val (rendered, unknown) = render(text, keys(context))
-        val dest = File(Util.homeDir(context), "scripts/env.sh")
+        val dest = File(Util.scriptsDir(context), "env.sh")
         dest.parentFile?.mkdirs()
         dest.writeText(rendered, Charsets.UTF_8)
         File(context.filesDir, "state").mkdirs()

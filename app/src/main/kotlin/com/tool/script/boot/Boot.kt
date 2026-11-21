@@ -100,7 +100,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                     r.failed.forEach { log("assets: lỗi $it") }
                 }
                 .onFailure { log("assets: không chép được: ${it.message ?: it}") }
-            val script = File(Util.homeDir(app), "scripts/init.sh")
+            val script = File(Util.scriptsDir(app), "init.sh")
             val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
             envResult.getOrNull()?.let { prepared ->
                 ExecutorManager.envFile = prepared.file.absolutePath
@@ -146,24 +146,27 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         ExecutorManager.prelude = config.app.env
         val builtin = mapOf(
             "SDK" to Build.VERSION.SDK_INT.toString(),
-            "ABI" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
+            "ABI" to Util.abi(),
+            "ARCH" to Util.arch(),
             "ROOT_MODE" to executor.rootMode,
         )
         val defaults = LinkedHashMap<String, String>()
         config.pages.forEach { collectDefaults(it.items, defaults) }
         config.subPages.values.forEach { collectDefaults(it.items, defaults) }
 
-        // Giá trị đã lưu: mỗi item có id một file trong files/state (tên file = id). Có file thì lấy giá trị trong đó
-        // (đúng kiểu mới hợp lệ), chưa có hoặc hỏng thì tạo file với giá trị mặc định. Item không id không lưu.
+        // Giá trị đã lưu: mỗi item có id một file trong files/state (tên file = id), chỉ được tạo khi giá trị đổi.
+        // Có file hợp lệ thì lấy giá trị trong đó; chưa có file thì dùng mặc định (không ghi gì); file hỏng thì xóa. Item không id không lưu.
         val specs = LinkedHashMap<String, Item>()
         config.pages.forEach { collectPersisted(it.items, specs) }
         config.subPages.values.forEach { collectPersisted(it.items, specs) }
         val files = StateFiles(File(app.filesDir, "state"))
         val values = LinkedHashMap(defaults)
         withContext(Dispatchers.IO) {
+            val saved = files.existing()
             for ((id, item) in specs) {
+                if (id !in saved) continue
                 val restored = files.read(id)?.let { restoreValue(item, it) }
-                if (restored != null) values[id] = restored else files.writeNow(id, values[id].orEmpty())
+                if (restored != null) values[id] = restored else files.delete(id)
             }
         }
         val store = VariableStore(values + builtin, files, specs.keys)

@@ -2,18 +2,12 @@
 # Script khởi động. App chạy bằng: sh init.sh (env.sh đã được nạp sẵn, assets đã chép ra $HOME).
 # Báo tiến trình bằng dòng "@progress N" (0-100); các dòng khác hiện lên log splash.
 
-# Cài busybox: chép $HOME/lib/<abi>/libbusybox.so thành $BIN_DIR/busybox ($BIN_DIR = $HOME/bin, chmod 755).
-# $ABIS là danh sách ABI của máy theo thứ tự ưu tiên (env.sh); lấy ABI đầu tiên có file.
+# Cài busybox: chép $HOME/lib/$ABI/libbusybox.so thành $BIN_DIR/busybox ($BIN_DIR = $HOME/bin, chmod 755).
+# $ABI là ABI đang chạy của app (một giá trị, env.sh).
 install_busybox() {
-    src=""
-    for abi in $ABIS; do
-        if [ -f "$HOME/lib/$abi/libbusybox.so" ]; then
-            src="$HOME/lib/$abi/libbusybox.so"
-            break
-        fi
-    done
-    if [ -z "$src" ]; then
-        echo "busybox: không có bản cho ABI của máy ($ABIS)" >&2
+    src="$HOME/lib/$ABI/libbusybox.so"
+    if [ ! -f "$src" ]; then
+        echo "busybox: không có bản cho ABI của máy ($ABI)" >&2
         return 1
     fi
 
@@ -27,7 +21,7 @@ install_busybox() {
             echo "busybox: không chép được ra $dst" >&2
             return 1
         fi
-        echo "busybox: đã cài ($abi)"
+        echo "busybox: đã cài ($ABI)"
     fi
 
     if ! "$dst" true; then

@@ -198,7 +198,7 @@ class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 
 /** Dò backend theo thứ tự su -> ROM -> adb -> thường, giữ backend đang dùng. */
 /**
- * Thêm vào đầu mọi lệnh: đặt `shell_progres` (PID của shell chạy lệnh), nạp env.sh ([ExecutorManager.envFile]),
+ * Thêm vào đầu mọi lệnh: đặt `shell_progres` (PID của shell chạy lệnh), nạp env.sh ([ExecutorManager.envFile]) kèm PID đó làm `$1`,
  * rồi chạy [ExecutorManager.prelude] (nếu có), để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
  *
  * Hủy lệnh (nút Hủy của log / banner) và hết giờ: shell chạy lệnh in dòng `@pid N` đầu tiên (không đưa ra log, không nằm trong kết quả);
@@ -260,7 +260,7 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
             if (withPid) add(PID_HEAD)
             if (envFile != null) {
                 val path = com.tool.script.util.ShellText.quote(envFile)
-                add("[ -r $path ] && . $path")
+                add("[ -r $path ] && . $path \$\$")
             }
             if (!prelude.isNullOrBlank()) add(prelude)
             add(command)

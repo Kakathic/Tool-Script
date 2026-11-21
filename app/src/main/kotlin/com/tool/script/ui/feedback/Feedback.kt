@@ -9,7 +9,6 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -125,11 +124,10 @@ class LogEntry(
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
 ) {
-    /** Một dòng log: [millis] là số mili giây kể từ lúc bắt đầu chạy, [isError] = true là stderr (hiện màu đỏ). */
-    class Line(val text: String, val isError: Boolean, val millis: Long)
+    /** Một dòng log: [isError] = true là stderr (hiện màu đỏ). Thứ tự dòng trong danh sách chính là thứ tự đến. */
+    class Line(val text: String, val isError: Boolean)
 
     private val lines = mutableStateListOf<Line>()
-    private val startedAt = SystemClock.elapsedRealtime()
     var result by mutableStateOf(initialResult)
         private set
 
@@ -174,13 +172,11 @@ class LogEntry(
     /** Các dòng đang hiện, theo đúng thứ tự đến (stdout và stderr xen kẽ), bỏ dòng trống ở cuối. */
     private fun shownLines(): List<Line> = lines.toList().dropLastWhile { it.text.isBlank() }
 
-    private fun prefix(line: Line): String = "[" + line.millis.toString().padStart(6) + " ms] "
-
-    /** Văn bản log mỗi dòng có mốc thời gian mili giây ở đầu; dùng cho khung log và nút Chia sẻ. */
+    /** Văn bản log theo đúng thứ tự đến; dùng cho khung log và nút Chia sẻ. */
     val output: String
         get() {
             val shown = shownLines()
-            if (shown.isNotEmpty()) return shown.joinToString("\n") { prefix(it) + it.text }
+            if (shown.isNotEmpty()) return shown.joinToString("\n") { it.text }
             // Không có dòng nào được phát trực tiếp: dùng đầu ra gom lại khi xong.
             val r = result ?: return ""
             return r.combined.lineSequence()
@@ -189,14 +185,13 @@ class LogEntry(
                 .trimEnd('\n', '\r')
         }
 
-    /** Cùng nội dung với [output]: mốc thời gian màu [timeColor], dòng stderr màu [errorColor]. */
-    fun styled(timeColor: Color, errorColor: Color): AnnotatedString {
+    /** Cùng nội dung với [output]: dòng stderr màu [errorColor]. */
+    fun styled(errorColor: Color): AnnotatedString {
         val shown = shownLines()
         if (shown.isEmpty()) return AnnotatedString(output)
         return buildAnnotatedString {
             shown.forEachIndexed { i, line ->
                 if (i > 0) append('\n')
-                withStyle(SpanStyle(color = timeColor)) { append(prefix(line)) }
                 if (line.isError) withStyle(SpanStyle(color = errorColor)) { append(line.text) } else append(line.text)
             }
         }
@@ -210,7 +205,7 @@ class LogEntry(
             progress = p / 100f
             return
         }
-        lines += Line(line, isError, SystemClock.elapsedRealtime() - startedAt)
+        lines += Line(line, isError)
         while (lines.size > MAX_LIVE_LINES) lines.removeAt(0)
     }
 
@@ -567,10 +562,7 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                     )
                 } else {
                     Text(
-                        text = entry.styled(
-                            timeColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            errorColor = LogRed,
-                        ),
+                        text = entry.styled(errorColor = LogRed),
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
                         softWrap = false,

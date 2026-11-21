@@ -8,7 +8,20 @@ fi
 
 if [ -f "$STATE_DIR/$1" ]; then
     cat "$STATE_DIR/$1"
-else
-    [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
-    [ "$2" ] && echo "$2" | tee "$STATE_DIR/$1"
+    exit 0
 fi
+
+# Chưa có file (item chưa đổi lần nào): lấy giá trị app truyền vào biến $<id> (mặc định hoặc hiện tại), không tạo file.
+case "$1" in
+    *[!A-Za-z0-9_]*|[0-9]*) ;;
+    *)
+        eval "set_=\${$1+x}"
+        if [ "$set_" ]; then
+            eval "printf '%s\n' \"\$$1\""
+            exit 0
+        fi
+        ;;
+esac
+
+[ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
+[ "$2" ] && echo "$2" | tee "$STATE_DIR/$1"

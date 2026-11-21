@@ -92,12 +92,12 @@ run   = 'slog pages_demo_key "xin chào"; echo "pages_demo_key=$(glog pages_demo
 [[group]]
 title = "Tệp chép từ assets và lệnh dựng sẵn (bin)"
 
-# Lúc mở app, các thư mục scripts, bin, lib của assets được chép ra $HOME (no_backup/home); assets/bin thành $BIN_DIR ($HOME/bin), assets/lib/<abi> thành $HOME/lib/<abi>.
+# Lúc mở app, assets/bin và assets/lib/<abi> được chép ra $HOME (no_backup/home), assets/scripts ra $SCRIPTS_DIR (no_backup/scripts); assets/bin thành $BIN_DIR ($HOME/bin), assets/lib/<abi> thành $HOME/lib/<abi>.
 [[group.item]]
 type  = "button"
 title = "Xem thư mục lib"
 desc  = "ls -R $HOME/lib: libbusybox.so của ABI máy (assets/lib/<abi>)"
-run   = 'echo "ABIS=$ABIS"; ls -lR "$HOME/lib"'
+run   = 'echo "ABI=$ABI ARCH=$ARCH"; ls -lR "$HOME/lib"'
 
 # init.sh chép libbusybox.so thành $BIN_DIR/busybox; glog, slog, killtree chép thẳng từ assets/bin.
 [[group.item]]

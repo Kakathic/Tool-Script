@@ -26,11 +26,11 @@ run     = 'for i in 1 2 3 4 5; do echo "Dòng $i"; sleep 1; done'
 shell   = "live"
 timeout = 15
 
-# mỗi dòng log có mốc thời gian mili giây ở đầu; stdout màu thường, stderr (>&2) màu đỏ, hiện đúng thứ tự lệnh in ra
+# stdout màu thường, stderr (>&2) màu đỏ, hiện đúng thứ tự lệnh in ra
 [[group.item]]
 type    = "button"
 title   = "live: stdout và stderr xen kẽ"
-desc    = "Dòng thường và dòng đỏ (>&2) đúng thứ tự, kèm mili giây"
+desc    = "Dòng thường và dòng đỏ (>&2) đúng thứ tự"
 run     = 'echo "1 thường"; sleep 0.3; echo "2 lỗi" >&2; sleep 0.3; echo "3 thường"; sleep 0.3; echo "4 lỗi" >&2; echo "5 thường"'
 shell   = "live"
 timeout = 15

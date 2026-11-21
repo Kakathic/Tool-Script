@@ -23,13 +23,22 @@ class StateFiles(private val dir: File) {
         }
     }
 
+    /** Tên các file đã có trong thư mục lưu (một lần liệt kê), để lúc khởi động chỉ đọc id nào đã có file. */
+    fun existing(): Set<String> = dir.list()?.toHashSet() ?: emptySet()
+
+    /** Xóa file của [id] (file có giá trị không hợp lệ), lúc khởi động. */
+    fun delete(id: String) {
+        if (!isValidId(id)) return
+        runCatching { File(dir, id).delete() }
+    }
+
     /** Ghi nền, dùng khi giá trị đổi lúc app đang chạy. */
     fun write(id: String, value: String) {
         if (!isValidId(id)) return
         writer.execute { writeNow(id, value) }
     }
 
-    /** Ghi ngay trên luồng gọi (lúc khởi động, đã ở luồng IO). Ghi ra file tạm rồi đổi tên để script không đọc phải file dở. */
+    /** Ghi ngay trên luồng gọi (đã ở luồng IO). Ghi ra file tạm rồi đổi tên để script không đọc phải file dở. */
     fun writeNow(id: String, value: String) {
         if (!isValidId(id)) return
         try {

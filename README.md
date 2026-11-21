@@ -46,7 +46,7 @@ Khi có khóa thật, thay thông tin trong `signingConfigs` (hoặc thêm một
 app/src/main/
 ├─ assets/
 │  ├─ configs/            # main.toml, pages/*.toml, icons/ (mẫu); đọc thẳng từ assets, không chép
-│  ├─ scripts/            # init.sh (khởi động, cài busybox), env.sh (biến dùng chung)
+│  ├─ scripts/            # init.sh (khởi động, cài busybox), env.sh (biến dùng chung): chép ra no_backup/scripts
 │  ├─ bin/                # glog, slog, killtree: chép ra $HOME/bin ($BIN_DIR, trong PATH)
 │  └─ lib/<abi>/libbusybox.so  # chép ra $HOME/lib, init.sh cài thành $BIN_DIR/busybox
 ├─ kotlin/com/tool/script/
@@ -73,7 +73,7 @@ app/src/main/
 
 ## Lưu ý kỹ thuật
 
-- `minSdk = 24`, `targetSdk = 28`, `compileSdk = 37`: target 28 là chủ ý để exec được file ELF tải về trong `filesDir` (app target >= 29 bị SELinux chặn). Không đưa lên Google Play. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp", kênh thông báo, xin quyền thông báo) được kiểm tra `SDK_INT` lúc chạy. Lúc khởi động app chép các thư mục cần thiết của assets (`scripts`, `bin`, `lib`) ra `$HOME` (`no_backup/home`); lệnh dựng sẵn (busybox, glog, slog, killtree) nằm trong `$HOME/bin` và exec trực tiếp.
+- `minSdk = 24`, `targetSdk = 28`, `compileSdk = 37`: target 28 là chủ ý để exec được file ELF tải về trong `filesDir` (app target >= 29 bị SELinux chặn). Không đưa lên Google Play. Tính năng chỉ có ở Android cao (Wireless Debugging, "Truy cập tất cả tệp", kênh thông báo, xin quyền thông báo) được kiểm tra `SDK_INT` lúc chạy. Lúc khởi động app chép các thư mục cần thiết của assets ra `no_backup`: `bin`, `lib/<abi>` vào `$HOME` (`no_backup/home`), `scripts` ở `no_backup/scripts` (cạnh home); lệnh dựng sẵn (busybox, glog, slog, killtree) nằm trong `$HOME/bin` và exec trực tiếp.
 - Script chép từ assets không phải lúc nào cũng exec trực tiếp được trên Android 10+ (khi app target >= 29); `init.sh` chạy bằng `sh init.sh`.
 - Backend adb: chưa chọn thư viện ADB client (xem TODO trong `libs.versions.toml`).
 - Chế độ không root: shell chạy được (`sh -c ...`) nhưng với quyền của chính app (SELinux `untrusted_app`), nên nhiều lệnh hệ thống như `pm`, `settings put`, `dumpsys` có thể bị từ chối. Tài liệu hành vi của Android 17 (`targetSdk = 37`) không nêu thay đổi nào về chạy shell, nhưng nên thử trên máy thật.
@@ -91,7 +91,7 @@ Giai đoạn 1: khung ứng dụng
 - [x] `boot/`: splash (logo, thanh tiến trình, 5 dòng log) -> xin quyền bộ nhớ -> dò backend -> chạy `init.sh` -> nạp TOML -> vào màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
 - [x] `config/`: model + parser TOML theo `docs/schema.md`. Cảnh báo khi thiếu trường hoặc `type` lạ, báo file + dòng khi sai cú pháp. `main.toml` sai thì sang Trung tâm lỗi; file trang sai thì chỉ trang đó hiện thẻ lỗi.
 - [x] `executor/`: backend `su` (libsu) và shell thường, biến `ROOT_MODE`; hết giờ dò quyền root sau 5 giây.
-- [x] `state/`: kho biến (`VariableStore`), bộ tính điều kiện `visible_if` / `lock` (`==`, `!=`, `&&`, `||`), biến dựng sẵn `SDK`, `ABI`, `ROOT_MODE`.
+- [x] `state/`: kho biến (`VariableStore`), bộ tính điều kiện `visible_if` / `lock` (`==`, `!=`, `&&`, `||`), biến dựng sẵn `SDK`, `ABI`, `ARCH`, `ROOT_MODE`.
 - [x] `crash/`: Trung tâm lỗi (tiến trình `:crash`) và bộ bắt crash trong `App`; nút Chia sẻ (icon + chữ, khung bo) ở góc phải hàng tiêu đề, hai nút Khởi động lại và Thoát ở dưới; nhấn giữ log để chọn và sao chép chữ. Demo crash: `run = "@crash"` hoặc `"@crash-thread"` (nhóm cuối `output.toml`).
 
 Giai đoạn 2: giao diện

@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Process
+import android.system.Os
 import android.provider.Settings
 import com.tool.script.MainActivity
 import java.io.File
@@ -49,8 +51,22 @@ object Util {
         Runtime.getRuntime().exit(0)
     }
 
-    /** `$HOME` của app: `no_backup/home` (không bị Auto Backup sao lưu), nơi chép assets cần thiết và đặt env.sh cạnh init.sh. */
+    /** `$HOME` của app: `no_backup/home` (không bị Auto Backup sao lưu), nơi chép assets `bin`, `lib`. */
     fun homeDir(context: Context): File = File(context.noBackupFilesDir, "home").apply { mkdirs() }
+
+    /** `no_backup/scripts`, cạnh `$HOME`: chứa `init.sh` (chép từ assets) và `env.sh` đã thay key. */
+    fun scriptsDir(context: Context): File = File(context.noBackupFilesDir, "scripts").apply { mkdirs() }
+
+    /** ABI chính thức mà tiến trình app đang chạy (một giá trị, vd `arm64-v8a`), không phải danh sách ABI máy hỗ trợ. */
+    fun abi(): String {
+        val abis = if (Process.is64Bit()) Build.SUPPORTED_64_BIT_ABIS else Build.SUPPORTED_32_BIT_ABIS
+        return abis.firstOrNull() ?: Build.SUPPORTED_ABIS.firstOrNull() ?: ""
+    }
+
+    /** Kiến trúc CPU lấy từ framework Android (`Os.uname().machine`, như `uname -m`): `aarch64`, `armv7l`, `x86_64`, `i686`... */
+    fun arch(): String =
+        runCatching { Os.uname().machine }.getOrNull()?.takeIf { it.isNotBlank() }
+            ?: System.getProperty("os.arch").orEmpty()
 
     /** Chép một file trong assets ra [dest], tạo thư mục cha nếu cần. */
     fun copyAsset(context: Context, assetPath: String, dest: File): File {
