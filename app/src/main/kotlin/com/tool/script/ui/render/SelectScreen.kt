@@ -35,8 +35,8 @@ import com.tool.script.config.SelectOption
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -105,14 +105,15 @@ internal fun SelectFullScreen(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        // Cột ngoài không có lề ngang: các dòng chọn chạy hết chiều rộng màn hình, vùng bấm và hiệu ứng nhấn
+        // phủ trọn dòng, không bị thẻ bo góc cắt. Lề 16dp chỉ áp cho tiêu đề, ô tìm và hai nút.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.background)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 16.dp),
+                .imePadding(),
         ) {
             Text(
                 text = title,
@@ -120,20 +121,27 @@ internal fun SelectFullScreen(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
             )
             TextField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 label = "Tìm kiếm",
                 singleLine = true,
             )
             Spacer(Modifier.height(12.dp))
 
-            if (multi) {
-                Card(Modifier.fillMaxWidth()) {
+            // Vùng danh sách: nền surface chạy hết ngang, ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(MiuixTheme.colorScheme.surface),
+            ) {
+                if (multi) {
                     BasicComponent(
+                        modifier = Modifier.fillMaxWidth(),
                         title = if (query.isBlank()) "Chọn tất cả (${visible.size})" else "Chọn tất cả kết quả tìm (${visible.size})",
                         enabled = visible.isNotEmpty(),
                         endActions = {
@@ -145,13 +153,10 @@ internal fun SelectFullScreen(
                         },
                         onClick = { toggleAll() },
                     )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
-                Spacer(Modifier.height(12.dp))
-            }
-
-            Card(Modifier.weight(1f).fillMaxWidth()) {
                 if (visible.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
                             text = "Không có mục nào khớp",
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -159,7 +164,7 @@ internal fun SelectFullScreen(
                         )
                     }
                 } else {
-                    LazyColumn(Modifier.fillMaxSize()) {
+                    LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                         items(visible) { option ->
                             val checked = option.value in draft
                             val click = {
@@ -172,6 +177,7 @@ internal fun SelectFullScreen(
                                 }
                             }
                             BasicComponent(
+                                modifier = Modifier.fillMaxWidth(),
                                 title = option.label,
                                 endActions = {
                                     if (multi) {
@@ -195,11 +201,11 @@ internal fun SelectFullScreen(
                     text = "Đã chọn ${draft.size}/${options.size}",
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.body2,
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                 )
             }
             Row(
-                modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(text = "Hủy", onClick = onDismiss, modifier = Modifier.weight(1f))
