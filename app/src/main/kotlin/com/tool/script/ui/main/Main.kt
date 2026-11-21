@@ -500,8 +500,8 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
                 .onSizeChanged { onHeight(it.height) },
         ) {
             Spacer(Modifier.height(DIALOG_TOP_BAR_HEIGHT))
-            // Lề 12dp phải khớp với contentPadding của PageList để chiều cao đo được bằng chiều cao thật.
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Lề 16dp và khoảng cách 12dp phải khớp với PageList để chiều cao đo được bằng chiều cao thật.
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 page.error?.let { PageErrorCard(it) }
                 page.items.filter { isShown(it, pageEnv.store) }.forEach { ItemRenderer(it, pageEnv) }
             }
@@ -724,8 +724,8 @@ private fun PageList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().imePadding(),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 12.dp + bottomInset),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomInset),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (error != null) {
             item { PageErrorCard(error) }

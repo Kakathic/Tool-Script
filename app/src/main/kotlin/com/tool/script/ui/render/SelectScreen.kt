@@ -60,7 +60,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal const val FULLSCREEN_MIN_OPTIONS = 6
 
 /** Lề hai bên của mọi thành phần trong màn hình chọn toàn màn hình. */
-private val SCREEN_MARGIN = 12.dp
+private val SCREEN_MARGIN = 16.dp
 
 private val COMBINING_MARKS = Regex("\\p{M}+")
 
@@ -138,7 +138,7 @@ internal fun SelectFullScreen(
             enter = slideInVertically(animationSpec = tween(300)) { it },
             exit = slideOutVertically(animationSpec = tween(220)) { it },
         ) {
-            // Lề hai bên 12dp (SCREEN_MARGIN) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
+            // Lề ngoài hai bên 16dp (SCREEN_MARGIN) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
             // Mỗi dòng trong thẻ vẫn bấm được trên toàn chiều ngang thẻ.
             Column(
                 modifier = Modifier
@@ -166,7 +166,7 @@ internal fun SelectFullScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền và bo góc với các thẻ trong app, cả sáng lẫn tối),
-                // lề 12dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+                // lề ngoài 16dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
                 // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
                 Card(
                     modifier = Modifier
@@ -176,6 +176,7 @@ internal fun SelectFullScreen(
                 ) {
                     if (multi) {
                         BasicComponent(
+                            insideMargin = CardInsideMargin,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(
@@ -193,7 +194,7 @@ internal fun SelectFullScreen(
                                 )
                             },
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
                     }
                     if (visible.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -217,6 +218,7 @@ internal fun SelectFullScreen(
                                     }
                                 }
                                 BasicComponent(
+                                    insideMargin = CardInsideMargin,
                                     // Bấm cả dòng nhưng không có hiệu ứng nhấn (indication = null, không dùng onClick của BasicComponent).
                                     modifier = Modifier
                                         .fillMaxWidth()

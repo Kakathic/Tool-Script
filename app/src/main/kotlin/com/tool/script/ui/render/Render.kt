@@ -187,6 +187,9 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     }
 }
 
+/** Đệm bên trong thẻ (từ mép thẻ tới nội dung), dùng cho mọi item và màn hình chọn. Mặc định của Miuix là 16dp. */
+internal val CardInsideMargin = PaddingValues(12.dp)
+
 /**
  * Nền của một item. Item đứng riêng (ngoài group) có thẻ của mình;
  * item trong group không vẽ thẻ, vì cả group dùng chung một thẻ lớn (xem [GroupItem]).
@@ -203,7 +206,7 @@ private fun ItemSurface(modifier: Modifier, inGroup: Boolean, content: @Composab
 @Composable
 private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
     ItemSurface(modifier, inGroup) {
-        BasicComponent(title = item.title, summary = item.content ?: item.desc)
+        BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.content ?: item.desc)
     }
 }
 
@@ -211,7 +214,7 @@ private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
 private val GroupTitleTrimTop = 8.dp
 
 /** Dời tiêu đề group sang trái, để thẳng hàng với chữ trong thẻ. */
-private val GroupTitleShiftLeft = 12.dp
+private val GroupTitleShiftLeft = 16.dp
 
 @Composable
 private fun GroupItem(item: Item, env: RenderEnv) {
@@ -238,6 +241,7 @@ private fun GroupItem(item: Item, env: RenderEnv) {
 private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     ItemSurface(modifier, inGroup) {
         BasicComponent(
+            insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
@@ -314,6 +318,7 @@ private fun BinaryItem(
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
+            insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
@@ -331,10 +336,10 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val current = env.store[id]
     val haptic = LocalHapticFeedback.current
     ItemSurface(modifier, inGroup) {
-        BasicComponent(title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
+        BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
         if (item.options.isNotEmpty()) {
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
         }
         item.options.forEach { option ->
             val select = {
@@ -344,6 +349,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 }
             }
             BasicComponent(
+                insideMargin = CardInsideMargin,
                 title = option.label,
                 enabled = enabled,
                 endActions = {
@@ -373,7 +379,7 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
     val fraction = if (item.max > item.min) (value - item.min) / (item.max - item.min) else 0f
 
     ItemSurface(modifier, inGroup) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(CardInsideMargin)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ItemIconInline(item)
                 Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
@@ -396,7 +402,7 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
 private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     ItemSurface(modifier, inGroup) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(CardInsideMargin)) {
             TitleRow(item) { Text(item.title, style = MiuixTheme.textStyles.headline1) }
             item.desc?.let {
                 Text(it, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
@@ -444,6 +450,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
+            insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
@@ -575,6 +582,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
+            insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
@@ -724,6 +732,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
         // Popup lấy cả hàng làm điểm neo: menu căn mép phải với hàng, nằm ngay dưới (lật lên nếu thiếu chỗ).
         Box(Modifier.fillMaxWidth()) {
             BasicComponent(
+                insideMargin = CardInsideMargin,
                 title = item.title,
                 summary = item.desc,
                 startAction = itemIcon(item),
@@ -762,7 +771,7 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
     val haptic = LocalHapticFeedback.current
 
     ItemSurface(modifier, inGroup) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(CardInsideMargin)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ItemIconInline(item)
                 Text(item.title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.headline1)
@@ -803,6 +812,7 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     ItemSurface(modifier, inGroup) {
         BasicComponent(
+            insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
@@ -826,7 +836,7 @@ private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Bo
 /** Thẻ báo file trang bị lỗi parse. */
 @Composable
 fun PageErrorCard(message: String, modifier: Modifier = Modifier) {
-    Card(modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
+    Card(modifier.fillMaxWidth(), insideMargin = CardInsideMargin) {
         Text("Không đọc được trang này", style = MiuixTheme.textStyles.headline1, color = MiuixTheme.colorScheme.error)
         Spacer(Modifier.height(8.dp))
         Text(message, style = MiuixTheme.textStyles.body2)
