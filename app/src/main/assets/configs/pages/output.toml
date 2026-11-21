@@ -1,5 +1,5 @@
 # Tab 3 - Demo: các kiểu hiển thị kết quả lệnh.
-# shell = live | full | hidden | banner | notice (mặc định live), thanh tiến trình @progress,
+# shell = live | full | hidden | banner | notice | snackbar (mặc định live), thanh tiến trình @progress,
 # progress, confirm, timeout.
 # Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị (riêng hai nhóm cuối cố ý gây lỗi: lỗi cấu hình và crash app).
 
@@ -50,7 +50,8 @@ title = "Banner và thông báo (banner, notice)"
 # banner: hiện ngay "Đang chạy script…" kèm thanh chạy vô hạn, có nút Hủy.
 # Xong thì đổi sang đầu ra thật của lệnh, thanh đếm ngược 5 giây, có nút Ẩn.
 # Vuốt banner sang trái / phải: đang chạy thì hủy, đã xong thì ẩn.
-# Khi banner đang chạy hoặc còn hiện, mọi item banner / notice bị khóa (mờ).
+# Mỗi lượt chạy là một banner riêng, nhiều banner xếp chồng ở đầu màn hình (nền khác màu thẻ, không tối màn hình).
+# Item đang chạy banner / notice chưa xong thì bị khóa (mờ); các item banner khác vẫn bấm được.
 [[group.item]]
 type  = "button"
 title = "banner"
@@ -90,6 +91,25 @@ title = "notice"
 desc  = "Thông báo hệ thống của Android"
 run   = 'echo "Xin chào từ notice"'
 shell = "notice"
+
+[[group]]
+title = "Snackbar của Miuix (snackbar)"
+
+# snackbar: lệnh chạy ẩn, xong thì hiện snackbar có sẵn của Miuix ở đáy màn hình (trên thanh tab), có nút đóng, vuốt ngang cũng đóng.
+# Không khóa màn hình, không tối nền; lệnh lỗi thì snackbar hiện lâu hơn (10 giây, thành công 4 giây).
+[[group.item]]
+type  = "button"
+title = "snackbar"
+desc  = "Hiện đầu ra thật của lệnh"
+run   = 'echo "Xin chào từ snackbar"'
+shell = "snackbar"
+
+[[group.item]]
+type  = "button"
+title = "snackbar (lỗi)"
+desc  = "Lệnh lỗi nên snackbar hiện lâu hơn"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "snackbar"
 
 [[group]]
 title = "Chạy ẩn (hidden)"

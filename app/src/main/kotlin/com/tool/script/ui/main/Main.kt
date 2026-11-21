@@ -108,6 +108,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -309,6 +310,7 @@ fun MainScreen(
                                 },
                             )
                         },
+                        snackbarHost = { SnackbarHost(feedback.snackbarState) },
                         bottomBar = {
                             if (pages.size >= 2) {
                                 NavigationBar {
@@ -380,7 +382,7 @@ fun MainScreen(
                     DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
                 }
             }
-            // Banner thông báo hiện đè lên cả thanh trên, trượt xuống / lên.
+            // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
             BannerOverlay(feedback, Modifier.align(Alignment.TopCenter))
         }
     }
@@ -446,6 +448,7 @@ private fun SubPageScreen(
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
     Scaffold(
         topBar = { Box(topBarModifier) { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog) } },
+        snackbarHost = { SnackbarHost(feedback.snackbarState) },
         bottomBar = { if (page.dialog) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
     ) { inner ->
         Column(

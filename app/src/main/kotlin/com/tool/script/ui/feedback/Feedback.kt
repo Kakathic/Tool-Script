@@ -14,7 +14,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -55,6 +58,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
@@ -90,12 +95,17 @@ import com.tool.script.util.ShellText
 import com.tool.script.util.Util
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.SnackbarDuration
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -186,64 +196,77 @@ class LogEntry(
 
 class FeedbackHost(private val context: Context) {
     var log by mutableStateOf<LogEntry?>(null)
-    var banner by mutableStateOf<String?>(null)
-    var bannerWarning by mutableStateOf(false)
-
-    /** true khi banner đang báo "Đang chạy script": thanh chạy vô hạn, chưa đếm ngược. */
-    var bannerRunning by mutableStateOf(false)
-        private set
-
-    private var activeRun by mutableIntStateOf(0)
+    /** Danh sách banner đang hiện, xếp chồng từ trên xuống (mỗi lượt chạy `banner` là một banner riêng). */
+    val banners = mutableStateListOf<BannerEntry>()
     private var lastRun = 0
-    private var runJob: Job? = null
 
-    /** Có lệnh `banner` / `notice` đang chạy hoặc banner còn hiện: các item dùng hai kiểu này bị khóa cho tới khi banner biến mất. */
-    val busy: Boolean get() = activeRun != 0 || banner != null
+    /** Item này có lượt chạy `banner` / `notice` chưa xong không: item đó bị khóa, các item khác vẫn bấm được. */
+    fun isRunning(item: Item): Boolean = banners.any { it.item === item && it.running }
 
-    /** Bắt đầu một lượt chạy; trả về mã lượt để [attachJob] / [endRun] nhận ra đúng lượt. */
-    fun beginRun(): Int {
-        activeRun = ++lastRun
-        banner = RUNNING_TEXT
-        bannerWarning = false
-        bannerRunning = true
-        bannerToken++
-        return activeRun
+    /** Bắt đầu một lượt chạy: thêm banner "Đang chạy script…" của riêng [item]; trả về mã lượt cho [attachJob] / [endRun] / [report]. */
+    fun beginRun(item: Item): Int {
+        banners.filter { it.item === item && !it.running }.forEach { dismissBanner(it) }
+        val entry = BannerEntry(++lastRun, item, RUNNING_TEXT, warning = false, running = true)
+        banners.add(entry)
+        return entry.id
     }
 
     fun attachJob(id: Int, job: Job) {
-        if (activeRun == id) runJob = job
+        banners.firstOrNull { it.id == id }?.job = job
     }
 
+    /** Đổi banner của lượt [id] sang kết quả và bắt đầu đếm ngược; bỏ qua nếu banner đã bị hủy / ẩn. */
+    private fun finishBanner(id: Int, message: String, warning: Boolean) {
+        val entry = banners.firstOrNull { it.id == id } ?: return
+        if (entry.closing) return
+        entry.message = message
+        entry.warning = warning
+        entry.running = false
+        entry.token++
+    }
+
+    /** Lượt chạy kết thúc (kể cả lỗi / bị hủy): banner nào còn "đang chạy" thì ẩn đi. */
     fun endRun(id: Int) {
-        if (activeRun != id) return
-        activeRun = 0
-        runJob = null
-        if (bannerRunning) banner = null
+        val entry = banners.firstOrNull { it.id == id } ?: return
+        if (entry.running) dismissBanner(entry)
     }
 
-    /** Hủy lượt đang chạy: dừng coroutine, ẩn banner và mở khóa ngay (kết quả của lượt bị bỏ). */
-    fun cancelRun() {
-        if (activeRun == 0) return
-        runJob?.cancel()
-        runJob = null
-        activeRun = 0
-        banner = null
-        bannerRunning = false
+    /** Hủy lượt đang chạy của [entry]: dừng coroutine, ẩn banner và mở khóa item ngay (kết quả của lượt bị bỏ). */
+    fun cancelBanner(entry: BannerEntry) {
+        if (entry.closing || !entry.running) return
+        entry.job?.cancel()
+        entry.job = null
+        dismissBanner(entry)
         toast("Đã hủy")
     }
 
-    var bannerToken by mutableIntStateOf(0)
-        private set
+    /** Ẩn banner: chạy hiệu ứng thu lại rồi mới gỡ khỏi danh sách. Banner coi như hết "đang chạy" ngay. */
+    fun dismissBanner(entry: BannerEntry) {
+        entry.running = false
+        entry.closing = true
+    }
 
+    /** Banner độc lập (không gắn item), ví dụ báo khi không có quyền gửi thông báo. */
     fun showBanner(message: String, warning: Boolean = false) {
-        banner = message
-        bannerWarning = warning
-        bannerRunning = false
-        bannerToken++
+        banners.add(BannerEntry(++lastRun, null, message, warning, running = false))
     }
 
     internal var requestNoticePermission: (() -> Unit)? = null
     private var pendingNotice: Triple<String, String, Boolean>? = null
+
+    /** Snackbar có sẵn của Miuix, hiện ở đáy màn hình (host đặt trong Scaffold), có nút đóng; lỗi thì hiện lâu hơn. */
+    val snackbarState = SnackbarHostState()
+    private val snackbarScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    fun showSnackbar(message: String, long: Boolean = false) {
+        snackbarScope.launch {
+            snackbarState.showSnackbar(
+                message = message,
+                withDismissAction = true,
+                duration = if (long) SnackbarDuration.Long else SnackbarDuration.Short,
+            )
+        }
+    }
 
     fun toast(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -252,16 +275,17 @@ class FeedbackHost(private val context: Context) {
     fun startLive(title: String, command: String, full: Boolean = false): LogEntry =
         LogEntry(title, command, startFull = full).also { log = it }
 
-    fun report(item: Item, command: String, result: ExecResult) {
+    fun report(item: Item, command: String, result: ExecResult, runId: Int = 0) {
         val summary = summaryOf(item.title, result)
         when (item.shell) {
             ShellMode.Live, ShellMode.Full -> Unit
             ShellMode.Hidden -> if (!result.ok) toast(summary)
-            ShellMode.Banner -> showBanner(summary, warning = !result.ok)
+            ShellMode.Banner -> finishBanner(runId, summary, warning = !result.ok)
             ShellMode.Notice -> {
-                if (bannerRunning) banner = null
+                banners.firstOrNull { it.id == runId }?.let { dismissBanner(it) }
                 notice(item.title, summary, warning = !result.ok)
             }
+            ShellMode.Snackbar -> showSnackbar(summary, long = !result.ok)
         }
     }
 
@@ -651,8 +675,8 @@ fun Banner(
         )
     } else {
         CardDefaults.defaultColors(
-            // Banner thông tin: nền trung tính (không xanh), chữ theo màu chữ chính.
-            color = MiuixTheme.colorScheme.surfaceContainer,
+            // Banner thông tin: nền trung tính (không xanh) đậm hơn nền thẻ (thẻ dùng surfaceContainer) để không trùng màu thẻ.
+            color = MiuixTheme.colorScheme.surfaceContainerHighest,
             contentColor = MiuixTheme.colorScheme.onSurface,
         )
     }
@@ -749,52 +773,76 @@ private const val OUTPUT_MAX_CHARS = 300
 
 private const val RUNNING_TEXT = "Đang chạy script…"
 
+/** Một banner: mỗi lượt chạy `banner` / `notice` có một cái, [item] là item đã chạy (null nếu là banner độc lập). */
+@Stable
+class BannerEntry(
+    val id: Int,
+    val item: Item?,
+    message: String,
+    warning: Boolean,
+    running: Boolean,
+) {
+    var message by mutableStateOf(message)
+    var warning by mutableStateOf(warning)
+
+    /** true khi lệnh còn chạy: thanh chạy vô hạn, có nút Hủy; false thì đếm ngược 5 giây rồi tự ẩn. */
+    var running by mutableStateOf(running)
+
+    /** true khi đang chạy hiệu ứng ẩn đi, sắp gỡ khỏi danh sách. */
+    var closing by mutableStateOf(false)
+
+    /** Tăng mỗi khi chuyển sang kết quả để đếm ngược chạy lại từ đầu. */
+    var token by mutableIntStateOf(0)
+    var job: Job? = null
+}
+
+/** Các banner xếp chồng ở đầu màn hình; chỉ chiếm chỗ của chính banner nên các item khác vẫn bấm được. */
 @Composable
 fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
-    val message = feedback.banner
-    var last by remember { mutableStateOf(message.orEmpty()) }
-    var lastWarning by remember { mutableStateOf(false) }
-    var lastRunning by remember { mutableStateOf(false) }
-    if (message != null) {
-        last = message
-        lastWarning = feedback.bannerWarning
-        lastRunning = feedback.bannerRunning
+    if (feedback.banners.isEmpty()) return
+    Column(modifier.fillMaxWidth().statusBarsPadding().padding(top = 4.dp)) {
+        for (entry in feedback.banners.toList()) {
+            key(entry.id) { BannerEntryView(entry, feedback) }
+        }
     }
+}
+
+@Composable
+private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost) {
+    val visibleState = remember { MutableTransitionState(false) }
+    visibleState.targetState = !entry.closing
 
     val progress = remember { Animatable(1f) }
-    val running = feedback.bannerRunning
-    LaunchedEffect(feedback.bannerToken, message != null, running) {
-        if (message != null && !running) {
+    LaunchedEffect(entry.token, entry.running, entry.closing) {
+        if (!entry.running && !entry.closing) {
             progress.snapTo(1f)
             progress.animateTo(0f, tween(BANNER_MILLIS, easing = LinearEasing))
-            feedback.banner = null
+            feedback.dismissBanner(entry)
         }
     }
 
-    // Vuốt ngang: đang chạy thì hủy script, đã xong thì ẩn banner. Banner mới hiện thì về lại vị trí giữa.
+    // Vuốt ngang: đang chạy thì hủy script, đã xong thì ẩn banner. Banner chuyển sang kết quả thì về lại vị trí giữa.
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     var widthPx by remember { mutableIntStateOf(0) }
-    LaunchedEffect(feedback.bannerToken) { offsetX.snapTo(0f) }
+    LaunchedEffect(entry.token) { offsetX.snapTo(0f) }
     val dismiss: () -> Unit = {
-        if (feedback.bannerRunning) feedback.cancelRun() else feedback.banner = null
+        if (entry.running) feedback.cancelBanner(entry) else feedback.dismissBanner(entry)
     }
 
     AnimatedVisibility(
-        visible = message != null,
-        modifier = modifier,
-        enter = slideInVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeIn(tween(BANNER_SLIDE_MILLIS)),
-        exit = slideOutVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeOut(tween(BANNER_SLIDE_MILLIS)),
+        visibleState = visibleState,
+        enter = expandVertically(tween(BANNER_SLIDE_MILLIS)) + slideInVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeIn(tween(BANNER_SLIDE_MILLIS)),
+        exit = shrinkVertically(tween(BANNER_SLIDE_MILLIS)) + slideOutVertically(tween(BANNER_SLIDE_MILLIS)) { -it } + fadeOut(tween(BANNER_SLIDE_MILLIS)),
     ) {
         Banner(
-            message = last,
-            warning = lastWarning,
+            message = entry.message,
+            warning = entry.warning,
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .graphicsLayer { alpha = 1f - (abs(offsetX.value) / widthPx.coerceAtLeast(1)).coerceIn(0f, 1f) }
                 .onSizeChanged { widthPx = it.width }
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
                 .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp))
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
@@ -817,12 +865,16 @@ fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
                     }
                 },
             progress = progress.value,
-            indeterminate = lastRunning,
+            indeterminate = entry.running,
             maxLines = BANNER_OUTPUT_MAX_LINES,
-            actionLabel = if (lastRunning) "Hủy" else null,
+            actionLabel = if (entry.running) "Hủy" else null,
             onAction = dismiss,
-            onDismiss = if (lastRunning) null else dismiss,
+            onDismiss = if (entry.running) null else dismiss,
         )
+    }
+
+    if (entry.closing && visibleState.isIdle && !visibleState.currentState) {
+        LaunchedEffect(entry) { feedback.banners.remove(entry) }
     }
 }
 

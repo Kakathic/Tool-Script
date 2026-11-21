@@ -20,7 +20,7 @@ enum class ItemType(val key: String) {
     }
 }
 
-enum class ShellMode { Live, Full, Hidden, Banner, Notice }
+enum class ShellMode { Live, Full, Hidden, Banner, Notice, Snackbar }
 
 enum class LockMode { Readonly, Hide }
 
@@ -308,6 +308,7 @@ object TomlParser {
             "hidden" -> ShellMode.Hidden
             "banner" -> ShellMode.Banner
             "notice" -> ShellMode.Notice
+            "snackbar" -> ShellMode.Snackbar
             else -> {
                 warnings += "$label \"$title\": shell = \"${t.str("shell")}\" không hợp lệ, dùng live"
                 ShellMode.Live
