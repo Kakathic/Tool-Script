@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 // Backend thực thi, thứ tự ưu tiên: su -> ROM -> adb -> thường.
 // Giá trị biến ROOT_MODE: root / system / adb / any.
@@ -41,6 +42,18 @@ interface ShellExecutor {
     suspend fun exec(command: String, timeoutSec: Int = 30, onLine: ((String) -> Unit)? = null): ExecResult
 }
 
+/**
+ * Đọc từng dòng của [stream] tới khi hết. Luồng bị ngắt khi hủy lệnh hoặc tiến trình bị dừng sẽ ném IOException
+ * (ví dụ InterruptedIOException "read interrupted"), ở đây coi là hết đầu ra để lỗi này không làm app crash.
+ */
+private fun readLines(stream: java.io.InputStream, onLine: (String) -> Unit) {
+    try {
+        stream.bufferedReader().forEachLine(onLine)
+    } catch (_: IOException) {
+        // hết đầu ra
+    }
+}
+
 /** Shell thường (`sh -c`), quyền của chính app. */
 class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
     override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult =
@@ -56,12 +69,12 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
             try {
                 coroutineScope {
                     val outJob = async {
-                        process.inputStream.bufferedReader().forEachLine {
+                        readLines(process.inputStream) {
                             out.appendLine(it)
                             onLine?.invoke(it)
                         }
                     }
-                    val errJob = async { process.errorStream.bufferedReader().forEachLine { err.appendLine(it) } }
+                    val errJob = async { readLines(process.errorStream) { err.appendLine(it) } }
                     var timedOut = false
                     val finished = try {
                         runInterruptible { process.waitFor(timeoutSec.toLong(), TimeUnit.SECONDS) }
@@ -93,6 +106,10 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
 class SuExecutor : ShellExecutor {
     override val rootMode: String = "root"
 
+    // Số lệnh đang chạy. Shell chính của libsu chạy tuần tự từng lệnh, nên khi đã có lệnh đang chạy,
+    // lệnh mới mở một shell root riêng để chạy song song (không phải chờ), xong thì đóng.
+    private val inFlight = AtomicInteger(0)
+
     override suspend fun exec(command: String, timeoutSec: Int, onLine: ((String) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
             val out = mutableListOf<String>()
@@ -105,13 +122,24 @@ class SuExecutor : ShellExecutor {
                     onLine?.invoke(e)
                 }
             }
-            val result = Shell.cmd(wrapped).to(outLines, err).exec()
-            ExecResult(
-                code = result.code,
-                stdout = out.joinToString("\n"),
-                stderr = err.joinToString("\n"),
-                timedOut = result.code == 124,
-            )
+            val parallel = inFlight.getAndIncrement() > 0
+            try {
+                // Không mở được shell riêng thì dùng shell chính (xếp hàng chờ như trước).
+                val extra = if (parallel) runCatching { Shell.Builder.create().build("su") }.getOrNull() else null
+                try {
+                    val result = (extra ?: Shell.getShell()).newJob().add(wrapped).to(outLines, err).exec()
+                    ExecResult(
+                        code = result.code,
+                        stdout = out.joinToString("\n"),
+                        stderr = err.joinToString("\n"),
+                        timedOut = result.code == 124,
+                    )
+                } finally {
+                    extra?.close()
+                }
+            } finally {
+                inFlight.decrementAndGet()
+            }
         }
 }
 

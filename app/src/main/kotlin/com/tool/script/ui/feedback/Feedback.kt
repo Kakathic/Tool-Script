@@ -200,12 +200,14 @@ class FeedbackHost(private val context: Context) {
     val banners = mutableStateListOf<BannerEntry>()
     private var lastRun = 0
 
-    /** Item này có lượt chạy `banner` / `notice` chưa xong không: item đó bị khóa, các item khác vẫn bấm được. */
-    fun isRunning(item: Item): Boolean = banners.any { it.item === item && it.running }
+    /**
+     * Item này còn banner của lượt chạy trước không (đang chạy, hoặc đã xong nhưng chưa hết đếm ngược 5 giây / chưa bị ẩn):
+     * item đó bị khóa tới khi banner biến mất, các item khác vẫn bấm được.
+     */
+    fun isBusy(item: Item): Boolean = banners.any { it.item === item && !it.closing }
 
     /** Bắt đầu một lượt chạy: thêm banner "Đang chạy script…" của riêng [item]; trả về mã lượt cho [attachJob] / [endRun] / [report]. */
     fun beginRun(item: Item): Int {
-        banners.filter { it.item === item && !it.running }.forEach { dismissBanner(it) }
         val entry = BannerEntry(++lastRun, item, RUNNING_TEXT, warning = false, running = true)
         banners.add(entry)
         return entry.id

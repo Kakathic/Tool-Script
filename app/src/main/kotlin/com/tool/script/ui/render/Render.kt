@@ -137,7 +137,7 @@ class RenderEnv(
         val action: () -> Unit = action@{
             // Lệnh demo `@crash` / `@crash-thread`: cố ý làm app crash để xem Trung tâm lỗi (xem crash/CrashDemo.kt).
             if (CrashDemo.trigger(command)) return@action
-            if (notifies && feedback.isRunning(item)) return@action
+            if (notifies && feedback.isBusy(item)) return@action
             val runId = if (notifies) feedback.beginRun(item) else 0
             val job = scope.launch {
                 try {
@@ -178,9 +178,9 @@ fun isShown(item: Item, store: VariableStore): Boolean {
 fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     val lock = item.lock
     val locked = lock != null && env.store.evaluate(lock)
-    // Item bị khóa (mờ) khi dính `lock`, hoặc khi chính lượt chạy banner / notice của nó chưa xong; item banner khác vẫn bấm được.
-    val running = (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice) && env.feedback.isRunning(item)
-    val enabled = !locked && !running
+    // Item bị khóa (mờ) khi dính `lock`, hoặc khi banner của chính nó còn hiện (đang chạy tới hết đếm ngược 5 giây); item banner khác vẫn bấm được.
+    val bannerBusy = (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice) && env.feedback.isBusy(item)
+    val enabled = !locked && !bannerBusy
     val modifier = Modifier
         .fillMaxWidth()
         .alpha(if (enabled) 1f else 0.4f)

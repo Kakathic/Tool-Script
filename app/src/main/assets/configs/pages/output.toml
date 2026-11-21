@@ -51,7 +51,7 @@ title = "Banner và thông báo (banner, notice)"
 # Xong thì đổi sang đầu ra thật của lệnh, thanh đếm ngược 5 giây, có nút Ẩn.
 # Vuốt banner sang trái / phải: đang chạy thì hủy, đã xong thì ẩn.
 # Mỗi lượt chạy là một banner riêng, nhiều banner xếp chồng ở đầu màn hình (nền khác màu thẻ, không tối màn hình).
-# Item đang chạy banner / notice chưa xong thì bị khóa (mờ); các item banner khác vẫn bấm được.
+# Item banner / notice bị khóa (mờ) tới khi banner của nó biến mất (chạy xong và hết đếm ngược 5 giây, hoặc bấm Ẩn / Hủy / vuốt); các item banner khác vẫn bấm được.
 [[group.item]]
 type  = "button"
 title = "banner"
