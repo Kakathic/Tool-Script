@@ -431,21 +431,22 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 keyboardOptions = KeyboardOptions(
                     keyboardType = if (item.numberInput) KeyboardType.Number else KeyboardType.Text,
                 ),
+                // Nút Chạy nằm ngay trong ô nhập, sát mép phải (trang dialog không có nút).
+                trailingIcon = if (env.varsOnly) null else {
+                    {
+                        TextButton(
+                            text = "Chạy",
+                            onClick = withTapHaptic { env.run(item, item.run) },
+                            enabled = enabled && !item.run.isNullOrBlank(),
+                            modifier = Modifier.padding(end = 6.dp),
+                            colors = ButtonDefaults.textButtonColors(
+                                color = MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA),
+                                textColor = MiuixTheme.colorScheme.primary,
+                            ),
+                        )
+                    }
+                },
             )
-            if (!env.varsOnly) {
-                Spacer(Modifier.height(12.dp))
-                // Nút Chạy dạng nhạt: nền màu chủ đạo mờ, chữ màu chủ đạo (cùng kiểu mục đang chọn của radio).
-                TextButton(
-                    text = "Chạy",
-                    onClick = withTapHaptic { env.run(item, item.run) },
-                    enabled = enabled && !item.run.isNullOrBlank(),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(
-                        color = MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA),
-                        textColor = MiuixTheme.colorScheme.primary,
-                    ),
-                )
-            }
         }
     }
 }
