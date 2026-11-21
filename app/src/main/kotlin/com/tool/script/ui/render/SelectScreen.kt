@@ -133,8 +133,8 @@ internal fun SelectFullScreen(
             enter = slideInVertically(animationSpec = tween(300)) { it },
             exit = slideOutVertically(animationSpec = tween(220)) { it },
         ) {
-            // Cột ngoài không có lề ngang: các dòng chọn chạy hết chiều rộng màn hình, vùng bấm và hiệu ứng nhấn
-            // phủ trọn dòng, không bị thẻ bo góc cắt. Lề 16dp chỉ áp cho tiêu đề, ô tìm và hai nút.
+            // Lề hai bên 16dp (cùng lề với các thẻ trong app) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
+            // Mỗi dòng trong thẻ vẫn bấm được trên toàn chiều ngang thẻ.
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -160,14 +160,14 @@ internal fun SelectFullScreen(
                 )
                 Spacer(Modifier.height(12.dp))
 
-                // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền với các thẻ trong app, cả sáng lẫn tối) nhưng
-                // không bo góc và chạy hết ngang. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+                // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền và bo góc với các thẻ trong app, cả sáng lẫn tối),
+                // lề 16dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
                 // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
-                    cornerRadius = 0.dp,
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                 ) {
                     if (multi) {
                         BasicComponent(
