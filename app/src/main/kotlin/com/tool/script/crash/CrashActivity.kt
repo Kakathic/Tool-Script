@@ -8,15 +8,12 @@ import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,6 +23,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.tool.script.R
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
-import com.tool.script.util.copyToClipboard
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -68,7 +71,6 @@ class CrashActivity : ComponentActivity() {
                     title = title,
                     text = text,
                     fatal = fatal,
-                    onCopy = { copyToClipboard(this, "lỗi", text) },
                     onShare = { share(title, text) },
                     onRestart = { restart() },
                     onExit = { exit(fatal) },
@@ -134,15 +136,14 @@ class CrashActivity : ComponentActivity() {
 private val CrashMargin = 12.dp
 
 /**
- * Màn hình lỗi: hàng tiêu đề (tiêu đề sát lề trái, hai icon Sao chép và Chia sẻ ở góc phải), khung log, rồi hai nút
- * Khởi động lại và Thoát / Đóng ở dưới.
+ * Màn hình lỗi: hàng tiêu đề (tiêu đề sát lề trái, nút Chia sẻ có khung bo ở góc phải), khung log (nhấn giữ để chọn chữ,
+ * thanh công cụ của hệ thống có Sao chép), rồi hai nút Khởi động lại và Thoát / Đóng ở dưới.
  */
 @Composable
 private fun CrashScreen(
     title: String,
     text: String,
     fatal: Boolean,
-    onCopy: () -> Unit,
     onShare: () -> Unit,
     onRestart: () -> Unit,
     onExit: () -> Unit,
@@ -158,7 +159,7 @@ private fun CrashScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .padding(start = CrashMargin, end = 4.dp),
+                .padding(start = CrashMargin, end = CrashMargin),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -169,8 +170,7 @@ private fun CrashScreen(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            HeaderIconButton(R.drawable.ic_copy, "Sao chép", onCopy)
-            HeaderIconButton(R.drawable.ic_share, "Chia sẻ", onShare)
+            ShareButton(onClick = onShare)
         }
         Column(
             modifier = Modifier
@@ -182,17 +182,30 @@ private fun CrashScreen(
             // insideMargin = 0 và đệm 12dp đặt trong vùng cuộn: vuốt ở đâu trong khung (kể cả chỗ trống, sát mép)
             // cũng cuộn được cả dọc lẫn ngang. fillMaxSize đứng trước hai modifier cuộn để vùng cuộn phủ kín khung.
             Card(modifier = Modifier.weight(1f).fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
-                Text(
-                    text = text,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .horizontalScroll(rememberScrollState())
-                        .padding(12.dp),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                    softWrap = false,
-                )
+                // SelectionContainer: nhấn giữ để chọn chữ, hiện thanh Sao chép / Chọn tất cả của hệ thống.
+                // Màu vùng chọn và tay cầm theo màu chủ đạo của theme.
+                val primary = MiuixTheme.colorScheme.primary
+                CompositionLocalProvider(
+                    LocalTextSelectionColors provides TextSelectionColors(
+                        handleColor = primary,
+                        backgroundColor = primary.copy(alpha = 0.3f),
+                    ),
+                ) {
+                    SelectionContainer(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .horizontalScroll(rememberScrollState())
+                            .padding(12.dp),
+                    ) {
+                        Text(
+                            text = text,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            softWrap = false,
+                        )
+                    }
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(CrashMargin)) {
                 TextButton(text = "Khởi động lại", onClick = onRestart, modifier = Modifier.weight(1f))
@@ -202,21 +215,26 @@ private fun CrashScreen(
     }
 }
 
-/** Nút icon tròn 40dp ở hàng tiêu đề. */
+/** Nút Chia sẻ ở hàng tiêu đề: icon và chữ trong một khung bo, nền xám nhạt theo màu chữ của theme. */
 @Composable
-private fun HeaderIconButton(@DrawableRes icon: Int, description: String, onClick: () -> Unit) {
-    Box(
+private fun ShareButton(onClick: () -> Unit) {
+    val content = MiuixTheme.colorScheme.onSurface
+    Row(
         modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+            .height(36.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(content.copy(alpha = 0.08f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = ImageVector.vectorResource(icon),
-            contentDescription = description,
-            tint = MiuixTheme.colorScheme.onSurface,
-            modifier = Modifier.size(22.dp),
+            imageVector = ImageVector.vectorResource(R.drawable.ic_share),
+            contentDescription = null,
+            tint = content,
+            modifier = Modifier.size(18.dp),
         )
+        Spacer(Modifier.width(6.dp))
+        Text(text = "Chia sẻ", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = content)
     }
 }

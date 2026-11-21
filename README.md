@@ -90,7 +90,7 @@ Giai đoạn 1: khung ứng dụng
 - [x] `config/`: model + parser TOML theo `docs/schema.md`. Cảnh báo khi thiếu trường hoặc `type` lạ, báo file + dòng khi sai cú pháp. `main.toml` sai thì sang Trung tâm lỗi; file trang sai thì chỉ trang đó hiện thẻ lỗi.
 - [x] `executor/`: backend `su` (libsu) và shell thường, biến `ROOT_MODE`; hết giờ dò quyền root sau 5 giây.
 - [x] `state/`: kho biến (`VariableStore`), bộ tính điều kiện `visible_if` / `lock` (`==`, `!=`, `&&`, `||`), biến dựng sẵn `SDK`, `ABI`, `ROOT_MODE`.
-- [x] `crash/`: Trung tâm lỗi (tiến trình `:crash`) và bộ bắt crash trong `App`; icon Sao chép và Chia sẻ ở góc phải hàng tiêu đề, hai nút Khởi động lại và Thoát ở dưới. Demo crash: `run = "@crash"` hoặc `"@crash-thread"` (nhóm cuối `output.toml`).
+- [x] `crash/`: Trung tâm lỗi (tiến trình `:crash`) và bộ bắt crash trong `App`; nút Chia sẻ (icon + chữ, khung bo) ở góc phải hàng tiêu đề, hai nút Khởi động lại và Thoát ở dưới; nhấn giữ log để chọn và sao chép chữ. Demo crash: `run = "@crash"` hoặc `"@crash-thread"` (nhóm cuối `output.toml`).
 
 Giai đoạn 2: giao diện
 
