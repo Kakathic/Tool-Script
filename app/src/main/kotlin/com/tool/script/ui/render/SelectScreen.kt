@@ -194,7 +194,7 @@ internal fun SelectFullScreen(
                                 )
                             },
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
                     if (visible.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {

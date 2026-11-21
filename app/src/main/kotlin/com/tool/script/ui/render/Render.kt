@@ -187,8 +187,8 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
     }
 }
 
-/** Đệm bên trong thẻ (từ mép thẻ tới nội dung), dùng cho mọi item và màn hình chọn. Mặc định của Miuix là 16dp. */
-internal val CardInsideMargin = PaddingValues(12.dp)
+/** Đệm bên trong thẻ (từ mép thẻ tới nội dung), dùng cho mọi item và màn hình chọn: trái, phải, dưới 16dp, trên 12dp. */
+internal val CardInsideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp)
 
 /**
  * Nền của một item. Item đứng riêng (ngoài group) có thẻ của mình;
@@ -214,7 +214,10 @@ private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
 private val GroupTitleTrimTop = 8.dp
 
 /** Dời tiêu đề group sang trái, để thẳng hàng với chữ trong thẻ. */
-private val GroupTitleShiftLeft = 16.dp
+private val GroupTitleShiftLeft = 12.dp
+
+/** Cắt bớt phần hở phía dưới tiêu đề group để tiêu đề sát thẻ của nó hơn. Tăng số này để sát hơn nữa. */
+private val GroupTitleTrimBottom = 4.dp
 
 @Composable
 private fun GroupItem(item: Item, env: RenderEnv) {
@@ -227,7 +230,8 @@ private fun GroupItem(item: Item, env: RenderEnv) {
                 val placeable = measurable.measure(constraints)
                 val trim = GroupTitleTrimTop.roundToPx().coerceAtMost(placeable.height)
                 val shift = GroupTitleShiftLeft.roundToPx()
-                layout(placeable.width, placeable.height - trim) { placeable.place(-shift, -trim) }
+                val trimBottom = GroupTitleTrimBottom.roundToPx().coerceAtMost((placeable.height - trim).coerceAtLeast(0))
+                layout(placeable.width, placeable.height - trim - trimBottom) { placeable.place(-shift, -trim) }
             },
         )
         // Mọi item con gộp chung trong một thẻ lớn, tiêu đề dính sát thẻ.
@@ -339,7 +343,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
         BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
         if (item.options.isNotEmpty()) {
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         }
         item.options.forEach { option ->
             val select = {

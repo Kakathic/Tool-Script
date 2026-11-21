@@ -118,7 +118,7 @@ lock_mode = "readonly"
 - Thanh trên cùng: tiêu đề là tên app (`[app] name`).
   Bên phải có 2 icon riêng biệt: Thông tin (menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix,
   lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
-- Lề ngoài thẻ 16dp (trái, phải, trên, dưới), khoảng cách giữa các thẻ 12dp, đệm bên trong thẻ 12dp.
+- Lề ngoài thẻ 16dp (trái, phải, trên, dưới), khoảng cách giữa các thẻ 12dp, đệm bên trong thẻ: trái, phải, dưới 16dp, trên 12dp. Tiêu đề group nằm ngoài thẻ, dính sát thẻ của nó.
 - Thanh tab dưới cùng, mỗi trang một tab (icon + title).
 - Cửa sổ tab trượt: hiện tối đa 4 tab. Từ 5 tab trở lên, vuốt tới tab thứ 4
   của cửa sổ thì tab kế tiếp hiện ra bên phải và tab đầu ẩn đi; vuốt ngược
@@ -295,7 +295,7 @@ run     = 'echo "Đã chọn: $mode"'
 `multiselect` / `singleselect` – chế độ toàn màn hình:
 
 - Có **từ 6 mục trở lên** trong `options` thì bấm hàng sẽ mở **toàn màn hình** thay cho hộp thoại nhỏ. Dưới 6 mục giữ hộp thoại như cũ. Ngưỡng cố định trong code (`FULLSCREEN_MIN_OPTIONS`, `ui/render/SelectScreen.kt`), không cấu hình trong TOML.
-- Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Mọi thành phần có lề ngoài hai bên 16dp, đệm trong thẻ 12dp; danh sách nằm trong một thẻ bo góc, mỗi dòng bấm được trên toàn chiều ngang thẻ và không có hiệu ứng nhấn. Màn hình **trượt từ dưới lên** khi mở và trượt xuống khi đóng. Cách lưu và chạy `run` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
+- Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Mọi thành phần có lề ngoài hai bên 16dp, đệm trong thẻ như trên; danh sách nằm trong một thẻ bo góc, mỗi dòng bấm được trên toàn chiều ngang thẻ và không có hiệu ứng nhấn. Màn hình **trượt từ dưới lên** khi mở và trượt xuống khi đóng. Cách lưu và chạy `run` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
 - Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
 - `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Chân màn hình hiện `Đã chọn x/y` tính trên toàn bộ danh sách.
 - `singleselect` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận. `multiselect` giữ nguyên màu chữ, chỉ đổi ô tích.
