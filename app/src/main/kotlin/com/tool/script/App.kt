@@ -1,6 +1,7 @@
 package com.tool.script
 
 import android.app.Application
+import android.os.Build
 import android.os.Process
 import com.tool.script.crash.CrashActivity
 import com.tool.script.ui.feedback.LogCenter
@@ -10,7 +11,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         // Tiến trình ":crash" không gắn bộ bắt lỗi, tránh vòng lặp mở CrashActivity.
-        if (Application.getProcessName()?.endsWith(":crash") == true) return
+        if (currentProcessName()?.endsWith(":crash") == true) return
 
         // Log đã ẩn cần Context của ứng dụng để gửi thông báo.
         LogCenter.init(this)
@@ -32,4 +33,14 @@ class App : Application() {
             exitProcess(10)
         }
     }
+
+    // Application.getProcessName() chỉ có từ API 28 (minSdk = 24): máy thấp hơn đọc tên tiến trình từ /proc/self/cmdline.
+    private fun currentProcessName(): String? =
+        if (Build.VERSION.SDK_INT >= 28) {
+            Application.getProcessName()
+        } else {
+            runCatching {
+                java.io.File("/proc/self/cmdline").readText().substringBefore('\u0000').trim()
+            }.getOrNull()
+        }
 }

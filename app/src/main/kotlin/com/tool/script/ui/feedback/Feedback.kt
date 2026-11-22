@@ -5,16 +5,21 @@ import android.Manifest
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ClipData
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
+import androidx.core.content.FileProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -114,6 +119,10 @@ import com.tool.script.util.AnsiTerminal
 import com.tool.script.util.copyToClipboard
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -122,6 +131,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -150,6 +160,15 @@ class LogEntry(
     internal var notifyJob: Job? = null
 
     private val terminal = AnsiTerminal(MAX_LIVE_LINES)
+
+    /** Tệp log đầy đủ (không bị cắt) cho nút Chia sẻ; màn hình chỉ giữ [MAX_LIVE_LINES] dòng cuối. */
+    private val logWriter = PlainLogWriter(LogFiles.fileFor(id))
+
+    private val uiHandler = Handler(Looper.getMainLooper())
+    private val flushRunnable = Runnable { synchronized(this) { if (dirty) publish(SystemClock.elapsedRealtime()) } }
+    private var dirty = false
+    private var newLines = 0
+    private var lastPublish = 0L
 
     /** Tăng sau mỗi lần nội dung log đổi (kể cả ghi đè bằng `\r`), để giao diện vẽ lại và tự cuộn xuống. */
     var revision by mutableIntStateOf(0)
@@ -180,6 +199,10 @@ class LogEntry(
         cancelled = true
         cancelAction?.invoke()
         result = ExecResult(code = -1, output = terminal.plainText())
+        synchronized(this) {
+            publish(SystemClock.elapsedRealtime())
+            logWriter.close()
+        }
     }
 
     /** true khi người dùng bấm Hủy: log chốt lại ngay, giữ phần đã in ra. */
@@ -239,7 +262,10 @@ class LogEntry(
         }
     }
 
-    /** Ghi một đoạn đầu ra (kết thúc bằng `\n` hoặc `\r`, hoặc đoạn dở); đầu ra đã gộp một pipe nên đến đúng thứ tự. Gọi từ luồng nền nên cần khóa. */
+    /**
+     * Ghi một đoạn đầu ra (kết thúc bằng `\n` hoặc `\r`, hoặc đoạn dở); đầu ra đã gộp một pipe nên đến đúng thứ tự. Gọi từ luồng nền nên cần khóa.
+     * Mọi dòng vào tệp log và terminal ngay, nhưng giao diện chỉ vẽ lại theo nhịp (xem [intervalFor]) để log dồn dập không làm giật máy.
+     */
     @Synchronized
     fun append(chunk: String) {
         val p = ShellText.parseProgress(chunk)
@@ -248,7 +274,26 @@ class LogEntry(
             return
         }
         terminal.write(chunk)
+        logWriter.write(chunk)
+        dirty = true
+        newLines += chunk.count { it == '\n' }
+        val now = SystemClock.elapsedRealtime()
+        val wait = intervalFor(newLines) - (now - lastPublish)
+        if (wait <= 0L) {
+            publish(now)
+        } else {
+            uiHandler.removeCallbacks(flushRunnable)
+            uiHandler.postDelayed(flushRunnable, wait)
+        }
+    }
+
+    /** Báo giao diện vẽ lại với nội dung terminal hiện tại; gọi khi đang giữ khóa. */
+    private fun publish(now: Long) {
+        uiHandler.removeCallbacks(flushRunnable)
         revision++
+        dirty = false
+        newLines = 0
+        lastPublish = now
     }
 
     fun finish(result: ExecResult) {
@@ -256,10 +301,42 @@ class LogEntry(
         if (this.result != null) return
         if (result.ok) progress = 1f
         this.result = result
+        synchronized(this) {
+            publish(SystemClock.elapsedRealtime())
+            logWriter.close()
+        }
+    }
+
+    /**
+     * Sao log đầy đủ ra một tệp riêng trong cache/logs/share để chia sẻ (log đang chạy thì lấy phần đã có tới lúc này).
+     * Chạy ở luồng nền: tệp có thể lớn.
+     */
+    fun exportFile(context: Context): File {
+        val dir = File(context.cacheDir, "logs/share").apply { mkdirs() }
+        val safe = title.replace(Regex("[^\\p{L}\\p{N}]+"), "_").trim('_').take(40).ifEmpty { "log" }
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val dest = File(dir, "${safe}_$stamp.txt")
+        val pending = synchronized(this) { logWriter.flushAndPending() }
+        val src = LogFiles.fileFor(id)
+        if (src != null && src.exists() && src.length() > 0L) {
+            src.copyTo(dest, overwrite = true)
+            if (pending.isNotEmpty()) dest.appendText(pending + "\n")
+        } else {
+            dest.writeText(output.ifBlank { "(không có đầu ra)" })
+        }
+        return dest
     }
 
     private companion object {
-        const val MAX_LIVE_LINES = 2000
+        /** Số dòng tối đa giữ trên màn hình; log đầy đủ nằm trong tệp (xem [exportFile]). */
+        const val MAX_LIVE_LINES = 1000
+
+        /** Nhịp vẽ lại tối thiểu theo số dòng mới từ lần vẽ trước: bình thường 100ms, từ 100 dòng trở lên 250ms, từ 1000 dòng trở lên 500ms. */
+        fun intervalFor(newLines: Int): Long = when {
+            newLines >= 1000 -> 500L
+            newLines >= 100 -> 250L
+            else -> 100L
+        }
         val nextId = AtomicInteger(1000)
     }
 }
@@ -549,7 +626,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
                 }
                 LogSelectableCard(shown, output, Modifier.height(logCardHeight()), full = false)
                 Spacer(Modifier.height(LogMargin))
-                LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
+                LogActionRow(shown, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
     }
@@ -598,7 +675,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                 }
                 LogSelectableCard(shown, output, Modifier.weight(1f), full = true)
                 Spacer(Modifier.height(LogFullMargin))
-                LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
+                LogActionRow(shown, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
     }
@@ -671,12 +748,19 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
 
 /** Hàng nút dưới cùng: Chia sẻ, và nút Hủy (vàng) / Thoát (xanh dương) / Thoát: <mã> (đỏ nhạt) theo trạng thái. */
 @Composable
-private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, onDismiss: () -> Unit) {
+private fun LogActionRow(entry: LogEntry, onCancel: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Row(horizontalArrangement = Arrangement.spacedBy(LogFullMargin)) {
         TextButton(
             text = "Chia sẻ",
-            onClick = { shareText(context, entry.title, output.ifBlank { "(không có đầu ra)" }) },
+            onClick = {
+                scope.launch {
+                    val file = withContext(Dispatchers.IO) { runCatching { entry.exportFile(context) }.getOrNull() }
+                    if (file != null) shareFile(context, entry.title, file)
+                    else Toast.makeText(context, "Không tạo được tệp log để chia sẻ", Toast.LENGTH_LONG).show()
+                }
+            },
             modifier = Modifier.weight(1f),
         )
         val label = when (entry.status) {
@@ -792,11 +876,14 @@ private fun LogIconButton(icon: Int, description: String, onClick: () -> Unit) {
     }
 }
 
-private fun shareText(context: Context, subject: String, text: String) {
+private fun shareFile(context: Context, subject: String, file: File) {
+    val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
     val send = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, subject)
-        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_STREAM, uri)
+        clipData = ClipData.newRawUri(subject, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     val chooser = Intent.createChooser(send, "Chia sẻ log")
     // Context không phải Activity thì bắt buộc cờ NEW_TASK.

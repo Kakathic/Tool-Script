@@ -1,5 +1,6 @@
 package com.tool.script.crash
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -8,6 +9,7 @@ import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.height
@@ -50,12 +52,16 @@ import com.tool.script.ui.theme.ToolScriptTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Trung tâm lỗi (chạy ở tiến trình ":crash").
  * Hiển thị: crash của app, lỗi script khởi động, lỗi parse TOML.
- * Lỗi chỉ giữ trong bộ nhớ (qua Intent), không ghi ra file.
- * Nút: Sao chép, Chia sẻ, Khởi động lại, Thoát.
+ * Màn hình chỉ hiện phần đầu (tối đa [MAX_CHARS] ký tự, do giới hạn của Intent); nội dung đầy đủ ghi vào tệp tạm trong cache/logs/share để nút Chia sẻ gửi cả tệp.
+ * Nút: Sao chép, Chia sẻ (gửi tệp), Khởi động lại, Thoát.
  */
 class CrashActivity : ComponentActivity() {
 
@@ -65,13 +71,14 @@ class CrashActivity : ComponentActivity() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Lỗi"
         val text = intent.getStringExtra(EXTRA_TEXT) ?: "(không có nội dung)"
         val fatal = intent.getBooleanExtra(EXTRA_FATAL, true)
+        val filePath = intent.getStringExtra(EXTRA_FILE)
         setContent {
             ToolScriptTheme(ThemePrefs.load(this), ThemePrefs.loadHaptic(this)) {
                 CrashScreen(
                     title = title,
                     text = text,
                     fatal = fatal,
-                    onShare = { share(title, text) },
+                    onShare = { share(title, text, filePath) },
                     onRestart = { restart() },
                     onExit = { exit(fatal) },
                 )
@@ -79,11 +86,21 @@ class CrashActivity : ComponentActivity() {
         }
     }
 
-    private fun share(title: String, text: String) {
+    private fun share(title: String, text: String, filePath: String?) {
+        // Tệp đầy đủ do nơi báo lỗi ghi sẵn; không có (ghi lỗi) thì ghi lại phần đang hiện.
+        val file = filePath?.let(::File)?.takeIf { it.exists() }
+            ?: runCatching { saveFull(this, text) }.getOrNull()
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_SUBJECT, title)
-            putExtra(Intent.EXTRA_TEXT, text)
+            if (file != null) {
+                val uri = FileProvider.getUriForFile(this@CrashActivity, "$packageName.fileprovider", file)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                clipData = ClipData.newRawUri(title, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } else {
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
         }
         startActivity(Intent.createChooser(send, "Chia sẻ lỗi"))
     }
@@ -107,6 +124,7 @@ class CrashActivity : ComponentActivity() {
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_TEXT = "text"
         private const val EXTRA_FATAL = "fatal"
+        private const val EXTRA_FILE = "file"
         private const val MAX_CHARS = 60_000
 
         /**
@@ -114,12 +132,21 @@ class CrashActivity : ComponentActivity() {
          */
         fun launch(context: Context, title: String, text: String, fatal: Boolean) {
             val shortened = if (text.length > MAX_CHARS) text.take(MAX_CHARS) + "\n... (đã cắt bớt)" else text
+            val file = runCatching { saveFull(context, text) }.getOrNull()
             val intent = Intent(context, CrashActivity::class.java)
                 .putExtra(EXTRA_TITLE, title)
                 .putExtra(EXTRA_TEXT, shortened)
                 .putExtra(EXTRA_FATAL, fatal)
+                .putExtra(EXTRA_FILE, file?.absolutePath)
             if (fatal) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             context.startActivity(intent)
+        }
+
+        /** Ghi nội dung đầy đủ vào cache/logs/share (cùng thư mục FileProvider cho phép) để chia sẻ dạng tệp. */
+        private fun saveFull(context: Context, text: String): File {
+            val dir = File(context.cacheDir, "logs/share").apply { mkdirs() }
+            val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            return File(dir, "error_$stamp.txt").also { it.writeText(text) }
         }
 
         /** Nội dung báo cáo cho một exception không bắt được. */

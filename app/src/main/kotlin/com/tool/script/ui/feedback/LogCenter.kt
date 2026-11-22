@@ -55,6 +55,7 @@ object LogCenter {
 
     fun init(context: Context) {
         appContext = context.applicationContext
+        LogFiles.init(context)
     }
 
     /** Ẩn [entry]: giữ lại để mở sau và bắt đầu gửi log lên thông báo. */

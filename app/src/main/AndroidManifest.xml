@@ -36,8 +36,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ToolScript.Starting">
 
+        <!-- configChanges: xoay màn hình, đổi tối / sáng, cỡ chữ, ngôn ngữ, bàn phím... không dựng lại Activity,
+             để lệnh shell đang chạy (gắn với coroutine của màn hình chính) và log đang mở không bị hủy. Compose tự vẽ lại theo cấu hình mới. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode|keyboard|keyboardHidden|navigation|density|fontScale|layoutDirection|locale|colorMode"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -45,6 +48,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Chia sẻ tệp log đầy đủ (cache/logs) cho ứng dụng khác -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/log_file_paths" />
+        </provider>
 
         <!-- Trung tâm lỗi: chạy ở tiến trình riêng để vẫn hiện được khi app chính văng -->
         <activity
