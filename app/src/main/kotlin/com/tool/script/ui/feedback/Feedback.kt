@@ -683,7 +683,7 @@ private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, 
 }
 
 // Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
-// Font mono bật mặc định, tắt được ở menu ba chấm. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
+// Toàn màn hình có blur: khung trong suốt, phủ đen nhạt để thấy nền mờ phía sau, chữ sáng cho dễ đọc. Font mono bật mặc định, tắt được ở menu ba chấm. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
 // false: khung ôm theo nội dung tới chiều cao tối đa do [modifier] đặt (bảng log thường).
 @Composable
 private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, fillHeight: Boolean) {
@@ -693,7 +693,13 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     LaunchedEffect(output, revision) {
         if (entry.running) vertical.scrollTo(vertical.maxValue)
     }
-    Card(modifier = modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
+    val glass = fillHeight && LocalBlurRequests.current != null
+    val cardColors = if (glass) {
+        CardDefaults.defaultColors(color = Color.Black.copy(alpha = 0.35f), contentColor = Color(0xFFE6EDF3))
+    } else {
+        CardDefaults.defaultColors()
+    }
+    Card(modifier = modifier.fillMaxWidth(), colors = cardColors, insideMargin = PaddingValues(0.dp)) {
         val primary = MiuixTheme.colorScheme.primary
         CompositionLocalProvider(
             LocalTextSelectionColors provides TextSelectionColors(
@@ -711,7 +717,7 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                 if (output.isBlank()) {
                     Text(
                         text = if (entry.running) "Đang chờ đầu ra..." else "Không có đầu ra",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = if (glass) Color.White.copy(alpha = 0.6f) else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontFamily = font,
                         fontSize = 12.sp,
                     )
@@ -720,11 +726,11 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                     Text(
                         text = entry.styled(
                             errorColor = LogRed,
-                            textColor = scheme.onSurface,
-                            backgroundColor = scheme.surface,
-                            dark = scheme.background.luminance() < 0.5f,
+                            textColor = if (glass) Color(0xFFE6EDF3) else scheme.onSurface,
+                            backgroundColor = if (glass) Color(0xFF161B22) else scheme.surface,
+                            dark = glass || scheme.background.luminance() < 0.5f,
                         ),
-                        color = scheme.onSurface,
+                        color = if (glass) Color(0xFFE6EDF3) else scheme.onSurface,
                         fontFamily = font,
                         fontSize = 12.sp,
                         softWrap = entry.wrap,
