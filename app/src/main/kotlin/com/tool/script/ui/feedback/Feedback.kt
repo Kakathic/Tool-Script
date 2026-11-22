@@ -498,6 +498,9 @@ fun rememberFeedbackHost(): FeedbackHost {
 /** Lề ngoài của log và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
 private val LogMargin = 12.dp
 
+/** Chiều cao ô giữ chỗ của thanh tiến trình. */
+private val LogProgressHeight = 6.dp
+
 private val LogYellow = Color(0xFFFFC107)
 
 /** Màu dòng stderr trong log. */
@@ -519,8 +522,10 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
         last?.let { shown ->
             val output = shown.output
             Column(verticalArrangement = Arrangement.spacedBy(LogMargin)) {
-                LogHeader(shown, onHide)
-                LogStatusBlock(shown)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LogHeader(shown, onHide)
+                    LogProgress(shown)
+                }
                 LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
@@ -574,7 +579,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                     .padding(start = LogMargin, end = LogMargin, bottom = LogMargin),
                 verticalArrangement = Arrangement.spacedBy(LogMargin),
             ) {
-                LogStatusBlock(shown)
+                LogProgress(shown)
                 LogSelectableCard(shown, output, Modifier.weight(1f), fillHeight = true)
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
@@ -634,19 +639,6 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
                 }
             }
         }
-    }
-}
-
-/**
- * Nhãn trạng thái và thanh tiến trình. Chạy xong không lỗi thì không hiện gì (nút Thoát đã nói lên kết quả);
- * không phát ra gì thì cũng không chiếm khoảng cách giữa các khối.
- */
-@Composable
-private fun LogStatusBlock(entry: LogEntry) {
-    if (entry.status == LogStatus.Done) return
-    Column {
-        LogStatusRow(entry)
-        LogProgress(entry)
     }
 }
 
@@ -785,69 +777,13 @@ private fun shareText(context: Context, subject: String, text: String) {
     context.startActivity(chooser)
 }
 
-// Thanh tiến trình: đang chạy chưa có "@progress N" thì chạy vô định, có thì hiện đúng %; xong không lỗi thì đầy.
-// Chạy xong (kể cả lỗi, hết giờ, đã hủy) thì ẩn hẳn thanh.
+// Thanh tiến trình: đang chạy chưa có "@progress N" thì chạy vô định, có thì hiện đúng %. Chạy xong (kể cả lỗi, hết giờ, đã hủy) thì thanh ẩn,
+// nhưng ô giữ chỗ cao cố định [LogProgressHeight] nên bố cục bên dưới không bị xê dịch.
 @Composable
 private fun LogProgress(entry: LogEntry?) {
-    if (entry == null || !entry.running) return
-    val value = entry.progress
-    Spacer(Modifier.height(10.dp))
-    LinearProgressIndicator(progress = value, modifier = Modifier.fillMaxWidth())
-}
-
-// Không hiện "Xong" và mã thoát: nút Thoát ở dưới đã báo kết quả (Thoát: <mã> khi lỗi).
-@Composable
-private fun LogStatusRow(entry: LogEntry?) {
-    val status = entry?.status ?: LogStatus.Running
-    val label: String
-    val container: Color
-    val content: Color
-    when (status) {
-        LogStatus.Running -> {
-            label = "Đang chạy..."
-            container = MiuixTheme.colorScheme.primaryContainer
-            content = MiuixTheme.colorScheme.onPrimaryContainer
-        }
-        LogStatus.Done -> {
-            label = "Xong"
-            container = MiuixTheme.colorScheme.primaryContainer
-            content = MiuixTheme.colorScheme.onPrimaryContainer
-        }
-        LogStatus.Failed -> {
-            label = "Lỗi"
-            container = MiuixTheme.colorScheme.errorContainer
-            content = MiuixTheme.colorScheme.onErrorContainer
-        }
-        LogStatus.TimedOut -> {
-            label = "Hết thời gian chờ"
-            container = MiuixTheme.colorScheme.errorContainer
-            content = MiuixTheme.colorScheme.onErrorContainer
-        }
-        LogStatus.Cancelled -> {
-            label = "Đã hủy"
-            container = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-            content = MiuixTheme.colorScheme.onSurface
-        }
-    }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = label,
-            color = content,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(container)
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-        )
-        Spacer(Modifier.weight(1f))
-        val rightText = entry?.takeIf { it.running }?.progress?.let { "${(it * 100).roundToInt()}%" }
-        rightText?.let { text ->
-            Text(
-                text = text,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 12.sp,
-            )
+    Box(Modifier.fillMaxWidth().height(LogProgressHeight)) {
+        if (entry != null && entry.running) {
+            LinearProgressIndicator(progress = entry.progress, modifier = Modifier.fillMaxWidth())
         }
     }
 }
