@@ -6,8 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: write-all
 
 concurrency:
   group: build-${{ github.ref }}
@@ -44,5 +43,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: "Tool Script (bản mới nhất)"
-          tag_name: "latest"
+          tag_name: "V1"
           files: "ToolScript-release.apk"
