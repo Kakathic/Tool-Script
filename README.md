@@ -71,7 +71,7 @@ app/                           # beta.jks, proguard-rules.pro, build.gradle.kts
 - Hiển thị khi chạy lệnh: `shell = live | full | hidden | banner | notice | snackbar` (mặc định `live`); `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.
-- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: nhóm chọn một Theo hệ thống / Sáng / Tối, rồi các ô tích: Màu động (Monet, áp lên mục đang chọn), "Rung khi chạm" (tắt rung của mọi component) và "Làm mờ nền"; đều được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
+- Thanh trên cùng có 2 icon riêng biệt: Thông tin (mở menu thả xuống tùy chỉnh chủ đề: một hàng ngang chọn Hệ thống / Sáng / Tối, rồi các ô tích: Màu động (Monet, áp lên mục đang chọn), "Rung khi chạm" (tắt rung của mọi component) và "Làm mờ nền"; đều được lưu lại) và Nguồn (mở menu khởi động lại: khởi động lại app, hoặc khởi động lại máy bằng `reboot`, cần root).
 
 ## Lưu ý kỹ thuật
 
@@ -103,7 +103,7 @@ Giai đoạn 2: giao diện
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
 - [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
-- [x] Chủ đề: chọn Theo hệ thống / Sáng / Tối, kèm ô tích Màu động (Monet) của Miuix cho cả ba; được lưu lại (vẫn là 6 giá trị `ThemeMode`, không đổi dữ liệu lưu).
+- [x] Chủ đề: hàng ngang chọn Hệ thống / Sáng / Tối, kèm ô tích Màu động (Monet) của Miuix cho cả ba; được lưu lại (vẫn là 6 giá trị `ThemeMode`, không đổi dữ liệu lưu).
 - [x] Trang mẫu trong `assets/configs/pages`: chỉ minh họa tính năng (nút, nhập liệu, lựa chọn, điều kiện, khóa, trang con, dialog, biến env.sh), lệnh chỉ là `echo`, không đổi thông số thiết bị.
 - [x] Build tự động bằng GitHub Actions.
 

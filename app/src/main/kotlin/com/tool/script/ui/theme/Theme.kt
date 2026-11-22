@@ -18,15 +18,15 @@ import top.yukonga.miuix.kmp.theme.ThemeController
  * Nhóm "Màu động" (Monet) lấy màu từ hình nền hệ thống (Android 12+); máy cũ hơn tự dùng màu mặc định.
  */
 enum class ThemeMode(val key: String, val label: String, val monet: Boolean) {
-    System("system", "Theo hệ thống", false),
+    System("system", "Hệ thống", false),
     Light("light", "Sáng", false),
     Dark("dark", "Tối", false),
-    MonetSystem("monet_system", "Màu động (theo hệ thống)", true),
+    MonetSystem("monet_system", "Màu động (hệ thống)", true),
     MonetLight("monet_light", "Màu động - Sáng", true),
     MonetDark("monet_dark", "Màu động - Tối", true),
     ;
 
-    /** Nhánh cơ bản (Theo hệ thống / Sáng / Tối), bỏ phần Màu động. */
+    /** Nhánh cơ bản (Hệ thống / Sáng / Tối), bỏ phần Màu động. */
     val base: ThemeMode
         get() = when (this) {
             MonetSystem -> System

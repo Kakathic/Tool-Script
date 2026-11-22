@@ -488,7 +488,7 @@ private fun AppTopBar(
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 44.dp
+private val LargeTitleTopPadding = 22.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
