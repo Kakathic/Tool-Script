@@ -637,6 +637,7 @@ private fun SubPageScreen(
     contentModifier: Modifier = Modifier,
     blur: Boolean = false,
     sheetFull: Boolean = false,
+    sheetHeld: Boolean = true,
 ) {
     // Dialog chỉ truyền biến: item không chạy lệnh, nút Xác nhận mới chạy lệnh của link.
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
@@ -647,7 +648,7 @@ private fun SubPageScreen(
             Box(topBarModifier) {
                 if (page.dialog) {
                     // X = Hủy luôn có; tích = Xác nhận chỉ khi chưa full (full thì hai nút Hủy / Xác nhận cũng nằm ở thanh dưới).
-                    SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull) null else onConfirm)
+                    SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull || !sheetHeld) null else onConfirm)
                 } else {
                     AppTopBar(title = page.title, onBack = onBack, closeStyle = false, backdrop = backdrop)
                 }
@@ -757,7 +758,8 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
 
 /**
  * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (kéo xuống thì các mục phía trên bị che dần).
- * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới. Full màn hình: thanh trên còn X, hai nút Hủy / Xác nhận hiện ở dưới.
+ * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới; tích chỉ hiện khi sheet đứng yên ở mức giữ lại (đang kéo hoặc đang trượt lên full thì ẩn).
+ * Chạm vào vùng trống phía trên sheet thì đóng như Hủy. Full màn hình: thanh trên còn X, hai nút Hủy / Xác nhận hiện ở dưới.
  * Kéo thanh trên xuống từ trạng thái full thì rời full ngay (không bật lại), thả dưới mức tối thiểu thì đóng như Hủy.
  * Chiều cao mở = chiều cao nội dung thật (tối thiểu [SHEET_MIN_FRACTION] màn hình); nếu nội dung vượt [SHEET_FULL_FRACTION] thì mở toàn màn hình.
  * Thả tay: dưới [SHEET_MIN_FRACTION] thì đóng như Hủy, trên [SHEET_FULL_FRACTION] thì lên toàn màn hình, ở giữa thì giữ nguyên chiều cao.
@@ -790,6 +792,10 @@ private fun DialogSheet(
         val jobs = remember { arrayOfNulls<Job>(1) }
         // Lần kéo thanh trên hiện tại bắt đầu khi sheet đang full.
         val startedFull = remember { mutableStateOf(false) }
+        // held = sheet đang đứng yên ở một mức sẽ được giữ lại (không đang kéo, không đang trượt lên full / xuống đóng): chỉ lúc đó mới hiện dấu tích.
+        var held by remember { mutableStateOf(true) }
+        // Đang chạy hiệu ứng đóng: bỏ qua chạm vào vùng trống để không đóng hai lần.
+        var closing by remember { mutableStateOf(false) }
 
         DialogContentMeasurer(page, env) { naturalPx = it }
 
@@ -804,10 +810,13 @@ private fun DialogSheet(
 
         fun cancelSettle() {
             jobs[0]?.cancel()
+            // Hiệu ứng đóng bị ngắt (người dùng chạm / kéo lại) thì không còn đang đóng.
+            closing = false
         }
 
         fun animateTo(target: Float, velocity: Float, onEnd: () -> Unit = {}) {
             cancelSettle()
+            held = false
             jobs[0] = scope.launch {
                 animate(
                     initialValue = heightPx,
@@ -822,23 +831,30 @@ private fun DialogSheet(
         // Thả tay: velocity (px/s) dương = kéo xuống. Kéo lên làm sheet cao hơn nên vận tốc chiều cao ngược dấu.
         fun settle(velocity: Float) {
             when {
-                heightPx < minPx - 1f || velocity > DISMISS_VELOCITY -> animateTo(0f, -velocity) { currentOnBack() }
-                velocity < -DISMISS_VELOCITY -> if (heightPx < screenPx - 0.5f) animateTo(screenPx, -velocity)
+                heightPx < minPx - 1f || velocity > DISMISS_VELOCITY -> {
+                    animateTo(0f, -velocity) { currentOnBack() }
+                    closing = true
+                }
+                velocity < -DISMISS_VELOCITY ->
+                    if (heightPx < screenPx - 0.5f) animateTo(screenPx, -velocity) else held = true
                 velocity > FLING_VELOCITY ->
-                    animateTo((heightPx - velocity * FLING_PROJECTION).coerceAtLeast(minPx), -velocity)
+                    animateTo((heightPx - velocity * FLING_PROJECTION).coerceAtLeast(minPx), -velocity) { held = true }
                 velocity < -FLING_VELOCITY -> {
                     val target = heightPx - velocity * FLING_PROJECTION
-                    animateTo(if (target > fullThresholdPx) screenPx else target, -velocity)
+                    animateTo(if (target > fullThresholdPx) screenPx else target, -velocity) { held = true }
                 }
                 heightPx > fullThresholdPx -> {
                     val leftFull = startedFull.value && heightPx < screenPx * (1f - LEAVE_FULL_FRACTION)
-                    if (heightPx < screenPx - 0.5f && !leftFull) animateTo(screenPx, -velocity)
+                    if (heightPx < screenPx - 0.5f && !leftFull) animateTo(screenPx, -velocity) else held = true
                 }
+                // Thả tay ở giữa mức tối thiểu và mức full: giữ nguyên chiều cao.
+                else -> held = true
             }
         }
 
         val dragState = rememberDraggableState { delta ->
             cancelSettle()
+            held = false
             heightPx = (heightPx - delta).coerceIn(0f, screenPx)
         }
 
@@ -849,6 +865,7 @@ private fun DialogSheet(
                     if (dy < 0f && heightPx < screenPx) {
                         val grow = min(-dy, screenPx - heightPx)
                         cancelSettle()
+                        held = false
                         heightPx += grow
                         movedByGesture = true
                         return Offset(0f, -grow)
@@ -861,6 +878,7 @@ private fun DialogSheet(
                     if (dy > 0f && heightPx > minPx) {
                         val shrink = min(dy, heightPx - minPx)
                         cancelSettle()
+                        held = false
                         heightPx -= shrink
                         movedByGesture = true
                         return Offset(0f, shrink)
@@ -890,6 +908,17 @@ private fun DialogSheet(
             sheet.scrim = if (minPx > 0f) (heightPx / minPx).coerceIn(0f, 1f) else 0f
         }
 
+        // Vùng trống phía trên sheet: chạm vào là Hủy. Lớp này nằm ngay trong sheet, ôm đúng phần không thuộc sheet,
+        // nên chạm được ở mọi mức chiều cao (kể cả vừa kéo rời full) mà không phụ thuộc lớp nền tối / mờ phía sau.
+        if (ready && !closing && !sheetFull) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = with(density) { heightPx.toDp() })
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { currentOnBack() },
+            )
+        }
+
         Box(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -913,12 +942,14 @@ private fun DialogSheet(
                     orientation = Orientation.Vertical,
                     onDragStarted = {
                         cancelSettle()
+                        held = false
                         startedFull.value = heightPx >= screenPx - 1f
                     },
                     onDragStopped = { velocity -> settle(velocity) },
                 ),
                 contentModifier = Modifier.nestedScroll(connection),
                 sheetFull = sheetFull,
+                sheetHeld = held,
             )
             Box(
                 Modifier
