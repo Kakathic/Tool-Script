@@ -74,7 +74,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -82,8 +81,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -96,7 +93,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Velocity
 import coil3.compose.AsyncImage
 import com.tool.script.boot.BootResult
 import com.tool.script.config.Item
@@ -807,7 +803,7 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
  * Thả tay: dưới [SHEET_MIN_FRACTION] thì đóng như Hủy, trên [SHEET_FULL_FRACTION] thì lên toàn màn hình, ở giữa thì giữ nguyên chiều cao.
  * Vuốt mạnh (hơn [DISMISS_VELOCITY]): xuống thì đóng như Hủy, lên thì toàn màn hình. Vuốt nhẹ thì chỉ đổi chiều cao theo đà vuốt
  * (giảm không thấp hơn mức tối thiểu; tăng vượt mức full thì lên toàn màn hình).
- * Cuộn nội dung lên khi sheet chưa full thì mở rộng sheet trước; nội dung đã ở đầu mà còn kéo xuống thì thu sheet (không thấp hơn mức tối thiểu, không đóng).
+ * Chỉ kéo ở thanh trên mới đổi chiều cao sheet; vuốt trong nội dung chỉ cuộn nội dung (không gắn cuộn lồng nhau), nên không xung đột với cuộn dọc.
  */
 @Composable
 private fun DialogSheet(
@@ -830,7 +826,6 @@ private fun DialogSheet(
         val fullThresholdPx = SHEET_FULL_FRACTION * screenPx
         var heightPx by remember(screenPx) { mutableFloatStateOf(0f) }
         var ready by remember(screenPx) { mutableStateOf(false) }
-        var movedByGesture by remember { mutableStateOf(false) }
         val jobs = remember { arrayOfNulls<Job>(1) }
         // Lần kéo thanh trên hiện tại bắt đầu khi sheet đang full.
         val startedFull = remember { mutableStateOf(false) }
@@ -905,48 +900,6 @@ private fun DialogSheet(
             heightPx = (heightPx - delta).coerceIn(0f, screenPx)
         }
 
-        val connection = remember(screenPx) {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    val dy = available.y
-                    if (dy < 0f && heightPx < screenPx) {
-                        val grow = min(-dy, screenPx - heightPx)
-                        cancelSettle()
-                        held = false
-                        dragging = true
-                        if (!movedByGesture) startedFull.value = false
-                        heightPx += grow
-                        movedByGesture = true
-                        return Offset(0f, -grow)
-                    }
-                    return Offset.Zero
-                }
-
-                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                    val dy = available.y
-                    if (dy > 0f && heightPx > minPx) {
-                        val shrink = min(dy, heightPx - minPx)
-                        cancelSettle()
-                        held = false
-                        dragging = true
-                        if (!movedByGesture) startedFull.value = false
-                        heightPx -= shrink
-                        movedByGesture = true
-                        return Offset(0f, shrink)
-                    }
-                    return Offset.Zero
-                }
-
-                override suspend fun onPreFling(available: Velocity): Velocity {
-                    if (!movedByGesture) return Velocity.Zero
-                    movedByGesture = false
-                    startedFull.value = false
-                    settle(available.y)
-                    return available
-                }
-            }
-        }
-
         // topPx = khoảng từ đỉnh màn hình đến mép trên sheet. Chạm tới thanh trạng thái thì hết bo góc, thanh kéo mờ dần.
         val topPx = (screenPx - heightPx).coerceAtLeast(0f)
         val roundness = if (statusPx > 0f) (topPx / statusPx).coerceIn(0f, 1f) else if (topPx > 0f) 1f else 0f
@@ -1004,7 +957,6 @@ private fun DialogSheet(
                     },
                     onDragStopped = { velocity -> settle(velocity) },
                 ),
-                contentModifier = Modifier.nestedScroll(connection),
                 sheetFull = sheetFull,
                 sheetHeld = tickReady,
             )
