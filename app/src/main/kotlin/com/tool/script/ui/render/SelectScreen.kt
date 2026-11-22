@@ -97,6 +97,7 @@ internal class SelectRequest(
     val selected: Set<String>,
     val onDismiss: () -> Unit,
     val onConfirm: (Set<String>) -> Unit,
+    val desc: String? = null,
 )
 
 /**
@@ -124,16 +125,17 @@ internal fun SelectFullScreenSlot(
     selected: Set<String>,
     onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
+    desc: String? = null,
 ) {
     val host = LocalSelectHost.current
     if (host == null) {
-        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm)
+        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm, desc = desc)
     } else {
         val latestDismiss by rememberUpdatedState(onDismiss)
         val latestConfirm by rememberUpdatedState(onConfirm)
         DisposableEffect(show) {
             if (!show) return@DisposableEffect onDispose {}
-            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) })
+            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) }, desc)
             host.request = request
             onDispose { if (host.request === request) host.request = null }
         }
@@ -153,6 +155,7 @@ fun SelectFullScreenHost(host: SelectHost) {
             onDismiss = request.onDismiss,
             onConfirm = request.onConfirm,
             inline = true,
+            desc = request.desc,
         )
     }
 }
@@ -179,6 +182,7 @@ internal fun SelectFullScreen(
     onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
     inline: Boolean = false,
+    desc: String? = null,
 ) {
     var draft by remember { mutableStateOf(selected) }
     var query by remember { mutableStateOf("") }
@@ -261,14 +265,25 @@ internal fun SelectFullScreen(
                         .padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = title,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
+                    // Tiêu đề và mô tả (desc) của item, cùng kiểu với hàng tiêu đề của log: mô tả cỡ 12sp, màu phụ, nằm dưới tiêu đề.
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        desc?.takeIf { it.isNotBlank() }?.let { text ->
+                            Text(
+                                text = text,
+                                fontSize = 12.sp,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                     if (multi) {
                         // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc có nền, không viền (cùng kiểu nút Chạy).
                         Text(

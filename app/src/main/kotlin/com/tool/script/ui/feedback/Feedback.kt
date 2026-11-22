@@ -26,10 +26,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -396,6 +392,11 @@ class FeedbackHost(private val context: Context) {
         val entry = BannerEntry(++lastRun, item, RUNNING_TEXT, warning = false, running = true)
         banners.add(entry)
         return entry.id
+    }
+
+    /** Cập nhật % của banner lượt [id] (0..1) khi lệnh in `@progress N`; bỏ qua nếu banner đã bị hủy / ẩn. */
+    fun setBannerProgress(id: Int, value: Float) {
+        banners.firstOrNull { it.id == id }?.progress = value
     }
 
     fun attachJob(id: Int, job: Job) {
@@ -950,6 +951,8 @@ fun Banner(
     onAction: () -> Unit = {},
     progress: Float? = null,
     indeterminate: Boolean = false,
+    // Đang chạy (indeterminate = true): có giá trị thì hiện đúng % (từ dòng `@progress N` của lệnh), null thì chạy vô định, giống log shell.
+    runProgress: Float? = null,
     maxLines: Int = 3,
     onDismiss: (() -> Unit)? = null,
     backdrop: LayerBackdrop? = null,
@@ -998,46 +1001,19 @@ fun Banner(
                 }
             }
         }
-        if (indeterminate) {
+        if (indeterminate || progress != null) {
             Spacer(Modifier.height(10.dp))
-            val start by rememberInfiniteTransition(label = "banner-run").animateFloat(
-                initialValue = 0f,
-                targetValue = 1f - INDETERMINATE_WIDTH,
-                animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Reverse),
-                label = "banner-run-start",
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = if (hasButtons) 6.dp else 0.dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(colors.contentColor.copy(alpha = 0.15f)),
-            ) {
-                Spacer(Modifier.weight(start + 0.001f))
-                Box(
-                    Modifier
-                        .weight(INDETERMINATE_WIDTH)
-                        .height(3.dp)
-                        .background(MiuixTheme.colorScheme.primary),
-                )
-                Spacer(Modifier.weight(1f - INDETERMINATE_WIDTH - start + 0.001f))
-            }
-        } else if (progress != null) {
-            Spacer(Modifier.height(10.dp))
+            // Cùng thanh LinearProgressIndicator của Miuix và ô giữ chỗ cao [LogProgressHeight] như log shell.
+            // Đang chạy: chưa có `@progress N` thì chạy vô định, có thì đúng %. Chạy xong: thanh đếm ngược 5 giây trước khi banner tự ẩn.
             Box(
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
                     .padding(end = if (hasButtons) 6.dp else 0.dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(colors.contentColor.copy(alpha = 0.15f)),
+                    .height(LogProgressHeight),
             ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(progress.coerceIn(0f, 1f))
-                        .height(3.dp)
-                        .background(MiuixTheme.colorScheme.primary),
+                LinearProgressIndicator(
+                    progress = if (indeterminate) runProgress else progress,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -1045,8 +1021,6 @@ fun Banner(
 }
 
 const val BANNER_MILLIS = 5_000
-
-private const val INDETERMINATE_WIDTH = 0.35f
 
 private const val OUTPUT_MAX_CHARS = 300
 
@@ -1066,6 +1040,9 @@ class BannerEntry(
 
     /** true khi lệnh còn chạy: thanh chạy vô hạn, có nút Hủy; false thì đếm ngược 5 giây rồi tự ẩn. */
     var running by mutableStateOf(running)
+
+    /** Tiến trình 0..1 từ dòng `@progress N` của lệnh; null = chưa có, thanh chạy vô định (giống log shell). */
+    var progress by mutableStateOf<Float?>(null)
 
     /** true khi đang chạy hiệu ứng ẩn đi, sắp gỡ khỏi danh sách. */
     var closing by mutableStateOf(false)
@@ -1145,6 +1122,7 @@ private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost, backdrop
                 },
             progress = progress.value,
             indeterminate = entry.running,
+            runProgress = entry.progress,
             maxLines = BANNER_OUTPUT_MAX_LINES,
             actionLabel = if (entry.running) "Hủy" else null,
             onAction = dismiss,

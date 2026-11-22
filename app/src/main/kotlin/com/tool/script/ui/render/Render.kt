@@ -159,7 +159,13 @@ class RenderEnv(
                             if (entry.running) entry.cancel()
                         }
                     } else {
-                        ExecutorManager.current.exec(full, item.timeoutSec)
+                        // Banner / Notice: đọc dòng `@progress N` để thanh tiến trình của banner hiện đúng %, giống log shell.
+                        val onOutput: ((String) -> Unit)? = if (notifies) {
+                            { chunk -> ShellText.parseProgress(chunk)?.let { feedback.setBannerProgress(runId, it / 100f) } }
+                        } else {
+                            null
+                        }
+                        ExecutorManager.current.exec(full, item.timeoutSec, onOutput)
                     }
                     feedback.report(item, command, result, runId)
                     onDone(result)
@@ -521,6 +527,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     SelectFullScreenSlot(
         show = fullScreen && showDialog,
         title = item.title,
+        desc = item.desc,
         options = item.options,
         multi = true,
         selected = currentSet,
@@ -663,6 +670,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
     SelectFullScreenSlot(
         show = fullScreen && showDialog,
         title = item.title,
+        desc = item.desc,
         options = item.options,
         multi = false,
         selected = setOf(current),
