@@ -7,6 +7,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -17,6 +19,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import java.util.PriorityQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -240,6 +243,38 @@ class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 
 /** Dò backend theo thứ tự su -> ROM -> adb -> thường, giữ backend đang dùng. */
 /**
+ * Gắn mốc thời gian cho từng đoạn đầu ra ngay lúc nhận (stdout và stderr đến từ hai luồng đọc khác nhau),
+ * giữ trong bộ đệm ngắn [windowMs], rồi đẩy ra [emit] theo thứ tự mốc thời gian (hòa thì theo số thứ tự đến).
+ * Nhờ vậy đoạn đến trễ vài mili giây từ pipe kia vẫn được xếp về đúng chỗ. Mốc thời gian chỉ dùng để xếp, không đưa ra log.
+ */
+private class ReorderSink(
+    private val windowMs: Long,
+    private val emit: (String, Boolean) -> Unit,
+) {
+    private class Item(val ts: Long, val seq: Long, val text: String, val isError: Boolean)
+
+    private val queue = PriorityQueue<Item>(compareBy<Item>({ it.ts }, { it.seq }))
+    private var seq = 0L
+
+    @Synchronized
+    fun add(text: String, isError: Boolean) {
+        queue += Item(System.nanoTime(), seq++, text, isError)
+    }
+
+    /** [all] = true: đẩy hết; ngược lại chỉ đẩy các đoạn đã nằm trong bộ đệm quá [windowMs]. */
+    @Synchronized
+    fun flush(all: Boolean) {
+        val limit = System.nanoTime() - windowMs * 1_000_000L
+        while (true) {
+            val head = queue.peek() ?: break
+            if (!all && head.ts > limit) break
+            queue.poll()
+            emit(head.text, head.isError)
+        }
+    }
+}
+
+/**
  * Thêm vào đầu mọi lệnh: đặt `shell_progres` (PID của shell chạy lệnh), nạp env.sh ([ExecutorManager.envFile]) kèm PID đó làm `$1`,
  * rồi chạy [ExecutorManager.prelude] (nếu có), để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
  *
@@ -251,33 +286,42 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
 
     override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult = coroutineScope {
         val pid = AtomicReference<String?>(null)
+        // stdout / stderr đọc ở hai luồng nên thứ tự đến không chắc đúng: gắn thời gian, đệm ngắn rồi xếp lại trước khi ra log.
+        val sink = onLine?.let { ReorderSink(REORDER_WINDOW_MS, it) }
+        val flusher = sink?.let { s -> launch(Dispatchers.Default) { while (true) { delay(FLUSH_INTERVAL_MS); s.flush(false) } } }
         // NonCancellable: không để bên trong tự kill tiến trình gốc trước, nếu không các tiến trình con mồ côi (ppid = 1)
         // sẽ không còn tìm thấy từ gốc. Thứ tự đúng: killtree giết cả cây, rồi lệnh gốc tự kết thúc.
         // Hết giờ cũng do đây tính (bên trong chạy không giới hạn) để dùng được killtree.
         val run = async(NonCancellable) {
             inner.exec(withHead(command, withPid = true), null) { line, isError ->
                 val p = if (isError) null else parsePid(line)
-                if (p != null) pid.compareAndSet(null, p) else onLine?.invoke(line, isError)
+                if (p != null) pid.compareAndSet(null, p) else sink?.add(line, isError)
             }
         }
         try {
-            val finished = if (timeoutSec == null) {
-                run.join()
-                true
-            } else {
-                withTimeoutOrNull(timeoutSec * 1000L) { run.join(); true } == true
-            }
-            if (finished) {
-                run.await().withoutPidLine()
-            } else {
+            try {
+                val finished = if (timeoutSec == null) {
+                    run.join()
+                    true
+                } else {
+                    withTimeoutOrNull(timeoutSec * 1000L) { run.join(); true } == true
+                }
+                if (finished) {
+                    run.await().withoutPidLine()
+                } else {
+                    stop(run, pid.get())
+                    // Lấy phần đã in ra; không lấy được thì để trống.
+                    val partial = runCatching { withTimeoutOrNull(STOP_WAIT_MS) { run.await() } }.getOrNull()
+                    (partial ?: ExecResult(-1, "", "")).copy(code = -1, timedOut = true).withoutPidLine()
+                }
+            } catch (e: CancellationException) {
                 stop(run, pid.get())
-                // Lấy phần đã in ra; không lấy được thì để trống.
-                val partial = runCatching { withTimeoutOrNull(STOP_WAIT_MS) { run.await() } }.getOrNull()
-                (partial ?: ExecResult(-1, "", "")).copy(code = -1, timedOut = true).withoutPidLine()
+                throw e
             }
-        } catch (e: CancellationException) {
-            stop(run, pid.get())
-            throw e
+        } finally {
+            // Dừng bộ đẩy định kỳ và đẩy nốt phần còn đệm, trước khi trả kết quả.
+            flusher?.cancel()
+            sink?.flush(true)
         }
     }
 
@@ -320,6 +364,8 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
         const val PID_HEAD = "shell_progres=\$\$; export shell_progres; echo \"$PID_MARK\$shell_progres\""
         const val KILL_TIMEOUT_SEC = 5
         const val STOP_WAIT_MS = 2000L
+        const val REORDER_WINDOW_MS = 40L
+        const val FLUSH_INTERVAL_MS = 15L
     }
 }
 
