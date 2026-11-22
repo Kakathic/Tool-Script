@@ -84,6 +84,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -94,6 +95,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -499,6 +501,19 @@ fun rememberFeedbackHost(): FeedbackHost {
 /** Lề ngoài của log và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
 private val LogMargin = 12.dp
 
+/** Tỉ lệ chiều cao màn hình mà cả cửa sổ log thường chiếm (khung log cố định, thêm dòng thì cuộn chứ không nở ra). */
+private const val LogWindowFraction = 0.55f
+
+/** Phần cố định ngoài khung log (tiêu đề, thanh tiến trình, hàng nút, khoảng cách, lề dialog), tính bằng dp. */
+private const val LogWindowOverheadDp = 150
+
+/** Chiều cao khung log ở bảng log thường: [LogWindowFraction] màn hình trừ phần cố định, không thấp hơn 160dp. */
+@Composable
+private fun logCardHeight(): Dp {
+    val screen = LocalConfiguration.current.screenHeightDp
+    return (screen * LogWindowFraction - LogWindowOverheadDp).dp.coerceAtLeast(160.dp)
+}
+
 /** Chiều cao ô giữ chỗ của thanh tiến trình. */
 private val LogProgressHeight = 3.dp
 
@@ -530,7 +545,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
                 Spacer(Modifier.height(LogProgressGap))
                 LogProgress(shown)
                 Spacer(Modifier.height(LogProgressGap))
-                LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
+                LogSelectableCard(shown, output, Modifier.height(logCardHeight()), fillHeight = false)
                 Spacer(Modifier.height(LogMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
