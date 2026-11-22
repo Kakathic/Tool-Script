@@ -547,7 +547,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
                 Box(Modifier.fillMaxWidth().height(LogMargin), contentAlignment = Alignment.Center) {
                     LogProgress(shown)
                 }
-                LogSelectableCard(shown, output, Modifier.height(logCardHeight()), fillHeight = false)
+                LogSelectableCard(shown, output, Modifier.height(logCardHeight()), full = false)
                 Spacer(Modifier.height(LogMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
@@ -596,7 +596,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                 Box(Modifier.fillMaxWidth().height(LogFullMargin), contentAlignment = Alignment.Center) {
                     LogProgress(shown)
                 }
-                LogSelectableCard(shown, output, Modifier.weight(1f), fillHeight = true)
+                LogSelectableCard(shown, output, Modifier.weight(1f), full = true)
                 Spacer(Modifier.height(LogFullMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
@@ -702,17 +702,17 @@ private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, 
 }
 
 // Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
-// Toàn màn hình có blur: khung trong suốt, phủ đen nhạt để thấy nền mờ phía sau, chữ sáng cho dễ đọc. Font mono bật mặc định, tắt được ở menu ba chấm. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
-// false: khung ôm theo nội dung tới chiều cao tối đa do [modifier] đặt (bảng log thường).
+// Toàn màn hình có blur: khung trong suốt, phủ đen nhạt để thấy nền mờ phía sau, chữ sáng cho dễ đọc. Font mono bật mặc định, tắt được ở menu ba chấm.
+// Khung có chiều cao cố định và nội dung luôn phủ kín khung, nên vuốt ở chỗ trống (kể cả log chỉ vài dòng) vẫn cuộn được; [full] = true là log toàn màn hình.
 @Composable
-private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, fillHeight: Boolean) {
+private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, full: Boolean) {
     val vertical = rememberScrollState()
     val horizontal = rememberScrollState()
     val revision = entry.revision
     LaunchedEffect(output, revision) {
         if (entry.running) vertical.scrollTo(vertical.maxValue)
     }
-    val glass = fillHeight && LocalBlurRequests.current != null
+    val glass = full && LocalBlurRequests.current != null
     val cardColors = if (glass) {
         CardDefaults.defaultColors(color = Color.Black.copy(alpha = 0.35f), contentColor = Color(0xFFE6EDF3))
     } else {
@@ -727,7 +727,8 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
             ),
         ) {
             SelectionContainer(
-                modifier = (if (fillHeight) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
+                modifier = Modifier
+                    .fillMaxSize()
                     .verticalScroll(vertical)
                     .then(if (entry.wrap) Modifier else Modifier.horizontalScroll(horizontal))
                     .padding(12.dp),
