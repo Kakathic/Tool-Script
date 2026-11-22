@@ -5,8 +5,11 @@ import android.content.Context
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +34,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -427,8 +432,45 @@ private fun rebootCommand(reason: String): String {
     return "/system/bin/svc power reboot$arg || /system/bin/reboot$arg"
 }
 
+/** Hai kiểu hay dùng, luôn hiện sẵn trong menu Nguồn; các kiểu còn lại gom vào nhóm [POWER_ADVANCED_LABEL] (bấm để mở / thu). */
+private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot)
+
+private const val POWER_ADVANCED_LABEL = "Khởi động lại nâng cao"
+
 /**
- * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy theo [PowerAction] (cần root).
+ * Dòng bấm để mở / thu một nhóm mục trong menu (cùng kiểu dáng [MenuItem]), bên phải là icon lên-xuống giống item `dropdown`.
+ */
+@Composable
+private fun MenuExpandItem(label: String, expanded: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = MenuItemGap)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(16.dp))
+        AsyncImage(
+            model = Util.iconModel(AppIcons.BarUpDown),
+            contentDescription = if (expanded) "Thu gọn" else "Mở rộng",
+            modifier = Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+        )
+    }
+}
+
+/**
+ * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy (cần root).
+ * Nhóm máy chỉ hiện sẵn Tắt máy và Khởi động lại máy cho menu ngắn gọn; Khởi động lại mềm, Recovery, Bootloader, Download, EDL
+ * gom vào dòng "Khởi động lại nâng cao" (mở / thu, mỗi lần mở menu bắt đầu ở trạng thái thu).
  * Việc xác nhận và thực thi do nơi gọi xử lý.
  */
 @Composable
@@ -446,13 +488,29 @@ fun PowerMenu(
         expanded = expanded,
         onOpen = onOpen,
         onDismiss = onDismiss,
+        // Đủ rộng cho mục dài nhất trong nhóm nâng cao, để menu không đổi chiều rộng khi mở / thu nhóm.
+        minWidth = 280.dp,
     ) {
+        var advanced by remember { mutableStateOf(false) }
         MenuItem(label = "Khởi động lại ứng dụng", onClick = onRestartApp)
         MenuItem(label = "Đóng ứng dụng", onClick = onCloseApp)
         MenuDivider()
         MenuSectionLabel("Thiết bị (cần root)")
-        PowerAction.entries.forEach { action ->
+        BASIC_POWER_ACTIONS.forEach { action ->
             MenuItem(label = action.label) { onDeviceAction(action) }
+        }
+        MenuExpandItem(label = POWER_ADVANCED_LABEL, expanded = advanced, onClick = { advanced = !advanced })
+        AnimatedVisibility(
+            visible = advanced,
+            enter = expandVertically(tween(180)),
+            exit = shrinkVertically(tween(150)),
+        ) {
+            // Thụt vào một chút để thấy các mục thuộc nhóm "Khởi động lại nâng cao".
+            Column(Modifier.padding(start = 12.dp)) {
+                PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
+                    MenuItem(label = action.label) { onDeviceAction(action) }
+                }
+            }
         }
     }
 }

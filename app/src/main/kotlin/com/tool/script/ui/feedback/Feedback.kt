@@ -644,7 +644,8 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
 // để dùng chung nền mờ của DialogBlurScrim: có blur thì trang phía sau mờ và tối nhẹ, phủ thêm lớp màu nền trong suốt một phần cho dễ đọc;
 // không có blur thì nền đặc như cũ. Đặt ở gốc Main, trên lớp scrim và dưới lớp popup của Scaffold (menu, hộp xác nhận vẫn nổi lên trên).
 // Nút cuối: đang chạy là Hủy (vàng, chỉ dừng lệnh, log vẫn mở), xong hoặc đã hủy là Thoát (xanh dương), lỗi là "Thoát: <mã>" (đỏ nhạt).
-// Back của máy thì đóng log, lệnh vẫn chạy tiếp.
+// Back của máy: lệnh đang chạy thì không đóng log (giống chạm ra ngoài ở bảng log thường; muốn rời thì bấm Hủy rồi Thoát, hoặc Ẩn để chạy nền);
+// lệnh xong thì Back đóng log.
 @Composable
 fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onHide: () -> Unit) {
     var last by remember { mutableStateOf(entry) }
@@ -657,7 +658,8 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
             onDispose { if (show) requests.dialogs-- }
         }
     }
-    BackHandler(enabled = show, onBack = onDismiss)
+    // Bật khi log đang hiện để Back không lọt xuống trang phía sau; đang chạy thì chỉ chặn, không đóng.
+    BackHandler(enabled = show) { if (entry?.running != true) onDismiss() }
     // Đóng log (Thoát, Hủy rồi Thoát, Back, Ẩn): trượt xuống như các màn hình toàn màn hình khác.
     // Chỉ khi "Thu nhỏ" (entry vẫn còn, chuyển sang bảng log thường) thì mờ dần để không chồng với hộp thoại hiện ra.
     val exit = if (entry == null) slideOutVertically(tween(220)) { it } else fadeOut(tween(180))
