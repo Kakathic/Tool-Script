@@ -2,6 +2,7 @@ package com.tool.script.ui.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
@@ -14,6 +15,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // Làm mờ nền thanh trên và thanh tab khi thẻ cuộn qua phía dưới (miuix-blur, theo ví dụ của Miuix).
 // Cách dùng: [rememberBarBackdrop] tạo backdrop, gắn `Modifier.layerBackdrop(backdrop)` vào vùng nội dung,
 // thêm `Modifier.barBlur(backdrop)` vào mỗi thanh và để nền thanh trong suốt khi backdrop khác null.
+// Nền sau dialog dùng `Modifier.scrimBlur(backdrop)` với backdrop của cả trang.
 
 private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
@@ -43,6 +45,23 @@ fun Modifier.barBlur(backdrop: LayerBackdrop?): Modifier {
         backdrop = backdrop,
         shape = RectangleShape,
         blurRadius = BarBlurRadius,
+        colors = colors,
+    )
+}
+
+private const val ScrimBlurRadius = 20f
+private const val ScrimDim = 0.35f
+
+/** Nền phía sau dialog: trang bên dưới làm mờ rồi phủ lớp tối nhẹ, thay cho lớp đen đặc. */
+@Composable
+fun Modifier.scrimBlur(backdrop: LayerBackdrop): Modifier {
+    val colors = BlurDefaults.blurColors(
+        blendColors = listOf(BlendColorEntry(color = Color.Black.copy(alpha = ScrimDim))),
+    )
+    return textureBlur(
+        backdrop = backdrop,
+        shape = RectangleShape,
+        blurRadius = ScrimBlurRadius,
         colors = colors,
     )
 }

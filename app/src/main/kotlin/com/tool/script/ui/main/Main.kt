@@ -244,10 +244,13 @@ fun MainScreen(
     val lastDialog = remember { LastDialog() }
     if (dialogFile != null) lastDialog.file = dialogFile
     val top = if (dialogFile != null) stack.getOrNull(stack.size - 2) else stack.lastOrNull()
+    // Ghi lại hình của cả trang đang mở để làm mờ làm nền phía sau dialog (không có blur thì nền tối như cũ).
+    val pageBackdrop = rememberBarBackdrop(blurEnabled)
     CompositionLocalProvider(LocalPageWarnings provides pageWarningHost) {
         Box(Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = top,
+                modifier = if (pageBackdrop != null) Modifier.layerBackdrop(pageBackdrop) else Modifier,
                 transitionSpec = {
                     val from = initialState
                     val to = targetState
@@ -394,7 +397,7 @@ fun MainScreen(
             AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
                 val sheetPage = lastDialog.file?.let { config.subPages[it] }
                 if (sheetPage != null) {
-                    DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+                    DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, backdrop = pageBackdrop)
                 }
             }
             // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
@@ -499,7 +502,7 @@ private class LastDialog {
     var file: String? = null
 }
 
-/** Lớp phủ của dialog: nền mờ (bấm vào là Hủy) và sheet trượt từ dưới lên; chiều cao tự tính theo nội dung, kéo thanh trên để đổi. */
+/** Lớp phủ của dialog: nền tối hoặc làm mờ trang phía sau khi bật blur (bấm vào là Hủy) và sheet trượt từ dưới lên; chiều cao tự tính theo nội dung, kéo thanh trên để đổi. */
 @Composable
 private fun AnimatedVisibilityScope.DialogLayer(
     page: SubPage,
@@ -507,13 +510,14 @@ private fun AnimatedVisibilityScope.DialogLayer(
     feedback: FeedbackHost,
     onBack: () -> Unit,
     onConfirm: () -> Unit,
+    backdrop: LayerBackdrop? = null,
 ) {
     Box(Modifier.fillMaxSize()) {
         Box(
             Modifier
                 .fillMaxSize()
                 .animateEnterExit(enter = fadeIn(tween(DIALOG_MILLIS)), exit = fadeOut(tween(DIALOG_MILLIS)))
-                .background(Color.Black.copy(alpha = 0.4f))
+                .then(if (backdrop != null) Modifier.scrimBlur(backdrop) else Modifier.background(Color.Black.copy(alpha = 0.4f)))
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack),
         )
         Box(
