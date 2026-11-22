@@ -1,5 +1,6 @@
 package com.tool.script.ui.feedback
 
+import com.tool.script.util.AppIcons
 import android.Manifest
 import android.app.Activity
 import android.app.NotificationChannel
@@ -815,7 +816,7 @@ fun Banner(
                 contentAlignment = Alignment.Center,
             ) {
                 AsyncImage(
-                    model = Util.iconModel(if (warning) "icons/banner_warning.svg" else "icons/banner_info.svg"),
+                    model = Util.iconModel(if (warning) AppIcons.BannerWarning else AppIcons.BannerInfo),
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     colorFilter = ColorFilter.tint(colors.contentColor),

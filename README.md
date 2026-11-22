@@ -8,7 +8,7 @@
 
 ## Cách mở
 
-1. Mở thư mục này bằng Android Studio (cần SDK 37 và JDK 17+).
+1. Mở thư mục này bằng Android Studio (cần SDK 37 và JDK 21).
 2. Thư mục `gradle/wrapper/` mới có `gradle-wrapper.properties` (Gradle 9.7.0), chưa có `gradlew` và `gradle-wrapper.jar`.
    Android Studio dùng Gradle theo cài đặt, hoặc chạy `gradle wrapper` để sinh wrapper.
 3. Kiểm tra version trong `gradle/libs.versions.toml` (Miuix, AGP, Kotlin, Compose...) trước lần sync đầu.
@@ -16,21 +16,20 @@
 ## Build tự động (GitHub Actions)
 
 - Workflow: `.github/workflows/build.yml`, chạy khi push lên `main`, khi có pull request, hoặc chạy tay (Actions > Build APK > Run workflow).
-- Kết quả: APK debug (`ToolScript-debug.apk`) đăng lên mục Releases, tag `latest`, mỗi lần build trên main ghi đè bản cũ. Pull request chỉ build kiểm tra, không đăng.
-- Lần chạy đầu cũng là lần build thử đầu tiên: nếu lỗi, xem log của bước "Build debug APK".
+- Kết quả: APK release (`ToolScript-release.apk`) đăng lên mục Releases, tag `latest`, mỗi lần build trên main ghi đè bản cũ. Pull request chỉ build kiểm tra, không đăng.
+- Lần chạy đầu cũng là lần build thử đầu tiên: nếu lỗi, xem log của bước "Build release APK".
 
 ## Bản chính thức (APK release)
 
-Mỗi lần push lên `main` (hoặc chạy tay workflow), GitHub Actions dựng cả hai APK và đăng vào Release `latest`:
+Mỗi lần push lên `main` (hoặc chạy tay workflow), GitHub Actions dựng APK release và đăng vào Release `latest`:
 
-- `ToolScript-release.apk`: bản chính thức, đã bật R8 (`isMinifyEnabled = true`).
-- `ToolScript-debug.apk`: bản debug để thử.
+- `ToolScript-release.apk`: bản chính thức, đã bật R8 (`isMinifyEnabled = true`). Workflow không dựng bản debug.
 
 Pull request chỉ build, không đăng.
 
 **Chữ ký hiện tại: khóa beta (tạm thời)**
 
-Cả hai APK đều ký bằng khóa beta `app/beta.jks` (alias `beta`, mật khẩu `android`), khai báo trong `app/build.gradle.kts`. File này commit trong repo và mật khẩu công khai, nên **không bảo mật**: ai cũng ký được app giả mạo cùng chữ ký. Ưu điểm là mọi build cùng chữ ký, cài đè / cập nhật lên nhau được, không cần cấu hình secret.
+APK release ký bằng khóa beta `app/beta.jks` (alias `beta`, mật khẩu `android`), khai báo trong `app/build.gradle.kts`. File này commit trong repo và mật khẩu công khai, nên **không bảo mật**: ai cũng ký được app giả mạo cùng chữ ký (buildType `debug` trong Gradle cũng dùng khóa này). Ưu điểm là mọi build cùng chữ ký, cài đè / cập nhật lên nhau được, không cần cấu hình secret.
 
 Khi có khóa thật, thay thông tin trong `signingConfigs` (hoặc thêm một signingConfig mới cho `release`). Đổi chữ ký thì người đã cài bản ký bằng khóa beta phải gỡ app rồi cài lại. Khóa thật không được commit vào repo.
 
@@ -38,27 +37,30 @@ Khi có khóa thật, thay thông tin trong `signingConfigs` (hoặc thêm một
 
 ## Tài liệu
 
-- `docs/schema.md`: schema TOML (bản v0.5), nguồn sự thật cho parser và renderer.
+- `docs/schema.md`: schema TOML (bản v0.6), nguồn sự thật cho parser và renderer.
 
 ## Cấu trúc
 
 ```
-app/src/main/
-├─ assets/
-│  ├─ configs/            # main.toml, pages/*.toml, icons/ (mẫu); đọc thẳng từ assets, không chép
-│  ├─ scripts/            # init.sh (khởi động, cài busybox), env.sh (biến dùng chung): chép ra no_backup/scripts
-│  ├─ bin/                # glog, slog, killtree: chép ra $HOME/bin ($BIN_DIR, trong PATH)
-│  └─ lib/<abi>/libbusybox.so  # chép ra $HOME/lib, init.sh cài thành $BIN_DIR/busybox
-├─ kotlin/com/tool/script/
-│  ├─ App.kt, MainActivity.kt
-│  ├─ boot/               # splash + máy trạng thái khởi động
-│  ├─ config/             # model + parser TOML
-│  ├─ executor/           # su -> ROM -> adb -> thường
-│  ├─ state/              # kho biến, visible_if / lock
-│  ├─ crash/              # CrashActivity (tiến trình :crash, không ghi log ra file)
-│  ├─ ui/{theme,main,render,feedback}
-│  └─ util/
-└─ res/
+.github/workflows/build.yml   # dựng + đăng APK release
+docs/schema.md                 # schema TOML
+app/                           # beta.jks, proguard-rules.pro, build.gradle.kts
+└─ src/main/
+   ├─ assets/
+   │  ├─ configs/            # main.toml, pages/*.toml, icons/ (mẫu); đọc thẳng từ assets, không chép
+   │  ├─ scripts/            # init.sh (khởi động, cài busybox), env.sh (biến dùng chung): chép ra no_backup/scripts
+   │  ├─ bin/                # glog, slog, killtree: chép ra $HOME/bin ($BIN_DIR, trong PATH)
+   │  └─ lib/<abi>/libbusybox.so  # chép ra $HOME/lib, init.sh cài thành $BIN_DIR/busybox
+   ├─ kotlin/com/tool/script/
+   │  ├─ App.kt, MainActivity.kt
+   │  ├─ boot/               # splash + máy trạng thái khởi động
+   │  ├─ config/             # model + parser TOML
+   │  ├─ executor/           # su -> ROM -> adb -> thường
+   │  ├─ state/              # kho biến, visible_if / lock
+   │  ├─ crash/              # CrashActivity (tiến trình :crash, không ghi log ra file)
+   │  ├─ ui/{theme,main,render,feedback}
+   │  └─ util/
+   └─ res/                # drawable (ic_logo, ic_logo_fg, ic_notification...), mipmap-anydpi*, values, values-night
 ```
 
 ## Quyết định đã chốt
@@ -83,7 +85,7 @@ app/src/main/
 
 ## Lộ trình
 
-Đối chiếu với `docs/schema.md` (bản v0.5): mục 1 đến 11 đã có code, riêng backend ROM và adb (mục 1) chưa làm; mục 12 ("Để lại sau") chưa làm.
+Đối chiếu với `docs/schema.md` (bản v0.6): mục 1 đến 11 đã có code, riêng backend ROM và adb (mục 1) chưa làm; mục 12 ("Để lại sau") chưa làm.
 
 ### Đã hoàn thành
 
@@ -136,7 +138,7 @@ Giai đoạn 6: chất lượng
 ### Lộ trình thành phần Miuix (xếp từ dễ đến khó)
 
 Danh sách này lấy từ tài liệu Miuix bản mới nhất, chưa đối chiếu riêng bản 0.9.4: khi làm từng mục cần kiểm tra lại API.
-Làm lần lượt từ trên xuống. Mức 1 đã xong.
+Làm lần lượt từ trên xuống. Mức 1 đã xong, mức 2 xong `icon` (còn `badge`, `tip`).
 
 Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
 
@@ -150,7 +152,7 @@ Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
 Mức 2: dễ đến vừa, thêm trường mới cho item có sẵn
 
 - [ ] `badge`: nhãn nhỏ cạnh tiêu đề (Miuix `Badge`).
-- [ ] `icon`: icon đầu dòng, dùng cùng cách khai báo đường dẫn icon của tab.
+- [x] `icon`: icon đầu dòng, dùng cùng cách khai báo đường dẫn icon của tab; kèm `icon_size` (dp) và `icon_tint` (docs/schema.md, mục 6). `group` chưa hỗ trợ `icon`.
 - [ ] `tip`: chú thích khi nhấn giữ (Miuix `Tooltip`).
 
 Mức 3: vừa, cần thêm logic

@@ -75,7 +75,7 @@ data class Item(
 )
 
 /** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
-data class AppInfo(val name: String, val version: Int, val lang: String, val env: String? = null)
+data class AppInfo(val name: String, val lang: String, val env: String? = null)
 
 data class PageRef(val id: String, val title: String, val icon: String, val file: String)
 
@@ -148,7 +148,6 @@ object TomlParser {
         val app = root["app"] as? TomlTable
         val info = AppInfo(
             name = app?.str("name") ?: "Tool Script",
-            version = app?.str("version")?.toIntOrNull() ?: 1,
             lang = app?.str("lang") ?: "vi",
             env = app?.str("env")?.takeIf { it.isNotBlank() },
         )

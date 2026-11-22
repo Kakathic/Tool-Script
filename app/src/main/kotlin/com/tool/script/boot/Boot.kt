@@ -34,6 +34,9 @@ import java.io.File
 //   4. Nạp TOML từ assets                             - thanh tiến trình vô hạn trở lại
 //   5. Vào màn hình chính (script lỗi vẫn vào, có banner cảnh báo)
 
+/** Số dòng log hiện trên splash; BootScreen vẽ đúng số dòng này. */
+const val BOOT_LOG_LINES = 5
+
 enum class BootStage { Permission, Detect, Script, Config, Done }
 
 /** Kết quả khởi động, đủ để vẽ màn hình chính. */
@@ -49,7 +52,7 @@ data class BootState(
     val stage: BootStage = BootStage.Permission,
     /** 0..1, null = thanh tiến trình vô hạn. */
     val progress: Float? = null,
-    /** Tối đa 5 dòng log gần nhất. */
+    /** Tối đa [BOOT_LOG_LINES] dòng log gần nhất. */
     val logs: List<String> = emptyList(),
     val result: BootResult? = null,
     /** Lỗi không vào được app (vd main.toml sai cú pháp): chuyển sang Trung tâm lỗi. */
@@ -74,7 +77,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
     private fun log(line: String) {
         synchronized(allLogs) {
             allLogs += line
-            val recent = allLogs.takeLast(LOG_LINES)
+            val recent = allLogs.takeLast(BOOT_LOG_LINES)
             _state.update { it.copy(logs = recent) }
         }
     }
@@ -120,7 +123,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                     append("init.sh ")
                     append(if (result.timedOut) "hết thời gian chờ" else "thoát với mã ${result.code}")
                     // Đầu ra gộp: chỉ lấy vài dòng cuối (thường là dòng lỗi) cho gọn.
-                    val tail = result.output.lines().filter { it.isNotBlank() && ShellText.parseProgress(it) == null }.takeLast(8)
+                    val tail = result.output.lines().filter { it.isNotBlank() && ShellText.parseProgress(it) == null }.takeLast(ERROR_TAIL_LINES)
                     if (tail.isNotEmpty()) append("\n").append(tail.joinToString("\n"))
                 }
                 log("Script khởi động lỗi")
@@ -228,7 +231,8 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private companion object {
-        const val LOG_LINES = 5
+        /** Số dòng cuối của đầu ra script đưa vào thông báo lỗi khởi động. */
+        const val ERROR_TAIL_LINES = 8
         const val SCRIPT_TIMEOUT_SEC = 60
     }
 }

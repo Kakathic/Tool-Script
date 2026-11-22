@@ -28,7 +28,6 @@ assets/configs/
 ```toml
 [app]
 name    = "Tool Script"   # hiện làm tiêu đề thanh trên cùng
-version = 1               # phiên bản schema
 lang    = "vi"
 env     = "export PATH=$PATH:/data/adb/bin"   # tùy chọn, xem bên dưới
 

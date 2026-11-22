@@ -1,5 +1,6 @@
 package com.tool.script.ui.main
 
+import com.tool.script.util.AppIcons
 import android.content.Context
 import android.view.WindowManager
 import androidx.compose.foundation.background
@@ -228,7 +229,7 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
             Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
                 if (selected) {
                     AsyncImage(
-                        model = Util.iconModel("icons/bar_check.svg"),
+                        model = Util.iconModel(AppIcons.BarCheck),
                         contentDescription = "Đang chọn",
                         modifier = Modifier.size(20.dp),
                         colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
@@ -287,7 +288,7 @@ fun ThemeMenu(
     onBlurChange: (Boolean) -> Unit,
 ) {
     TopBarMenu(
-        icon = "icons/bar_theme.svg",
+        icon = AppIcons.BarTheme,
         description = "Tùy chỉnh chủ đề",
         expanded = expanded,
         onOpen = onOpen,
@@ -314,7 +315,7 @@ fun PowerMenu(
     onRebootDevice: () -> Unit,
 ) {
     TopBarMenu(
-        icon = "icons/bar_power.svg",
+        icon = AppIcons.BarPower,
         description = "Nguồn",
         expanded = expanded,
         onOpen = onOpen,

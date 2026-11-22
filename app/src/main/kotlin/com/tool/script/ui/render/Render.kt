@@ -1,5 +1,6 @@
 package com.tool.script.ui.render
 
+import com.tool.script.util.AppIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -755,7 +756,7 @@ private fun TitleRow(item: Item, title: @Composable () -> Unit) {
 @Composable
 private fun UpDownIcon() {
     AsyncImage(
-        model = Util.iconModel("icons/bar_updown.svg"),
+        model = Util.iconModel(AppIcons.BarUpDown),
         contentDescription = null,
         modifier = Modifier.size(20.dp),
         colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),

@@ -1,5 +1,6 @@
 package com.tool.script.ui.main
 
+import com.tool.script.util.AppIcons
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -449,7 +450,7 @@ private fun AppTopBar(
     ) {
         if (onBack != null) {
             TopBarIcon(
-                icon = if (closeStyle) "icons/bar_close.svg" else "icons/bar_back.svg",
+                icon = if (closeStyle) AppIcons.BarClose else AppIcons.BarBack,
                 description = if (closeStyle) "Đóng" else "Quay lại",
                 onClick = onBack,
             )
@@ -494,10 +495,10 @@ private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -
             overflow = TextOverflow.Ellipsis,
         )
         if (onCancel != null) {
-            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = "icons/bar_close.svg", description = "Hủy", onClick = onCancel) }
+            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = AppIcons.BarClose, description = "Hủy", onClick = onCancel) }
         }
         if (onConfirm != null) {
-            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = "icons/bar_check.svg", description = "Xác nhận", onClick = onConfirm) }
+            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = AppIcons.BarCheck, description = "Xác nhận", onClick = onConfirm) }
         }
     }
 }

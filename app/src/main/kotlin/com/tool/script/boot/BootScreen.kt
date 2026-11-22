@@ -51,7 +51,7 @@ fun SplashScreen(state: BootState) {
             )
             Spacer(Modifier.height(16.dp))
             // Luôn đủ 5 dòng để bố cục không nhảy khi log đến dần.
-            repeat(LOG_LINES) { i ->
+            repeat(BOOT_LOG_LINES) { i ->
                 val line = state.logs.getOrNull(i).orEmpty()
                 Text(
                     text = line.ifEmpty { " " },
@@ -67,4 +67,3 @@ fun SplashScreen(state: BootState) {
     }
 }
 
-private const val LOG_LINES = 5
