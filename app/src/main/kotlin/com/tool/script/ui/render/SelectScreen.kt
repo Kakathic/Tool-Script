@@ -74,8 +74,8 @@ internal const val FULLSCREEN_MIN_OPTIONS = 6
  */
 private val SCREEN_MARGIN = 16.dp
 
-/** Lề trong mỗi dòng danh sách: chỉ lề trên dưới; hai bên 0 để chữ thẳng hàng với tiêu đề và ô tìm (đã cách mép 16dp) vì danh sách không còn khung. */
-private val ListRowMargin = PaddingValues(start = 0.dp, top = 12.dp, end = 0.dp, bottom = 12.dp)
+/** Lề trong mỗi dòng danh sách: 12dp hai bên và 12dp trên dưới (danh sách không còn khung nên chữ cách mép màn hình 16 + 12 = 28dp). */
+private val ListRowMargin = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 12.dp)
 
 private val COMBINING_MARKS = Regex("\\p{M}+")
 
