@@ -19,8 +19,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
-import java.util.PriorityQueue
+import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 // Backend thực thi, thứ tự ưu tiên: su -> ROM -> adb -> thường.
@@ -251,25 +252,33 @@ private class ReorderSink(
     private val windowMs: Long,
     private val emit: (String, Boolean) -> Unit,
 ) {
-    private class Item(val ts: Long, val seq: Long, val text: String, val isError: Boolean)
+    private class Item(val ts: Long, val seq: Long, val text: String, val isError: Boolean) : Comparable<Item> {
+        override fun compareTo(other: Item): Int {
+            val c = ts.compareTo(other.ts)
+            return if (c != 0) c else seq.compareTo(other.seq)
+        }
+    }
 
-    private val queue = PriorityQueue<Item>(compareBy<Item>({ it.ts }, { it.seq }))
-    private var seq = 0L
+    // Hàng đợi không khóa: luồng đọc chỉ lấy mốc rồi bỏ vào, không bao giờ phải chờ việc phát ra log.
+    private val queue = PriorityBlockingQueue<Item>(256)
+    private val seq = AtomicLong(0)
+    private val emitLock = Any()
 
-    @Synchronized
     fun add(text: String, isError: Boolean) {
-        queue += Item(System.nanoTime(), seq++, text, isError)
+        val ts = System.nanoTime() // lấy mốc trước mọi thao tác khác
+        queue.put(Item(ts, seq.incrementAndGet(), text, isError))
     }
 
     /** [all] = true: đẩy hết; ngược lại chỉ đẩy các đoạn đã nằm trong bộ đệm quá [windowMs]. */
-    @Synchronized
     fun flush(all: Boolean) {
-        val limit = System.nanoTime() - windowMs * 1_000_000L
-        while (true) {
-            val head = queue.peek() ?: break
-            if (!all && head.ts > limit) break
-            queue.poll()
-            emit(head.text, head.isError)
+        synchronized(emitLock) {
+            val limit = System.nanoTime() - windowMs * 1_000_000L
+            while (true) {
+                val head = queue.peek() ?: break
+                if (!all && head.ts > limit) break
+                val item = queue.poll() ?: break
+                emit(item.text, item.isError)
+            }
         }
     }
 }
