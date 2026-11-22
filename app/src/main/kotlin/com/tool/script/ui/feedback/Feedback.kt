@@ -139,6 +139,7 @@ class LogEntry(
     val command: String,
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
+    val desc: String? = null,
 ) {
     /** Mã riêng của log: cũng là mã thông báo Android khi log bị ẩn, và mã để mở lại log từ thông báo (xem [LogCenter]). */
     val id: Int = nextId.getAndIncrement()
@@ -375,8 +376,8 @@ class FeedbackHost(private val context: Context) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
-    fun startLive(title: String, command: String, full: Boolean = false): LogEntry =
-        LogEntry(title, command, startFull = full).also { log = it }
+    fun startLive(title: String, command: String, full: Boolean = false, desc: String? = null): LogEntry =
+        LogEntry(title, command, startFull = full, desc = desc).also { log = it }
 
     /**
      * Ẩn log đang xem: đóng màn hình log, lệnh vẫn chạy nền để làm việc khác; mọi dòng log gửi lên thông báo Android
@@ -499,7 +500,10 @@ fun rememberFeedbackHost(): FeedbackHost {
 private val LogMargin = 12.dp
 
 /** Chiều cao ô giữ chỗ của thanh tiến trình. */
-private val LogProgressHeight = 6.dp
+private val LogProgressHeight = 3.dp
+
+/** Khoảng cách trên và dưới thanh tiến trình (nhỏ để khi thanh ẩn, khoảng trống còn lại vẫn cân đối). */
+private val LogProgressGap = 6.dp
 
 private val LogYellow = Color(0xFFFFC107)
 
@@ -521,12 +525,13 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
     ) {
         last?.let { shown ->
             val output = shown.output
-            Column(verticalArrangement = Arrangement.spacedBy(LogMargin)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LogHeader(shown, onHide)
-                    LogProgress(shown)
-                }
+            Column {
+                LogHeader(shown, onHide)
+                Spacer(Modifier.height(LogProgressGap))
+                LogProgress(shown)
+                Spacer(Modifier.height(LogProgressGap))
                 LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
+                Spacer(Modifier.height(LogMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
@@ -577,10 +582,11 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(start = LogMargin, end = LogMargin, bottom = LogMargin),
-                verticalArrangement = Arrangement.spacedBy(LogMargin),
             ) {
                 LogProgress(shown)
+                Spacer(Modifier.height(LogProgressGap))
                 LogSelectableCard(shown, output, Modifier.weight(1f), fillHeight = true)
+                Spacer(Modifier.height(LogMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
@@ -595,14 +601,24 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
 private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = entry.title,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = entry.title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            entry.desc?.takeIf { it.isNotBlank() }?.let { desc ->
+                Text(
+                    text = desc,
+                    fontSize = 12.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         Spacer(Modifier.width(8.dp))
         Row(
             modifier = Modifier

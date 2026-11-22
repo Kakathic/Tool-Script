@@ -148,7 +148,7 @@ class RenderEnv(
                     val vars = store.snapshot() + extra
                     val full = ShellText.withEnv(command, vars)
                     val result = if (item.shell == ShellMode.Live || item.shell == ShellMode.Full) {
-                        val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
+                        val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full, desc = item.desc)
                         // Nút Hủy của log toàn màn hình: hủy coroutine đang chạy lệnh này.
                         entry.cancelAction = { coroutineContext[Job]?.cancel() }
                         try {
