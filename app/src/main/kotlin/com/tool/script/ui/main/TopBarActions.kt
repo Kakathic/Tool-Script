@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
@@ -42,6 +45,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
+import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Text
@@ -51,13 +55,24 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
 // Chủ đề -> tùy chỉnh giao diện, Nguồn -> tùy chọn khởi động lại.
 
-/** Icon bấm được ở thanh trên; [icon] tính từ assets/configs/ giống icon tab. */
+/**
+ * Icon bấm được ở thanh trên; [icon] tính từ assets/configs/ giống icon tab.
+ * Vùng chạm 48dp, hiệu ứng nhấn là gợn sóng tròn nhỏ ([CompactRipple]) thay cho ô chữ nhật phủ kín mặc định.
+ */
 @Composable
 fun TopBarIcon(icon: String, description: String, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val rippleColor = MiuixTheme.colorScheme.onBackground
+    val ripple = remember(rippleColor) { CompactRipple(color = rippleColor) }
     Box(
         modifier = Modifier
             .size(48.dp)
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple,
+                role = Role.Button,
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         AsyncImage(
