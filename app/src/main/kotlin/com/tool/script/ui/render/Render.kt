@@ -71,7 +71,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.tool.script.ui.main.BlurDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -530,7 +530,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             },
         )
     }
-    OverlayDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
+    BlurDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item.options.chunked(item.columns).forEach { rowOptions ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -673,7 +673,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
             },
         )
     }
-    OverlayDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
+    BlurDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item.options.chunked(item.columns).forEach { rowOptions ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -99,6 +99,7 @@ import com.tool.script.R
 import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
+import com.tool.script.ui.main.BlurDialog
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.cardBlur
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -124,7 +125,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 
@@ -464,7 +464,7 @@ private val LogRed = Color(0xFFE5534B)
 fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
     var last by remember { mutableStateOf(entry) }
     if (entry != null) last = entry
-    OverlayDialog(
+    BlurDialog(
         show = entry != null && !entry.full,
         title = null,
         // Đang chạy: chạm ra ngoài không đóng log (Miuix dùng chung một callback cho chạm ngoài và Back, nên Back cũng tạm không đóng);
@@ -764,7 +764,7 @@ private fun LogStatusRow(entry: LogEntry?) {
 fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     var last by remember { mutableStateOf(message) }
     if (message != null) last = message
-    OverlayDialog(
+    BlurDialog(
         show = message != null,
         title = "Xác nhận",
         summary = last,

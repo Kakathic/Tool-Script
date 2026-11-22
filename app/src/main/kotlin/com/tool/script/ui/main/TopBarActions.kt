@@ -156,7 +156,7 @@ private fun TopBarMenu(
 
 /**
  * Popup menu thả xuống dùng chung (menu thanh trên và item `dropdown`): nằm ngay dưới vị trí đặt nó
- * (lật lên trên nếu thiếu chỗ), làm tối nền, bo góc, cuộn được khi danh sách dài.
+ * (lật lên trên nếu thiếu chỗ), làm tối nền (và làm mờ trang phía sau khi bật blur), bo góc, cuộn được khi danh sách dài.
  * Chạm ra ngoài hoặc bấm Back thì gọi [onDismiss].
  */
 @Composable
@@ -165,6 +165,8 @@ internal fun MenuPopup(
     minWidth: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // Menu là cửa sổ riêng nên không làm mờ nền được từ trong menu: báo để MainScreen làm mờ trang phía sau.
+    MenuBlurRequest()
     Popup(
         popupPositionProvider = BelowAnchorPositionProvider(
             marginPx = with(LocalDensity.current) { 16.dp.roundToPx() },
