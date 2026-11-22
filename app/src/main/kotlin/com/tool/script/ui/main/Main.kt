@@ -285,171 +285,180 @@ fun MainScreen(
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.
         Scaffold { _ ->
-            Box(Modifier.fillMaxSize().blurIfPositive(menuBlurRadius(blurRequests))) {
-                Box(Modifier.fillMaxSize().then(if (fullBackdrop != null) Modifier.layerBackdrop(fullBackdrop) else Modifier)) {
-                    AnimatedContent(
-                        targetState = top,
-                        modifier = if (pageBackdrop != null) Modifier.layerBackdrop(pageBackdrop) else Modifier,
-                        transitionSpec = {
-                            val from = initialState
-                            val to = targetState
-                            when {
-                                // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
-                                // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
-                                // Trang bị gỡ khỏi stack = đang đóng (kể cả khi bấm link về tab và đóng hết một lượt).
-                                to != null && (from == null || from in stack) ->
-                                    (
-                                        slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
-                                            slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
-                                        ).also { it.targetContentZIndex = 1f }
-                                from != null && from !in stack ->
-                                    (
-                                        slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
-                                            slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
-                                        ).also { it.targetContentZIndex = -1f }
-                                else -> EnterTransition.None togetherWith ExitTransition.None
-                            }
-                        },
-                        label = "subPage",
-                    ) { file ->
-                        val subPage = file?.let { config.subPages[it] }
-                        if (subPage != null) {
-                            SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, blur = blurEnabled)
-                        } else {
-                            val backdrop = rememberBarBackdrop(blurEnabled)
-                            // Rời màn hình chính (mở trang con) thì danh sách cuộn mất vị trí, nên trả tiêu đề về trạng thái mở rộng.
-                            DisposableEffect(Unit) {
-                                onDispose {
-                                    titleScroll.state.heightOffset = 0f
-                                    titleScroll.state.contentOffset = 0f
+            Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize().blurIfPositive(menuBlurRadius(blurRequests))) {
+                    Box(Modifier.fillMaxSize().then(if (fullBackdrop != null) Modifier.layerBackdrop(fullBackdrop) else Modifier)) {
+                        AnimatedContent(
+                            targetState = top,
+                            modifier = if (pageBackdrop != null) Modifier.layerBackdrop(pageBackdrop) else Modifier,
+                            transitionSpec = {
+                                val from = initialState
+                                val to = targetState
+                                when {
+                                    // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
+                                    // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
+                                    // Trang bị gỡ khỏi stack = đang đóng (kể cả khi bấm link về tab và đóng hết một lượt).
+                                    to != null && (from == null || from in stack) ->
+                                        (
+                                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
+                                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
+                                            ).also { it.targetContentZIndex = 1f }
+                                    from != null && from !in stack ->
+                                        (
+                                            slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
+                                                slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
+                                            ).also { it.targetContentZIndex = -1f }
+                                    else -> EnterTransition.None togetherWith ExitTransition.None
                                 }
-                            }
-                            Scaffold(
-                                topBar = {
-                                    LargeTitleTopBar(
-                                        title = config.app.name,
-                                        scrollBehavior = titleScroll,
-                                        backdrop = backdrop,
-                                        actions = {
-                                            // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
-                                            ThemeMenu(
-                                                expanded = showThemeMenu,
-                                                current = themeMode,
-                                                onOpen = { showThemeMenu = true },
-                                                onDismiss = { showThemeMenu = false },
-                                                onSelect = onThemeChange,
-                                                haptic = hapticEnabled,
-                                                onHapticChange = onHapticChange,
-                                                blur = blurEnabled,
-                                                onBlurChange = onBlurChange,
-                                            )
-                                            // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
-                                            PowerMenu(
-                                                expanded = showRestartMenu,
-                                                onOpen = { showRestartMenu = true },
-                                                onDismiss = { showRestartMenu = false },
-                                                onRestartApp = {
-                                                    showRestartMenu = false
-                                                    env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
-                                                },
-                                                onRebootDevice = {
-                                                    showRestartMenu = false
-                                                    env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
-                                                        scope.launch {
-                                                            val result = ExecutorManager.current.exec("reboot", 10)
-                                                            if (!result.ok) feedback.toast(rebootErrorText(result))
+                            },
+                            label = "subPage",
+                        ) { file ->
+                            val subPage = file?.let { config.subPages[it] }
+                            if (subPage != null) {
+                                SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, blur = blurEnabled)
+                            } else {
+                                val backdrop = rememberBarBackdrop(blurEnabled)
+                                // Rời màn hình chính (mở trang con) thì danh sách cuộn mất vị trí, nên trả tiêu đề về trạng thái mở rộng.
+                                DisposableEffect(Unit) {
+                                    onDispose {
+                                        titleScroll.state.heightOffset = 0f
+                                        titleScroll.state.contentOffset = 0f
+                                    }
+                                }
+                                Scaffold(
+                                    topBar = {
+                                        LargeTitleTopBar(
+                                            title = config.app.name,
+                                            scrollBehavior = titleScroll,
+                                            backdrop = backdrop,
+                                            actions = {
+                                                // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
+                                                ThemeMenu(
+                                                    expanded = showThemeMenu,
+                                                    current = themeMode,
+                                                    onOpen = { showThemeMenu = true },
+                                                    onDismiss = { showThemeMenu = false },
+                                                    onSelect = onThemeChange,
+                                                    haptic = hapticEnabled,
+                                                    onHapticChange = onHapticChange,
+                                                    blur = blurEnabled,
+                                                    onBlurChange = onBlurChange,
+                                                )
+                                                // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                                                PowerMenu(
+                                                    expanded = showRestartMenu,
+                                                    onOpen = { showRestartMenu = true },
+                                                    onDismiss = { showRestartMenu = false },
+                                                    onRestartApp = {
+                                                        showRestartMenu = false
+                                                        env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                                                    },
+                                                    onRebootDevice = {
+                                                        showRestartMenu = false
+                                                        env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                                            scope.launch {
+                                                                val result = ExecutorManager.current.exec("reboot", 10)
+                                                                if (!result.ok) feedback.toast(rebootErrorText(result))
+                                                            }
                                                         }
-                                                    }
-                                                },
-                                            )
-                                        },
-                                    )
-                                },
-                                snackbarHost = { SnackbarHost(feedback.snackbarState) },
-                                bottomBar = {
-                                    if (pages.size >= 2) {
-                                        NavigationBar(
-                                            modifier = Modifier.barBlur(backdrop),
-                                            color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-                                        ) {
-                                            // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
-                                            val slide by animateFloatAsState(
-                                                targetValue = windowStart.toFloat(),
-                                                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                                                label = "tabWindowSlide",
-                                            )
-                                            BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
-                                                val itemWidth = maxWidth / visibleTabs
-                                                val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
-                                                Row(
-                                                    Modifier
-                                                        // Không dùng requiredWidth: khi rộng hơn khung cha nó tự căn GIỮA, làm cả hàng tab lệch nửa ô.
-                                                        // Căn từ mép trái (unbounded) để windowStart = 0 khớp đúng ô đầu tiên.
-                                                        .wrapContentWidth(Alignment.Start, unbounded = true)
-                                                        .width(itemWidth * pages.size)
-                                                        .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
-                                                ) {
-                                                    pages.forEachIndexed { index, page ->
-                                                        TabItem(
-                                                            ref = page.ref,
-                                                            selected = pagerState.currentPage == index,
-                                                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                                        )
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    },
+                                    snackbarHost = { SnackbarHost(feedback.snackbarState) },
+                                    bottomBar = {
+                                        if (pages.size >= 2) {
+                                            NavigationBar(
+                                                modifier = Modifier.barBlur(backdrop),
+                                                color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                                            ) {
+                                                // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
+                                                val slide by animateFloatAsState(
+                                                    targetValue = windowStart.toFloat(),
+                                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                                    label = "tabWindowSlide",
+                                                )
+                                                BoxWithConstraints(Modifier.weight(1f).clipToBounds()) {
+                                                    val itemWidth = maxWidth / visibleTabs
+                                                    val itemWidthPx = constraints.maxWidth.toFloat() / visibleTabs
+                                                    Row(
+                                                        Modifier
+                                                            // Không dùng requiredWidth: khi rộng hơn khung cha nó tự căn GIỮA, làm cả hàng tab lệch nửa ô.
+                                                            // Căn từ mép trái (unbounded) để windowStart = 0 khớp đúng ô đầu tiên.
+                                                            .wrapContentWidth(Alignment.Start, unbounded = true)
+                                                            .width(itemWidth * pages.size)
+                                                            .offset { IntOffset((-slide * itemWidthPx).roundToInt(), 0) },
+                                                    ) {
+                                                        pages.forEachIndexed { index, page ->
+                                                            TabItem(
+                                                                ref = page.ref,
+                                                                selected = pagerState.currentPage == index,
+                                                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
+                                    },
+                                ) { inner ->
+                                    // Có blur: nội dung kéo xuống dưới thanh trên (thẻ cuộn qua thanh thì bị làm mờ), chừa chỗ bằng padding của danh sách.
+                                    val barTop = inner.calculateTopPadding()
+                                    val bannerShown = warningText.isNotEmpty() && !warningDismissed
+                                    Column(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .nestedScroll(titleScroll.nestedScrollConnection)
+                                            .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
+                                    ) {
+                                        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                                            val page = pages[pageIndex]
+                                            PageList(
+                                                list = page.items.filter { isShown(it, env.store) },
+                                                error = page.error,
+                                                file = page.ref.file,
+                                                warnings = page.warnings,
+                                                env = env,
+                                                bottomInset = inner.calculateBottomPadding(),
+                                                topInset = if (backdrop != null) barTop else 0.dp,
+                                                appBanner = if (bannerShown) {
+                                                    {
+                                                        Banner(
+                                                            message = warningText,
+                                                            warning = true,
+                                                            actionLabel = "Xem",
+                                                            onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                                                            onDismiss = { warningDismissed = true },
+                                                        )
+                                                    }
+                                                } else null,
+                                            )
+                                        }
+                                        FeedbackDialogs(feedback, env)
                                     }
-                                },
-                            ) { inner ->
-                                // Có blur: nội dung kéo xuống dưới thanh trên (thẻ cuộn qua thanh thì bị làm mờ), chừa chỗ bằng padding của danh sách.
-                                val barTop = inner.calculateTopPadding()
-                                val bannerShown = warningText.isNotEmpty() && !warningDismissed
-                                Column(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .nestedScroll(titleScroll.nestedScrollConnection)
-                                        .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
-                                ) {
-                                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
-                                        val page = pages[pageIndex]
-                                        PageList(
-                                            list = page.items.filter { isShown(it, env.store) },
-                                            error = page.error,
-                                            file = page.ref.file,
-                                            warnings = page.warnings,
-                                            env = env,
-                                            bottomInset = inner.calculateBottomPadding(),
-                                            topInset = if (backdrop != null) barTop else 0.dp,
-                                            appBanner = if (bannerShown) {
-                                                {
-                                                    Banner(
-                                                        message = warningText,
-                                                        warning = true,
-                                                        actionLabel = "Xem",
-                                                        onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
-                                                        onDismiss = { warningDismissed = true },
-                                                    )
-                                                }
-                                            } else null,
-                                        )
-                                    }
-                                    FeedbackDialogs(feedback, env)
                                 }
                             }
                         }
-                    }
-                    // Dialog: nền mờ + sheet trượt từ dưới lên (giữ trang cuối trong lúc chạy hiệu ứng đóng).
-                    AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
-                        val sheetPage = lastDialog.file?.let { config.subPages[it] }
-                        if (sheetPage != null) {
-                            DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, backdrop = pageBackdrop)
+                        // Dialog: nền mờ + sheet trượt từ dưới lên (giữ trang cuối trong lúc chạy hiệu ứng đóng).
+                        AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
+                            val sheetPage = lastDialog.file?.let { config.subPages[it] }
+                            if (sheetPage != null) {
+                                DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, backdrop = pageBackdrop)
+                            }
                         }
+                        // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
+                        BannerOverlay(feedback, Modifier.align(Alignment.TopCenter), backdrop = pageBackdrop)
                     }
-                    // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
-                    BannerOverlay(feedback, Modifier.align(Alignment.TopCenter), backdrop = pageBackdrop)
+                    if (fullBackdrop != null) DialogBlurScrim(blurRequests, fullBackdrop)
                 }
-                if (fullBackdrop != null) DialogBlurScrim(blurRequests, fullBackdrop)
+                // Log toàn màn hình nằm ngoài lớp bị menu làm mờ, để menu ba chấm của chính log không làm mờ log.
+                LogFullScreen(
+                    entry = feedback.log,
+                    onDismiss = { feedback.log = null },
+                    onCancel = { feedback.log?.cancel() },
+                    onHide = { feedback.log?.let { feedback.hideLog(it) } },
+                )
             }
         }
     }
@@ -1028,12 +1037,6 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
 @Composable
 private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
     LogDialog(
-        entry = feedback.log,
-        onDismiss = { feedback.log = null },
-        onCancel = { feedback.log?.cancel() },
-        onHide = { feedback.log?.let { feedback.hideLog(it) } },
-    )
-    LogFullScreen(
         entry = feedback.log,
         onDismiss = { feedback.log = null },
         onCancel = { feedback.log?.cancel() },

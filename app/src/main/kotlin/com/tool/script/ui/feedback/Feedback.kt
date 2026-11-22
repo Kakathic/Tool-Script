@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
@@ -30,8 +31,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,13 +97,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.tool.script.R
 import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.ui.main.BlurDialog
+import com.tool.script.ui.main.LocalBlurRequests
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.cardBlur
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -153,6 +154,7 @@ class LogEntry(
 
     /** Bật: ngắt dòng dài trong khung log; tắt (mặc định): giữ nguyên một dòng và cuộn ngang. */
     var wrap by mutableStateOf(false)
+    var mono by mutableStateOf(true)
     var result by mutableStateOf(initialResult)
         private set
 
@@ -526,22 +528,33 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
     }
 }
 
-// Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình". Bố cục giống màn hình lỗi (crash/CrashActivity):
-// hàng tiêu đề có icon Thu nhỏ và icon menu, khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát ở dưới.
+// Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình". Vẽ thẳng trong cây giao diện chính (không phải cửa sổ riêng)
+// để dùng chung nền mờ của DialogBlurScrim: có blur thì trang phía sau mờ và tối nhẹ, phủ thêm lớp màu nền trong suốt một phần cho dễ đọc;
+// không có blur thì nền đặc như cũ. Đặt ở gốc Main, trên lớp scrim và dưới lớp popup của Scaffold (menu, hộp xác nhận vẫn nổi lên trên).
 // Nút cuối: đang chạy là Hủy (vàng, chỉ dừng lệnh, log vẫn mở), xong hoặc đã hủy là Thoát (xanh dương), lỗi là "Thoát: <mã>" (đỏ nhạt).
 // Back của máy thì đóng log, lệnh vẫn chạy tiếp.
 @Composable
 fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onHide: () -> Unit) {
-    if (entry == null || !entry.full) return
-    val output = entry.output
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
+    var last by remember { mutableStateOf(entry) }
+    if (entry != null) last = entry
+    val show = entry != null && entry.full
+    val requests = LocalBlurRequests.current
+    if (requests != null) {
+        DisposableEffect(show) {
+            if (show) requests.dialogs++
+            onDispose { if (show) requests.dialogs-- }
+        }
+    }
+    BackHandler(enabled = show, onBack = onDismiss)
+    AnimatedVisibility(visible = show, enter = fadeIn(tween(220)), exit = fadeOut(tween(180))) {
+        val shown = last ?: return@AnimatedVisibility
+        val output = shown.output
+        val base = MiuixTheme.colorScheme.background
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
+                .background(if (requests != null) base.copy(alpha = 0.6f) else base)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
                 .statusBarsPadding()
                 .navigationBarsPadding(),
         ) {
@@ -552,7 +565,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                     .padding(horizontal = LogMargin),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                LogHeader(entry, onHide)
+                LogHeader(shown, onHide)
             }
             Column(
                 modifier = Modifier
@@ -561,9 +574,9 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                     .padding(start = LogMargin, end = LogMargin, bottom = LogMargin),
                 verticalArrangement = Arrangement.spacedBy(LogMargin),
             ) {
-                LogStatusBlock(entry)
-                LogSelectableCard(entry, output, Modifier.weight(1f), fillHeight = true)
-                LogActionRow(entry, output, onCancel = onCancel, onDismiss = onDismiss)
+                LogStatusBlock(shown)
+                LogSelectableCard(shown, output, Modifier.weight(1f), fillHeight = true)
+                LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
     }
@@ -597,18 +610,24 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
             if (entry.running) {
                 LogIconButton(R.drawable.ic_hide, "Ẩn (chạy nền)", onHide)
+                LogToolbarDivider()
             }
             if (entry.full) {
                 LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }
             } else {
                 LogIconButton(R.drawable.ic_fullscreen, "Toàn màn hình") { entry.full = true }
             }
+            LogToolbarDivider()
             Box {
                 LogIconButton(R.drawable.ic_more_vert, "Menu") { menuOpen = true }
                 if (menuOpen) {
                     MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
                         MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
                             entry.wrap = !entry.wrap
+                            menuOpen = false
+                        }
+                        MenuItem(label = "Font mono", selected = entry.mono) {
+                            entry.mono = !entry.mono
                             menuOpen = false
                         }
                     }
@@ -663,9 +682,8 @@ private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, 
     }
 }
 
-// Khung log kiểu terminal: nền cố định theo theme (tối 0xFF0D1117, sáng 0xFFF6F8FA) có viền mảnh; nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép),
-// cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
-// [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
+// Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
+// Font mono bật mặc định, tắt được ở menu ba chấm. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
 // false: khung ôm theo nội dung tới chiều cao tối đa do [modifier] đặt (bảng log thường).
 @Composable
 private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, fillHeight: Boolean) {
@@ -675,20 +693,8 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     LaunchedEffect(output, revision) {
         if (entry.running) vertical.scrollTo(vertical.maxValue)
     }
-    val scheme = MiuixTheme.colorScheme
-    val dark = scheme.background.luminance() < 0.5f
-    val terminalBg = if (dark) Color(0xFF0D1117) else Color(0xFFF6F8FA)
-    val terminalText = if (dark) Color(0xFFC9D1D9) else Color(0xFF24292F)
-    val terminalHint = if (dark) Color(0xFF8B949E) else Color(0xFF57606A)
-    val shape = RoundedCornerShape(16.dp)
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(terminalBg)
-            .border(1.dp, scheme.onSurface.copy(alpha = 0.10f), shape),
-    ) {
-        val primary = scheme.primary
+    Card(modifier = modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
+        val primary = MiuixTheme.colorScheme.primary
         CompositionLocalProvider(
             LocalTextSelectionColors provides TextSelectionColors(
                 handleColor = primary,
@@ -701,23 +707,25 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                     .then(if (entry.wrap) Modifier else Modifier.horizontalScroll(horizontal))
                     .padding(12.dp),
             ) {
+                val font = if (entry.mono) FontFamily.Monospace else FontFamily.Default
                 if (output.isBlank()) {
                     Text(
                         text = if (entry.running) "Đang chờ đầu ra..." else "Không có đầu ra",
-                        color = terminalHint,
-                        fontFamily = FontFamily.Monospace,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontFamily = font,
                         fontSize = 12.sp,
                     )
                 } else {
+                    val scheme = MiuixTheme.colorScheme
                     Text(
                         text = entry.styled(
                             errorColor = LogRed,
-                            textColor = terminalText,
-                            backgroundColor = terminalBg,
-                            dark = dark,
+                            textColor = scheme.onSurface,
+                            backgroundColor = scheme.surface,
+                            dark = scheme.background.luminance() < 0.5f,
                         ),
-                        color = terminalText,
-                        fontFamily = FontFamily.Monospace,
+                        color = scheme.onSurface,
+                        fontFamily = font,
                         fontSize = 12.sp,
                         softWrap = entry.wrap,
                     )
@@ -725,6 +733,17 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
             }
         }
     }
+}
+
+/** Vạch dọc mảnh ngăn cách các nút trong thanh công cụ của hàng tiêu đề. */
+@Composable
+private fun LogToolbarDivider() {
+    Box(
+        Modifier
+            .width(1.dp)
+            .height(16.dp)
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+    )
 }
 
 /** Nút icon tròn 32dp nằm trong thanh công cụ của hàng tiêu đề (nền chung do thanh vẽ); [icon] là vector drawable. */
