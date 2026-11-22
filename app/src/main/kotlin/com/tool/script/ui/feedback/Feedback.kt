@@ -30,6 +30,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -569,8 +570,8 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
 }
 
 /**
- * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là icon Ẩn (chỉ khi đang chạy), icon Toàn màn hình / Thu nhỏ rồi icon menu (ba chấm).
- * Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng [MenuItem].
+ * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là một thanh công cụ dạng viên thuốc gom các icon Ẩn (chỉ khi đang chạy),
+ * Toàn màn hình / Thu nhỏ và menu (ba chấm). Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng [MenuItem].
  */
 @Composable
 private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
@@ -584,25 +585,32 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
-        if (entry.running) {
-            Spacer(Modifier.width(8.dp))
-            LogIconButton(R.drawable.ic_hide, "Ẩn (chạy nền)", onHide)
-        }
         Spacer(Modifier.width(8.dp))
-        if (entry.full) {
-            LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }
-        } else {
-            LogIconButton(R.drawable.ic_fullscreen, "Toàn màn hình") { entry.full = true }
-        }
-        Spacer(Modifier.width(8.dp))
-        Box {
-            LogIconButton(R.drawable.ic_more_vert, "Menu") { menuOpen = true }
-            if (menuOpen) {
-                MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
-                    MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
-                        entry.wrap = !entry.wrap
-                        menuOpen = false
+        Row(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                .padding(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
+            if (entry.running) {
+                LogIconButton(R.drawable.ic_hide, "Ẩn (chạy nền)", onHide)
+            }
+            if (entry.full) {
+                LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }
+            } else {
+                LogIconButton(R.drawable.ic_fullscreen, "Toàn màn hình") { entry.full = true }
+            }
+            Box {
+                LogIconButton(R.drawable.ic_more_vert, "Menu") { menuOpen = true }
+                if (menuOpen) {
+                    MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
+                        MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
+                            entry.wrap = !entry.wrap
+                            menuOpen = false
+                        }
                     }
                 }
             }
@@ -655,8 +663,9 @@ private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, 
     }
 }
 
-// Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
-// Cùng kiểu với khung log của màn hình lỗi. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
+// Khung log kiểu terminal: nền cố định theo theme (tối 0xFF0D1117, sáng 0xFFF6F8FA) có viền mảnh; nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép),
+// cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
+// [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
 // false: khung ôm theo nội dung tới chiều cao tối đa do [modifier] đặt (bảng log thường).
 @Composable
 private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, fillHeight: Boolean) {
@@ -666,8 +675,20 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     LaunchedEffect(output, revision) {
         if (entry.running) vertical.scrollTo(vertical.maxValue)
     }
-    Card(modifier = modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
-        val primary = MiuixTheme.colorScheme.primary
+    val scheme = MiuixTheme.colorScheme
+    val dark = scheme.background.luminance() < 0.5f
+    val terminalBg = if (dark) Color(0xFF0D1117) else Color(0xFFF6F8FA)
+    val terminalText = if (dark) Color(0xFFC9D1D9) else Color(0xFF24292F)
+    val terminalHint = if (dark) Color(0xFF8B949E) else Color(0xFF57606A)
+    val shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(terminalBg)
+            .border(1.dp, scheme.onSurface.copy(alpha = 0.10f), shape),
+    ) {
+        val primary = scheme.primary
         CompositionLocalProvider(
             LocalTextSelectionColors provides TextSelectionColors(
                 handleColor = primary,
@@ -683,19 +704,19 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                 if (output.isBlank()) {
                     Text(
                         text = if (entry.running) "Đang chờ đầu ra..." else "Không có đầu ra",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = terminalHint,
+                        fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
                     )
                 } else {
-                    val scheme = MiuixTheme.colorScheme
                     Text(
                         text = entry.styled(
                             errorColor = LogRed,
-                            textColor = scheme.onSurface,
-                            backgroundColor = scheme.surface,
-                            dark = scheme.background.luminance() < 0.5f,
+                            textColor = terminalText,
+                            backgroundColor = terminalBg,
+                            dark = dark,
                         ),
-                        color = scheme.onSurface,
+                        color = terminalText,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
                         softWrap = entry.wrap,
@@ -706,15 +727,14 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     }
 }
 
-/** Nút icon tròn ở hàng tiêu đề (nền xám nhạt cùng kiểu nút Chia sẻ của màn hình lỗi); [icon] là vector drawable. */
+/** Nút icon tròn 32dp nằm trong thanh công cụ của hàng tiêu đề (nền chung do thanh vẽ); [icon] là vector drawable. */
 @Composable
 private fun LogIconButton(icon: Int, description: String, onClick: () -> Unit) {
     val content = MiuixTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(32.dp)
             .clip(CircleShape)
-            .background(content.copy(alpha = 0.08f))
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
