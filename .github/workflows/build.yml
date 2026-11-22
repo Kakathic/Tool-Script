@@ -35,18 +35,14 @@ jobs:
           cache-cleanup: on-success
           
       - name: Build release APK
-        run: gradle :app:assembleRelease --stacktrace --warning-mode none -PversionCode="$GITHUB_RUN_NUMBER"
-
-      - name: Publish release
-        if: github.event_name != 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
+          gradle :app:assembleRelease --stacktrace --warning-mode none -PversionCode="$GITHUB_RUN_NUMBER"
           cp app/build/outputs/apk/release/*.apk ToolScript-release.apk
-          gh release delete latest --cleanup-tag --yes || true
-          gh release create latest ToolScript-release.apk \
-            --target "$GITHUB_SHA" \
-            --title "Tool Script (bản build mới nhất)" \
-            --notes "ToolScript-release.apk: bản chính thức (R8, ký khóa beta). Dựng từ commit $GITHUB_SHA" \
-            --latest
+
+      - name: Release APK
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Tool Script (bản mới nhất)"
+          tag_name: "latest"
+          files: ToolScript-release.apk
