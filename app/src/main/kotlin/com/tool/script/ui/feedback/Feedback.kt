@@ -100,6 +100,8 @@ import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.ui.main.MenuItem
+import com.tool.script.ui.main.cardBlur
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.AnsiTerminal
@@ -791,22 +793,16 @@ fun Banner(
     indeterminate: Boolean = false,
     maxLines: Int = 3,
     onDismiss: (() -> Unit)? = null,
+    backdrop: LayerBackdrop? = null,
 ) {
-    val colors = if (warning) {
-        CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.errorContainer,
-            contentColor = MiuixTheme.colorScheme.onErrorContainer,
-        )
-    } else {
-        CardDefaults.defaultColors(
-            // Banner thông tin: nền trung tính (không xanh) đậm hơn nền thẻ (thẻ dùng surfaceContainer) để không trùng màu thẻ.
-            color = MiuixTheme.colorScheme.surfaceContainerHighest,
-            contentColor = MiuixTheme.colorScheme.onSurface,
-        )
-    }
+    // Banner thông tin: nền trung tính (không xanh) đậm hơn nền thẻ (thẻ dùng surfaceContainer) để không trùng màu thẻ.
+    val base = if (warning) MiuixTheme.colorScheme.errorContainer else MiuixTheme.colorScheme.surfaceContainerHighest
+    val content = if (warning) MiuixTheme.colorScheme.onErrorContainer else MiuixTheme.colorScheme.onSurface
+    // Có backdrop: nền kính mờ (làm mờ phần phía sau rồi phủ màu nền trong suốt một phần), Card để trong suốt.
+    val colors = CardDefaults.defaultColors(color = if (backdrop != null) Color.Transparent else base, contentColor = content)
     val hasButtons = actionLabel != null || onDismiss != null
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().cardBlur(backdrop, RoundedCornerShape(16.dp), base),
         colors = colors,
         insideMargin = PaddingValues(start = 14.dp, top = 12.dp, end = if (hasButtons) 8.dp else 14.dp, bottom = 12.dp),
     ) {
@@ -922,17 +918,17 @@ class BannerEntry(
 
 /** Các banner xếp chồng ở đầu màn hình; chỉ chiếm chỗ của chính banner nên các item khác vẫn bấm được. */
 @Composable
-fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier) {
+fun BannerOverlay(feedback: FeedbackHost, modifier: Modifier = Modifier, backdrop: LayerBackdrop? = null) {
     if (feedback.banners.isEmpty()) return
     Column(modifier.fillMaxWidth().statusBarsPadding().padding(top = 4.dp)) {
         for (entry in feedback.banners.toList()) {
-            key(entry.id) { BannerEntryView(entry, feedback) }
+            key(entry.id) { BannerEntryView(entry, feedback, backdrop) }
         }
     }
 }
 
 @Composable
-private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost) {
+private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost, backdrop: LayerBackdrop?) {
     val visibleState = remember { MutableTransitionState(false) }
     visibleState.targetState = !entry.closing
 
@@ -994,6 +990,7 @@ private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost) {
             actionLabel = if (entry.running) "Hủy" else null,
             onAction = dismiss,
             onDismiss = if (entry.running) null else dismiss,
+            backdrop = backdrop,
         )
     }
 

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -15,7 +16,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // Làm mờ nền thanh trên và thanh tab khi thẻ cuộn qua phía dưới (miuix-blur, theo ví dụ của Miuix).
 // Cách dùng: [rememberBarBackdrop] tạo backdrop, gắn `Modifier.layerBackdrop(backdrop)` vào vùng nội dung,
 // thêm `Modifier.barBlur(backdrop)` vào mỗi thanh và để nền thanh trong suốt khi backdrop khác null.
-// Nền sau dialog dùng `Modifier.scrimBlur(backdrop)` với backdrop của cả trang.
+// Nền sau dialog dùng `Modifier.scrimBlur(backdrop)` với backdrop của cả trang; banner thông báo nổi dùng `Modifier.cardBlur`.
 
 private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
@@ -62,6 +63,24 @@ fun Modifier.scrimBlur(backdrop: LayerBackdrop): Modifier {
         backdrop = backdrop,
         shape = RectangleShape,
         blurRadius = ScrimBlurRadius,
+        colors = colors,
+    )
+}
+
+private const val CardBlurRadius = 20f
+private const val CardBlurTint = 0.72f
+
+/** Nền kính cho thẻ nổi (banner thông báo): làm mờ phần phía sau theo [shape] rồi phủ [tint] trong suốt một phần. [backdrop] = null thì không làm gì. */
+@Composable
+fun Modifier.cardBlur(backdrop: LayerBackdrop?, shape: Shape, tint: Color): Modifier {
+    if (backdrop == null) return this
+    val colors = BlurDefaults.blurColors(
+        blendColors = listOf(BlendColorEntry(color = tint.copy(alpha = CardBlurTint))),
+    )
+    return textureBlur(
+        backdrop = backdrop,
+        shape = shape,
+        blurRadius = CardBlurRadius,
         colors = colors,
     )
 }

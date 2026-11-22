@@ -401,7 +401,7 @@ fun MainScreen(
                 }
             }
             // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
-            BannerOverlay(feedback, Modifier.align(Alignment.TopCenter))
+            BannerOverlay(feedback, Modifier.align(Alignment.TopCenter), backdrop = pageBackdrop)
         }
     }
 }
