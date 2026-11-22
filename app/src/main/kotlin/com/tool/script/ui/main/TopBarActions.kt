@@ -5,7 +5,10 @@ import android.content.Context
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -59,21 +64,29 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
 // Chủ đề -> tùy chỉnh giao diện, Nguồn -> tùy chọn khởi động lại.
 
+/** Độ trong của icon khi đang nhấn (chế độ [TopBarIcon] pressAlpha). */
+private const val PressedIconAlpha = 0.4f
+
 /**
  * Icon bấm được ở thanh trên; [icon] tính từ assets/configs/ giống icon tab.
- * Vùng chạm 48dp, hiệu ứng nhấn là gợn sóng tròn nhỏ ([CompactRipple]) thay cho ô chữ nhật phủ kín mặc định.
+ * Vùng chạm 48dp, hiệu ứng nhấn là gợn sóng tròn nhỏ ([CompactRipple]) thay cho ô chữ nhật phủ kín mặc định;
+ * [pressAlpha] = true thì bỏ gợn sóng, icon mờ đi trong lúc nhấn.
  */
 @Composable
-fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: Boolean = false) {
+fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: Boolean = false, pressAlpha: Boolean = false) {
     val interactionSource = remember { MutableInteractionSource() }
     val rippleColor = MiuixTheme.colorScheme.onBackground
     val ripple = remember(rippleColor) { CompactRipple(color = rippleColor) }
+    // pressAlpha: không gợn sóng, icon mờ đi khi đang nhấn (dùng cho icon chủ đề / nguồn).
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressedAlpha by animateFloatAsState(if (pressAlpha && pressed) PressedIconAlpha else 1f, tween(90), label = "iconPress")
     Box(
         modifier = Modifier
             .size(48.dp)
+            .graphicsLayer { alpha = pressedAlpha }
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple,
+                indication = if (pressAlpha) null else ripple,
                 role = Role.Button,
                 onClick = onClick,
             ),
@@ -170,7 +183,7 @@ private fun TopBarMenu(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box {
-        TopBarIcon(icon = icon, description = description, onClick = onOpen)
+        TopBarIcon(icon = icon, description = description, onClick = onOpen, pressAlpha = true)
         if (expanded) {
             MenuPopup(onDismiss = onDismiss, minWidth = minWidth, content = content)
         }

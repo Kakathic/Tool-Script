@@ -46,6 +46,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -64,6 +66,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -170,6 +173,8 @@ fun MainScreen(
     var pendingTab by remember { mutableStateOf<Int?>(null) }
     // Giá trị biến của dialog lúc mở, để khôi phục khi bấm Hủy.
     var dialogSnapshot by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    // Vị trí cuộn của từng trang (khóa = file): đứng ở MainScreen nên mở trang con rồi quay lại, hoặc đổi tab, vẫn giữ chỗ đang đọc.
+    val scrollStates = rememberSaveable(saver = PageScrollStates.Saver) { PageScrollStates() }
 
     val env = remember(result) {
         RenderEnv(
@@ -180,6 +185,7 @@ fun MainScreen(
                 val index = pages.indexOfFirst { it.ref.id == id }
                 if (index >= 0) {
                     pendingTab = index
+                    stack.forEach { scrollStates.forget(it) }
                     stack = emptyList()
                 }
             },
@@ -222,6 +228,7 @@ fun MainScreen(
                 dialogSnapshot.forEach { (name, value) -> result.store[name] = value }
             }
         }
+        stack.lastOrNull()?.let { scrollStates.forget(it) }
         stack = stack.dropLast(1)
     }
 
@@ -264,6 +271,7 @@ fun MainScreen(
     val blurRequests = remember { BlurRequests() }
     CompositionLocalProvider(
         LocalPageWarnings provides pageWarningHost,
+        LocalPageScroll provides scrollStates,
         LocalBlurRequests provides (if (fullBackdrop != null) blurRequests else null),
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.
@@ -489,7 +497,7 @@ private fun AppTopBar(
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 24.dp
+private val LargeTitleTopPadding = 20.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -758,7 +766,7 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
 
 /**
  * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (kéo xuống thì các mục phía trên bị che dần).
- * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới; tích chỉ hiện khi sheet đứng yên ở mức giữ lại (đang kéo hoặc đang trượt lên full thì ẩn).
+ * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới; tích hiện khi sheet đã ở (hoặc đang kéo tới) mức thả tay là giữ lại; còn bị bật lại full hoặc sắp đóng thì ẩn.
  * Chạm vào vùng trống phía trên sheet thì đóng như Hủy. Full màn hình: thanh trên còn X, hai nút Hủy / Xác nhận hiện ở dưới.
  * Kéo thanh trên xuống từ trạng thái full thì rời full ngay (không bật lại), thả dưới mức tối thiểu thì đóng như Hủy.
  * Chiều cao mở = chiều cao nội dung thật (tối thiểu [SHEET_MIN_FRACTION] màn hình); nếu nội dung vượt [SHEET_FULL_FRACTION] thì mở toàn màn hình.
@@ -794,6 +802,8 @@ private fun DialogSheet(
         val startedFull = remember { mutableStateOf(false) }
         // held = sheet đang đứng yên ở một mức sẽ được giữ lại (không đang kéo, không đang trượt lên full / xuống đóng): chỉ lúc đó mới hiện dấu tích.
         var held by remember { mutableStateOf(true) }
+        // Người dùng đang kéo (thanh trên hoặc cuộn nội dung): dấu tích hiện ngay khi chiều cao đã đủ để thả tay là giữ lại.
+        var dragging by remember { mutableStateOf(false) }
         // Đang chạy hiệu ứng đóng: bỏ qua chạm vào vùng trống để không đóng hai lần.
         var closing by remember { mutableStateOf(false) }
 
@@ -814,9 +824,10 @@ private fun DialogSheet(
             closing = false
         }
 
-        fun animateTo(target: Float, velocity: Float, onEnd: () -> Unit = {}) {
+        fun animateTo(target: Float, velocity: Float, keep: Boolean = false, onEnd: () -> Unit = {}) {
             cancelSettle()
-            held = false
+            // keep = đích là một mức được giữ lại (không phải full, không phải đóng): dấu tích hiện ngay trong lúc trượt.
+            held = keep
             jobs[0] = scope.launch {
                 animate(
                     initialValue = heightPx,
@@ -830,6 +841,7 @@ private fun DialogSheet(
 
         // Thả tay: velocity (px/s) dương = kéo xuống. Kéo lên làm sheet cao hơn nên vận tốc chiều cao ngược dấu.
         fun settle(velocity: Float) {
+            dragging = false
             when {
                 heightPx < minPx - 1f || velocity > DISMISS_VELOCITY -> {
                     animateTo(0f, -velocity) { currentOnBack() }
@@ -838,10 +850,10 @@ private fun DialogSheet(
                 velocity < -DISMISS_VELOCITY ->
                     if (heightPx < screenPx - 0.5f) animateTo(screenPx, -velocity) else held = true
                 velocity > FLING_VELOCITY ->
-                    animateTo((heightPx - velocity * FLING_PROJECTION).coerceAtLeast(minPx), -velocity) { held = true }
+                    animateTo((heightPx - velocity * FLING_PROJECTION).coerceAtLeast(minPx), -velocity, keep = true)
                 velocity < -FLING_VELOCITY -> {
                     val target = heightPx - velocity * FLING_PROJECTION
-                    animateTo(if (target > fullThresholdPx) screenPx else target, -velocity) { held = true }
+                    animateTo(if (target > fullThresholdPx) screenPx else target, -velocity, keep = target <= fullThresholdPx)
                 }
                 heightPx > fullThresholdPx -> {
                     val leftFull = startedFull.value && heightPx < screenPx * (1f - LEAVE_FULL_FRACTION)
@@ -855,6 +867,7 @@ private fun DialogSheet(
         val dragState = rememberDraggableState { delta ->
             cancelSettle()
             held = false
+            dragging = true
             heightPx = (heightPx - delta).coerceIn(0f, screenPx)
         }
 
@@ -866,6 +879,8 @@ private fun DialogSheet(
                         val grow = min(-dy, screenPx - heightPx)
                         cancelSettle()
                         held = false
+                        dragging = true
+                        if (!movedByGesture) startedFull.value = false
                         heightPx += grow
                         movedByGesture = true
                         return Offset(0f, -grow)
@@ -879,6 +894,8 @@ private fun DialogSheet(
                         val shrink = min(dy, heightPx - minPx)
                         cancelSettle()
                         held = false
+                        dragging = true
+                        if (!movedByGesture) startedFull.value = false
                         heightPx -= shrink
                         movedByGesture = true
                         return Offset(0f, shrink)
@@ -903,6 +920,11 @@ private fun DialogSheet(
         // Phần thanh trạng thái nằm phía trên sheet thì báo "đã dùng", để thanh trên bên trong không chừa chỗ lần nữa.
         val consumedTop = with(density) { min(topPx, statusPx).toDp() }
         val sheetFull = heightPx >= screenPx - 1f
+        // Thả tay ngay lúc này thì sheet có ở lại không (cùng luật với settle, bỏ qua vận tốc):
+        // từ mức tối thiểu tới mức full thì ở lại; trên mức full thì chỉ ở lại khi bắt đầu kéo từ full và đã kéo xuống quá LEAVE_FULL_FRACTION.
+        val canStay = heightPx >= minPx &&
+            (heightPx <= fullThresholdPx || (startedFull.value && heightPx < screenPx * (1f - LEAVE_FULL_FRACTION)))
+        val tickReady = held || (dragging && canStay)
         SideEffect {
             sheet.full = sheetFull
             sheet.scrim = if (minPx > 0f) (heightPx / minPx).coerceIn(0f, 1f) else 0f
@@ -943,13 +965,14 @@ private fun DialogSheet(
                     onDragStarted = {
                         cancelSettle()
                         held = false
+                        dragging = true
                         startedFull.value = heightPx >= screenPx - 1f
                     },
                     onDragStopped = { velocity -> settle(velocity) },
                 ),
                 contentModifier = Modifier.nestedScroll(connection),
                 sheetFull = sheetFull,
-                sheetHeld = held,
+                sheetHeld = tickReady,
             )
             Box(
                 Modifier
@@ -1020,7 +1043,11 @@ private fun PageList(
     appBanner: (@Composable () -> Unit)? = null,
 ) {
     val showWarnings = shouldShowPageWarnings(file, warnings)
+    // Lấy trạng thái cuộn theo file từ MainScreen (lấy một lần cho lần dựng này: trang đang trượt ra không bị nhảy về đầu khi vừa bị quên).
+    val scrolls = LocalPageScroll.current
+    val listState = if (scrolls != null) remember(file, scrolls) { scrolls.of(file) } else rememberLazyListState()
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize().imePadding(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -1039,6 +1066,43 @@ private fun PageList(
         items(list) { item -> ItemRenderer(item, env) }
     }
 }
+
+/**
+ * Vị trí cuộn của từng trang theo file. Danh sách của trang bị gỡ khỏi composition khi mở trang con (hoặc khi pager chuyển tab)
+ * nên không tự giữ được vị trí; trạng thái đặt ở đây để dựng lại là cuộn về đúng chỗ. Lưu qua xoay màn hình.
+ */
+private class PageScrollStates {
+    private val states = mutableMapOf<String, LazyListState>()
+
+    fun of(file: String): LazyListState = states.getOrPut(file) { LazyListState() }
+
+    /** Trang con đã đóng: lần mở sau bắt đầu từ đầu. */
+    fun forget(file: String) {
+        states.remove(file)
+    }
+
+    companion object {
+        private const val SEP = '\u0000'
+
+        val Saver = listSaver<PageScrollStates, String>(
+            save = { holder ->
+                holder.states.map { (file, st) -> "$file$SEP${st.firstVisibleItemIndex}$SEP${st.firstVisibleItemScrollOffset}" }
+            },
+            restore = { saved ->
+                PageScrollStates().also { holder ->
+                    saved.forEach { entry ->
+                        val parts = entry.split(SEP)
+                        val index = parts.getOrNull(1)?.toIntOrNull()
+                        val offset = parts.getOrNull(2)?.toIntOrNull()
+                        if (parts.size == 3 && index != null && offset != null) holder.states[parts[0]] = LazyListState(index, offset)
+                    }
+                }
+            },
+        )
+    }
+}
+
+private val LocalPageScroll = staticCompositionLocalOf<PageScrollStates?> { null }
 
 /** Banner cảnh báo cấu hình của từng trang: "Ẩn" nhớ theo file, "Xem" mở Trung tâm lỗi với danh sách cảnh báo của trang đó. */
 private class PageWarningHost(
