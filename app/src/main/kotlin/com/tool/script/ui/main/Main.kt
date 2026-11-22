@@ -234,7 +234,7 @@ fun MainScreen(
         windowStart = nextWindowStart(pagerState.currentPage, windowStart, visibleTabs, pages.size)
     }
 
-    // Banner chung chỉ cho lỗi toàn app (script khởi động, main.toml), ẩn được.
+    // Thẻ cảnh báo chung chỉ cho lỗi toàn app (script khởi động, main.toml), ẩn được; hiện ở đầu danh sách mỗi tab (xem PageList).
     // Cảnh báo cấu hình của từng trang hiện riêng trong trang đó (xem PageWarningBanner).
     var warningDismissed by rememberSaveable { mutableStateOf(false) }
     val warningText = buildList {
@@ -394,17 +394,7 @@ fun MainScreen(
                                         .nestedScroll(titleScroll.nestedScrollConnection)
                                         .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
                                 ) {
-                                    if (bannerShown) {
-                                        Banner(
-                                            message = warningText,
-                                            warning = true,
-                                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = if (backdrop != null) barTop + 8.dp else 8.dp),
-                                            actionLabel = "Xem",
-                                            onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
-                                            onDismiss = { warningDismissed = true },
-                                        )
-                                    }
-                                        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
                                         val page = pages[pageIndex]
                                         PageList(
                                             list = page.items.filter { isShown(it, env.store) },
@@ -413,7 +403,18 @@ fun MainScreen(
                                             warnings = page.warnings,
                                             env = env,
                                             bottomInset = inner.calculateBottomPadding(),
-                                            topInset = if (backdrop != null && !bannerShown) barTop else 0.dp,
+                                            topInset = if (backdrop != null) barTop else 0.dp,
+                                            appBanner = if (bannerShown) {
+                                                {
+                                                    Banner(
+                                                        message = warningText,
+                                                        warning = true,
+                                                        actionLabel = "Xem",
+                                                        onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                                                        onDismiss = { warningDismissed = true },
+                                                    )
+                                                }
+                                            } else null,
                                         )
                                     }
                                     FeedbackDialogs(feedback, env)
@@ -488,7 +489,7 @@ private fun AppTopBar(
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 44.dp
+private val LargeTitleTopPadding = 24.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -985,6 +986,7 @@ private fun PageList(
     env: RenderEnv,
     bottomInset: androidx.compose.ui.unit.Dp,
     topInset: androidx.compose.ui.unit.Dp = 0.dp,
+    appBanner: (@Composable () -> Unit)? = null,
 ) {
     val showWarnings = shouldShowPageWarnings(file, warnings)
     LazyColumn(
@@ -992,6 +994,10 @@ private fun PageList(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Thẻ cảnh báo chung của app (script khởi động, main.toml) nằm đầu danh sách như một mục: cuộn cùng nội dung, không dính thanh trên.
+        if (appBanner != null) {
+            item { appBanner() }
+        }
         // Banner nằm trong danh sách nên cuộn cùng nội dung, không che mục nào.
         if (showWarnings) {
             item { PageWarningBanner(file, warnings) }

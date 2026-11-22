@@ -36,8 +36,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
@@ -53,7 +53,7 @@ import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
@@ -166,12 +166,13 @@ private fun TopBarMenu(
     expanded: Boolean,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
+    minWidth: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box {
         TopBarIcon(icon = icon, description = description, onClick = onOpen)
         if (expanded) {
-            MenuPopup(onDismiss = onDismiss, content = content)
+            MenuPopup(onDismiss = onDismiss, minWidth = minWidth, content = content)
         }
     }
 }
@@ -261,13 +262,32 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     }
 }
 
-/** Hàng chọn một xếp ngang: các ô chia đều chiều rộng, ô đang chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo (cùng kiểu với [MenuItem]). */
+/** Nhãn nhỏ đầu mỗi nhóm trong menu (ví dụ "Giao diện", "Tùy chọn"). */
+@Composable
+private fun MenuSectionLabel(text: String) {
+    Text(
+        text = text,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 6.dp),
+    )
+}
+
+/**
+ * Hàng chọn một xếp ngang kiểu "thanh trượt phân đoạn": các ô chia đều chiều rộng nằm trong một khay bo tròn,
+ * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo và đậm hơn (cùng tông với [MenuItem]).
+ */
 @Composable
 internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+    val trackShape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 12.dp)
+            .clip(trackShape)
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         labels.forEachIndexed { index, label ->
@@ -275,16 +295,17 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = MenuSelectedAlpha) else Color.Transparent)
                     .clickable { onSelect(index) }
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
                 )
             }
@@ -292,7 +313,7 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
     }
 }
 
-// Mục menu có ô tích bên phải: bấm cả hàng hoặc ô tích đều đổi trạng thái, menu giữ nguyên.
+// Mục menu có công tắc bên phải: bấm cả hàng hoặc công tắc đều đổi trạng thái, menu giữ nguyên.
 @Composable
 internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
@@ -301,7 +322,7 @@ internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) 
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(12.dp))
             .clickable { onChange(!checked) }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -310,11 +331,8 @@ internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) 
             fontSize = 16.sp,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(16.dp))
-        Checkbox(
-            state = if (checked) ToggleableState.On else ToggleableState.Off,
-            onClick = { onChange(!checked) },
-        )
+        Spacer(Modifier.width(24.dp))
+        Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 
@@ -322,7 +340,7 @@ internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) 
 private fun MenuDivider() {
     Box(
         Modifier
-            .padding(vertical = 4.dp, horizontal = 16.dp)
+            .padding(top = 10.dp, bottom = 6.dp, start = 20.dp, end = 20.dp)
             .fillMaxWidth()
             .height(1.dp)
             .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
@@ -331,8 +349,8 @@ private fun MenuDivider() {
 
 /**
  * Nút chủ đề: menu tùy chỉnh giao diện.
- * Hàng trên cùng chọn một, xếp ngang: Hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
- * Nhóm dưới là các ô tích: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
+ * Nhóm "Giao diện": chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
+ * Nhóm "Tùy chọn" là các công tắc: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
  */
 @Composable
 fun ThemeMenu(
@@ -352,7 +370,9 @@ fun ThemeMenu(
         expanded = expanded,
         onOpen = onOpen,
         onDismiss = onDismiss,
+        minWidth = 280.dp,
     ) {
+        MenuSectionLabel("Giao diện")
         MenuSegmentedRow(
             labels = BASE_THEME_MODES.map { it.label },
             selectedIndex = BASE_THEME_MODES.indexOf(current.base),
@@ -362,6 +382,7 @@ fun ThemeMenu(
             },
         )
         MenuDivider()
+        MenuSectionLabel("Tùy chọn")
         MenuCheckItem(label = "Màu động", checked = current.monet, onChange = { onSelect(current.withMonet(it)) })
         MenuCheckItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
         if (isBlurSupported()) MenuCheckItem(label = "Làm mờ nền", checked = blur, onChange = onBlurChange)
