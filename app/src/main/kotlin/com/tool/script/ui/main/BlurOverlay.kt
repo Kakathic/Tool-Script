@@ -1,5 +1,6 @@
 package com.tool.script.ui.main
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -34,6 +35,8 @@ class BlurRequests {
 val LocalBlurRequests = staticCompositionLocalOf<BlurRequests?> { null }
 
 private const val MenuBlurRadiusDp = 12
+private const val MenuBlurOpenMillis = 110
+private const val MenuBlurCloseMillis = 180
 
 /**
  * Thay cho OverlayDialog: có blur thì tắt lớp tối của Miuix và đăng ký để [DialogBlurScrim] vẽ nền mờ,
@@ -73,10 +76,15 @@ fun DialogBlurScrim(requests: BlurRequests, backdrop: LayerBackdrop) {
     }
 }
 
-/** Bán kính làm mờ trang khi có menu đang mở (tăng dần khi mở, giảm dần khi đóng). */
+/** Bán kính làm mờ trang khi có menu đang mở: mở nhanh (đà đầu mạnh để thấy mờ ngay), đóng chậm hơn một chút cho êm. */
 @Composable
 fun menuBlurRadius(requests: BlurRequests): Dp {
-    val radius by animateDpAsState(if (requests.menus > 0) MenuBlurRadiusDp.dp else 0.dp, tween(250), label = "menuBlur")
+    val open = requests.menus > 0
+    val radius by animateDpAsState(
+        targetValue = if (open) MenuBlurRadiusDp.dp else 0.dp,
+        animationSpec = tween(durationMillis = if (open) MenuBlurOpenMillis else MenuBlurCloseMillis, easing = LinearOutSlowInEasing),
+        label = "menuBlur",
+    )
     return radius
 }
 
