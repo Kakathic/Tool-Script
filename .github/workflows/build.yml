@@ -45,4 +45,4 @@ jobs:
         with:
           name: "Tool Script (bản mới nhất)"
           tag_name: "latest"
-          files: ToolScript-release.apk
+          files: "ToolScript-release.apk"
