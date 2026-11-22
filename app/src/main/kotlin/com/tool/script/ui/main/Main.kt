@@ -803,7 +803,7 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
  * Thả tay: dưới [SHEET_MIN_FRACTION] thì đóng như Hủy, trên [SHEET_FULL_FRACTION] thì lên toàn màn hình, ở giữa thì giữ nguyên chiều cao.
  * Vuốt mạnh (hơn [DISMISS_VELOCITY]): xuống thì đóng như Hủy, lên thì toàn màn hình. Vuốt nhẹ thì chỉ đổi chiều cao theo đà vuốt
  * (giảm không thấp hơn mức tối thiểu; tăng vượt mức full thì lên toàn màn hình).
- * Chỉ kéo ở thanh trên mới đổi chiều cao sheet; vuốt trong nội dung chỉ cuộn nội dung (không gắn cuộn lồng nhau), nên không xung đột với cuộn dọc.
+ * Chỉ kéo ở thanh trên và thanh kéo nhỏ mới đổi chiều cao sheet; vuốt trong nội dung chỉ cuộn nội dung (không gắn cuộn lồng nhau), nên không xung đột với cuộn dọc.
  */
 @Composable
 private fun DialogSheet(
@@ -917,6 +917,19 @@ private fun DialogSheet(
             sheet.scrim = if (minPx > 0f) (heightPx / minPx).coerceIn(0f, 1f) else 0f
         }
 
+        // Kéo đổi chiều cao sheet: chỉ có ở thanh trên và thanh kéo nhỏ, nội dung bên dưới chỉ cuộn (không xung đột với cuộn dọc).
+        val sheetDrag = Modifier.draggable(
+            state = dragState,
+            orientation = Orientation.Vertical,
+            onDragStarted = {
+                cancelSettle()
+                held = false
+                dragging = true
+                startedFull.value = heightPx >= screenPx - 1f
+            },
+            onDragStopped = { velocity -> settle(velocity) },
+        )
+
         // Vùng trống phía trên sheet: chạm vào là Hủy. Lớp này nằm ngay trong sheet, ôm đúng phần không thuộc sheet,
         // nên chạm được ở mọi mức chiều cao (kể cả vừa kéo rời full) mà không phụ thuộc lớp nền tối / mờ phía sau.
         if (ready && !closing && !sheetFull) {
@@ -946,28 +959,26 @@ private fun DialogSheet(
                 feedback = feedback,
                 onBack = onBack,
                 onConfirm = onConfirm,
-                topBarModifier = Modifier.draggable(
-                    state = dragState,
-                    orientation = Orientation.Vertical,
-                    onDragStarted = {
-                        cancelSettle()
-                        held = false
-                        dragging = true
-                        startedFull.value = heightPx >= screenPx - 1f
-                    },
-                    onDragStopped = { velocity -> settle(velocity) },
-                ),
+                topBarModifier = sheetDrag,
                 sheetFull = sheetFull,
                 sheetHeld = tickReady,
             )
+            // Thanh kéo nhỏ cũng là vùng kéo (cùng cơ chế với thanh trên): vùng chạm rộng hơn nét vẽ, hẹp hơn thanh trên để không đè lên nút X / tích.
             Box(
                 Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 6.dp)
-                    .size(width = 36.dp, height = 4.dp)
-                    .graphicsLayer { alpha = roundness }
-                    .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
-            )
+                    .size(width = 120.dp, height = 24.dp)
+                    .then(sheetDrag),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                Box(
+                    Modifier
+                        .padding(top = 6.dp)
+                        .size(width = 36.dp, height = 4.dp)
+                        .graphicsLayer { alpha = roundness }
+                        .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
+                )
+            }
         }
     }
 }
