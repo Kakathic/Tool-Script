@@ -233,6 +233,9 @@ internal fun MenuPopup(
 /** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
 private const val MenuSelectedAlpha = 0.24f
 
+/** Khoảng cách dọc mỗi bên của một mục menu (hai mục liền nhau cách nhau gấp đôi giá trị này). */
+private val MenuItemGap = 2.dp
+
 /**
  * Mục menu. [selected] = null: menu không có lựa chọn (không chừa chỗ cho dấu tích);
  * khác null: luôn chừa ô tích bên phải để các mục thẳng hàng, true thì hiện dấu tích.
@@ -246,7 +249,8 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            // Chừa khe nhỏ giữa các mục để nền mục đang chọn không dính vào mục kế bên.
+            .padding(horizontal = 8.dp, vertical = MenuItemGap)
             .clip(itemShape)
             .background(itemBackground)
             .clickable(onClick = onClick)
