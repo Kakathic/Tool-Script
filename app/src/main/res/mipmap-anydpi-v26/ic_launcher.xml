@@ -2,4 +2,6 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_bg" />
     <foreground android:drawable="@drawable/ic_logo_fg" />
+    <!-- Icon theo chủ đề (Android 13+): hệ thống tô lại theo màu nền tảng -->
+    <monochrome android:drawable="@drawable/ic_logo_fg" />
 </adaptive-icon>

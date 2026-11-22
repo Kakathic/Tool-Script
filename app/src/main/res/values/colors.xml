@@ -1,4 +1,5 @@
 <resources>
     <color name="window_bg">#FFFFFFFF</color>
-    <color name="ic_launcher_bg">#FF3482FF</color>
+    <!-- Nền icon launcher: màu bề mặt sáng, bản tối nằm trong values-night -->
+    <color name="ic_launcher_bg">#FFF1F4F9</color>
 </resources>

@@ -1,14 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lớp trước của icon launcher (màu trắng trên nền xanh) -->
+<!-- Lớp trước của icon launcher (nét xanh trên nền bề mặt ic_launcher_bg).
+     Cũng là lớp monochrome cho icon theo chủ đề Android 13+ (hệ thống chỉ lấy kênh alpha). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M30,34 L58,54 L30,74 L30,66 L48,54 L30,42 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M60,68 L80,68 L80,76 L60,76 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        <path
+            android:pathData="M31,28H24V80H31M77,28H84V80H77"
+            android:strokeColor="#FF3482FF"
+            android:strokeWidth="5"
+            android:strokeLineCap="butt"
+            android:strokeLineJoin="miter" />
+        <path
+            android:pathData="M36,41.5H52M44,41.5V69"
+            android:strokeColor="#FF3482FF"
+            android:strokeWidth="5"
+            android:strokeLineCap="butt"
+            android:strokeLineJoin="miter" />
+        <path
+            android:pathData="M69.5,47V41.5H58.5V54H69.5V66.5H58.5V61"
+            android:strokeColor="#FF3482FF"
+            android:strokeWidth="5"
+            android:strokeLineCap="butt"
+            android:strokeLineJoin="miter" />
+    </group>
 </vector>
