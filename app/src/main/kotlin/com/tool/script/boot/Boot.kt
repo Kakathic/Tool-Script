@@ -107,8 +107,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 prepared.unknownKeys.forEach { log("env.sh: key lạ $it, giữ nguyên") }
             }
             envResult.exceptionOrNull()?.let { log("Không chuẩn bị được env.sh: ${it.message ?: it}") }
-            val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line, isError ->
-                if (isError) return@exec
+            val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line ->
                 val p = ShellText.parseProgress(line)
                 if (p != null) {
                     _state.update { it.copy(progress = p / 100f) }
@@ -120,7 +119,9 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 scriptError = buildString {
                     append("init.sh ")
                     append(if (result.timedOut) "hết thời gian chờ" else "thoát với mã ${result.code}")
-                    if (result.stderr.isNotBlank()) append("\n").append(result.stderr)
+                    // Đầu ra gộp: chỉ lấy vài dòng cuối (thường là dòng lỗi) cho gọn.
+                    val tail = result.output.lines().filter { it.isNotBlank() && ShellText.parseProgress(it) == null }.takeLast(8)
+                    if (tail.isNotEmpty()) append("\n").append(tail.joinToString("\n"))
                 }
                 log("Script khởi động lỗi")
             }

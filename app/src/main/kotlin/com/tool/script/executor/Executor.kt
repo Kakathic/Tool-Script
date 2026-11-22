@@ -7,8 +7,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -19,27 +17,24 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
+// Mọi backend đều chỉ dùng MỘT pipe: stderr gộp vào stdout (như `2>&1`) ngay trong shell, nên đầu ra đến đúng thứ tự lệnh in ra.
+// Đổi lại không phân biệt được dòng stderr (không còn màu đỏ tự động).
+//
 // Backend thực thi, thứ tự ưu tiên: su -> ROM -> adb -> thường.
 // Giá trị biến ROOT_MODE: root / system / adb / any.
 // File chép từ assets ra thư mục app không exec trực tiếp được (Android 10+),
 // nên script được chạy qua trình thông dịch: `sh /đường/dẫn/init.sh`.
 
+/** [output] là toàn bộ đầu ra (stdout và stderr gộp, đúng thứ tự in ra). */
 data class ExecResult(
     val code: Int,
-    val stdout: String,
-    val stderr: String,
+    val output: String,
     val timedOut: Boolean = false,
 ) {
     val ok: Boolean get() = code == 0 && !timedOut
-
-    /** stdout rồi stderr, bỏ phần rỗng. */
-    val combined: String
-        get() = listOf(stdout, stderr).filter { it.isNotBlank() }.joinToString("\n")
 }
 
 interface ShellExecutor {
@@ -47,12 +42,12 @@ interface ShellExecutor {
     val rootMode: String
 
     /**
-     * Chạy [command]; [onLine] nhận từng đoạn đầu ra ngay khi lệnh in ra, theo thứ tự đến:
-     * mỗi đoạn kết thúc bằng `\n` hoặc `\r` (đoạn cuối có thể không có), nên chữ ghi đè bằng `\r` đến được ngay.
-     * `isError` = false là stdout, true là stderr (có thể gọi từ luồng nền).
+     * Chạy [command]; [onOutput] nhận từng đoạn đầu ra (stdout và stderr gộp một pipe) ngay khi lệnh in ra, đúng thứ tự:
+     * mỗi đoạn kết thúc bằng `\n` hoặc `\r` (đoạn cuối có thể không có), nên chữ ghi đè bằng `\r` đến được ngay
+     * (có thể gọi từ luồng nền).
      * [timeoutSec] = null là không giới hạn thời gian; có giá trị thì quá số giây đó lệnh bị dừng và báo hết giờ.
      */
-    suspend fun exec(command: String, timeoutSec: Int? = null, onLine: ((line: String, isError: Boolean) -> Unit)? = null): ExecResult
+    suspend fun exec(command: String, timeoutSec: Int? = null, onOutput: ((chunk: String) -> Unit)? = null): ExecResult
 }
 
 /**
@@ -132,30 +127,23 @@ private fun Process.waitForCompat(timeoutSec: Long): Boolean {
 
 /** Shell thường (`sh -c`), quyền của chính app. */
 class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
-    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult =
+    override suspend fun exec(command: String, timeoutSec: Int?, onOutput: ((String) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
             val process = try {
-                ProcessBuilder("sh", "-c", command).start()
+                // Một pipe duy nhất cho cả stdout và stderr: thứ tự đọc ra chính là thứ tự lệnh ghi vào.
+                ProcessBuilder("sh", "-c", command).redirectErrorStream(true).start()
             } catch (e: IOException) {
-                return@withContext ExecResult(127, "", e.message ?: "không chạy được sh")
+                return@withContext ExecResult(127, e.message ?: "không chạy được sh")
             }
             runCatching { process.outputStream.close() }
             val out = StringBuilder()
-            val err = StringBuilder()
             try {
                 coroutineScope {
-                    val outJoin = LineJoiner(out)
-                    val errJoin = LineJoiner(err)
-                    val outJob = async {
+                    val joiner = LineJoiner(out)
+                    val readJob = async {
                         readSegments(process.inputStream) {
-                            outJoin.add(it)
-                            onLine?.invoke(it, false)
-                        }
-                    }
-                    val errJob = async {
-                        readSegments(process.errorStream) {
-                            errJoin.add(it)
-                            onLine?.invoke(it, true)
+                            joiner.add(it)
+                            onOutput?.invoke(it)
                         }
                     }
                     var timedOut = false
@@ -169,7 +157,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                             }
                         }
                     } catch (e: CancellationException) {
-                        // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để các luồng đọc đầu ra kết thúc ngay.
+                        // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để luồng đọc đầu ra kết thúc ngay.
                         process.kill()
                         throw e
                     }
@@ -177,12 +165,10 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                         timedOut = true
                         process.kill()
                     }
-                    outJob.await()
-                    errJob.await()
+                    readJob.await()
                     ExecResult(
                         code = if (timedOut) -1 else process.exitValue(),
-                        stdout = out.toString().trimEnd(),
-                        stderr = err.toString().trimEnd(),
+                        output = out.toString().trimEnd(),
                         timedOut = timedOut,
                     )
                 }
@@ -192,7 +178,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
         }
 }
 
-/** Shell root qua libsu. [onLine] nhận từng dòng stdout và stderr (thêm `\n` cuối dòng) ngay khi lệnh in ra; libsu đã tách dòng sẵn nên `\r` giữa chừng không được giữ lại. */
+/** Shell root qua libsu. [onOutput] nhận từng dòng (thêm `\n` cuối dòng) ngay khi lệnh in ra; libsu đã tách dòng sẵn nên `\r` giữa chừng không được giữ lại. */
 class SuExecutor : ShellExecutor {
     override val rootMode: String = "root"
 
@@ -200,23 +186,17 @@ class SuExecutor : ShellExecutor {
     // lệnh mới mở một shell root riêng để chạy song song (không phải chờ), xong thì đóng.
     private val inFlight = AtomicInteger(0)
 
-    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult =
+    override suspend fun exec(command: String, timeoutSec: Int?, onOutput: ((String) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
             val out = mutableListOf<String>()
-            val err = mutableListOf<String>()
             // `timeout` của toybox (Android 6+) giữ giới hạn thời gian cho từng lệnh; mã 124 = hết giờ.
             val quoted = com.tool.script.util.ShellText.quote(command)
-            val wrapped = if (timeoutSec == null) "sh -c $quoted" else "timeout $timeoutSec sh -c $quoted"
+            // `2>&1` gộp stderr vào stdout ngay trong shell root: một pipe duy nhất nên thứ tự là thứ tự thật.
+            val wrapped = if (timeoutSec == null) "sh -c $quoted 2>&1" else "timeout $timeoutSec sh -c $quoted 2>&1"
             val outLines = object : CallbackList<String>(Executor { it.run() }) {
                 override fun onAddElement(e: String) {
                     out += e
-                    onLine?.invoke(e + "\n", false)
-                }
-            }
-            val errLines = object : CallbackList<String>(Executor { it.run() }) {
-                override fun onAddElement(e: String) {
-                    err += e
-                    onLine?.invoke(e + "\n", true)
+                    onOutput?.invoke(e + "\n")
                 }
             }
             val parallel = inFlight.getAndIncrement() > 0
@@ -224,11 +204,10 @@ class SuExecutor : ShellExecutor {
                 // Không mở được shell riêng thì dùng shell chính (xếp hàng chờ như trước).
                 val extra = if (parallel) runCatching { Shell.Builder.create().build("su") }.getOrNull() else null
                 try {
-                    val result = (extra ?: Shell.getShell()).newJob().add(wrapped).to(outLines, errLines).exec()
+                    val result = (extra ?: Shell.getShell()).newJob().add(wrapped).to(outLines).exec()
                     ExecResult(
                         code = result.code,
-                        stdout = out.joinToString("\n"),
-                        stderr = err.joinToString("\n"),
+                        output = out.joinToString("\n"),
                         timedOut = timeoutSec != null && result.code == 124,
                     )
                 } finally {
@@ -244,46 +223,6 @@ class DetectResult(val executor: ShellExecutor, val notes: List<String>)
 
 /** Dò backend theo thứ tự su -> ROM -> adb -> thường, giữ backend đang dùng. */
 /**
- * Gắn mốc thời gian cho từng đoạn đầu ra ngay lúc nhận (stdout và stderr đến từ hai luồng đọc khác nhau),
- * giữ trong bộ đệm ngắn [windowMs], rồi đẩy ra [emit] theo thứ tự mốc thời gian (hòa thì theo số thứ tự đến).
- * Nhờ vậy đoạn đến trễ vài mili giây từ pipe kia vẫn được xếp về đúng chỗ. Mốc thời gian chỉ dùng để xếp, không đưa ra log.
- */
-private class ReorderSink(
-    private val windowMs: Long,
-    private val emit: (String, Boolean) -> Unit,
-) {
-    private class Item(val ts: Long, val seq: Long, val text: String, val isError: Boolean) : Comparable<Item> {
-        override fun compareTo(other: Item): Int {
-            val c = ts.compareTo(other.ts)
-            return if (c != 0) c else seq.compareTo(other.seq)
-        }
-    }
-
-    // Hàng đợi không khóa: luồng đọc chỉ lấy mốc rồi bỏ vào, không bao giờ phải chờ việc phát ra log.
-    private val queue = PriorityBlockingQueue<Item>(256)
-    private val seq = AtomicLong(0)
-    private val emitLock = Any()
-
-    fun add(text: String, isError: Boolean) {
-        val ts = System.nanoTime() // lấy mốc trước mọi thao tác khác
-        queue.put(Item(ts, seq.incrementAndGet(), text, isError))
-    }
-
-    /** [all] = true: đẩy hết; ngược lại chỉ đẩy các đoạn đã nằm trong bộ đệm quá [windowMs]. */
-    fun flush(all: Boolean) {
-        synchronized(emitLock) {
-            val limit = System.nanoTime() - windowMs * 1_000_000L
-            while (true) {
-                val head = queue.peek() ?: break
-                if (!all && head.ts > limit) break
-                val item = queue.poll() ?: break
-                emit(item.text, item.isError)
-            }
-        }
-    }
-}
-
-/**
  * Thêm vào đầu mọi lệnh: đặt `shell_progres` (PID của shell chạy lệnh), nạp env.sh ([ExecutorManager.envFile]) kèm PID đó làm `$1`,
  * rồi chạy [ExecutorManager.prelude] (nếu có), để chúng luôn chạy trước và lệnh dùng được các biến trong env.sh.
  *
@@ -293,44 +232,35 @@ private class ReorderSink(
 private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor {
     override val rootMode: String get() = inner.rootMode
 
-    override suspend fun exec(command: String, timeoutSec: Int?, onLine: ((String, Boolean) -> Unit)?): ExecResult = coroutineScope {
+    override suspend fun exec(command: String, timeoutSec: Int?, onOutput: ((String) -> Unit)?): ExecResult = coroutineScope {
         val pid = AtomicReference<String?>(null)
-        // stdout / stderr đọc ở hai luồng nên thứ tự đến không chắc đúng: gắn thời gian, đệm ngắn rồi xếp lại trước khi ra log.
-        val sink = onLine?.let { ReorderSink(REORDER_WINDOW_MS, it) }
-        val flusher = sink?.let { s -> launch(Dispatchers.Default) { while (true) { delay(FLUSH_INTERVAL_MS); s.flush(false) } } }
         // NonCancellable: không để bên trong tự kill tiến trình gốc trước, nếu không các tiến trình con mồ côi (ppid = 1)
         // sẽ không còn tìm thấy từ gốc. Thứ tự đúng: killtree giết cả cây, rồi lệnh gốc tự kết thúc.
         // Hết giờ cũng do đây tính (bên trong chạy không giới hạn) để dùng được killtree.
         val run = async(NonCancellable) {
-            inner.exec(withHead(command, withPid = true), null) { line, isError ->
-                val p = if (isError) null else parsePid(line)
-                if (p != null) pid.compareAndSet(null, p) else sink?.add(line, isError)
+            inner.exec(withHead(command, withPid = true), null) { line ->
+                val p = parsePid(line)
+                if (p != null) pid.compareAndSet(null, p) else onOutput?.invoke(line)
             }
         }
         try {
-            try {
-                val finished = if (timeoutSec == null) {
-                    run.join()
-                    true
-                } else {
-                    withTimeoutOrNull(timeoutSec * 1000L) { run.join(); true } == true
-                }
-                if (finished) {
-                    run.await().withoutPidLine()
-                } else {
-                    stop(run, pid.get())
-                    // Lấy phần đã in ra; không lấy được thì để trống.
-                    val partial = runCatching { withTimeoutOrNull(STOP_WAIT_MS) { run.await() } }.getOrNull()
-                    (partial ?: ExecResult(-1, "", "")).copy(code = -1, timedOut = true).withoutPidLine()
-                }
-            } catch (e: CancellationException) {
-                stop(run, pid.get())
-                throw e
+            val finished = if (timeoutSec == null) {
+                run.join()
+                true
+            } else {
+                withTimeoutOrNull(timeoutSec * 1000L) { run.join(); true } == true
             }
-        } finally {
-            // Dừng bộ đẩy định kỳ và đẩy nốt phần còn đệm, trước khi trả kết quả.
-            flusher?.cancel()
-            sink?.flush(true)
+            if (finished) {
+                run.await().withoutPidLine()
+            } else {
+                stop(run, pid.get())
+                // Lấy phần đã in ra; không lấy được thì để trống.
+                val partial = runCatching { withTimeoutOrNull(STOP_WAIT_MS) { run.await() } }.getOrNull()
+                (partial ?: ExecResult(-1, "")).copy(code = -1, timedOut = true).withoutPidLine()
+            }
+        } catch (e: CancellationException) {
+            stop(run, pid.get())
+            throw e
         }
     }
 
@@ -366,15 +296,13 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
         if (line.startsWith(PID_MARK)) line.removePrefix(PID_MARK).trim().takeIf { it.isNotEmpty() && it.all(Char::isDigit) } else null
 
     private fun ExecResult.withoutPidLine(): ExecResult =
-        if (stdout.startsWith(PID_MARK)) copy(stdout = stdout.substringAfter('\n', "")) else this
+        if (output.startsWith(PID_MARK)) copy(output = output.substringAfter('\n', "")) else this
 
     private companion object {
         const val PID_MARK = "@pid "
         const val PID_HEAD = "shell_progres=\$\$; export shell_progres; echo \"$PID_MARK\$shell_progres\""
         const val KILL_TIMEOUT_SEC = 5
         const val STOP_WAIT_MS = 2000L
-        const val REORDER_WINDOW_MS = 40L
-        const val FLUSH_INTERVAL_MS = 15L
     }
 }
 

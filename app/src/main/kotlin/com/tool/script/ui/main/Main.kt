@@ -867,7 +867,7 @@ private fun buildDetails(result: BootResult): String = buildString {
 
 private fun rebootErrorText(result: ExecResult): String {
     if (result.timedOut) return "Khởi động lại máy: hết thời gian chờ"
-    val firstLine = result.stderr.lineSequence().firstOrNull { it.isNotBlank() }
+    val firstLine = result.output.lineSequence().firstOrNull { it.isNotBlank() }
     return "Không khởi động lại được máy (cần root)" + (firstLine?.let { ": $it" } ?: "")
 }
 

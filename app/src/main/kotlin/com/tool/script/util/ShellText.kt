@@ -21,6 +21,12 @@ object ShellText {
         return prefix + command
     }
 
+    /**
+     * Bọc [command] để bỏ stderr. Backend chỉ có một pipe (stderr gộp vào stdout), nên lệnh `get` đọc giá trị
+     * phải tự bỏ stderr, không thì cảnh báo của lệnh lẫn vào giá trị. Dùng `{ }` (không phải subshell) để `exit` giữ nguyên nghĩa.
+     */
+    fun silenceStderr(command: String): String = "{\n$command\n} 2>/dev/null"
+
     /** Đọc dòng `@progress N` (0-100). Trả về null nếu không phải dòng tiến trình. */
     fun parseProgress(line: String): Int? {
         val t = line.trim()

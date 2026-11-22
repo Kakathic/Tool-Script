@@ -163,7 +163,7 @@ class LogEntry(
         if (!running) return
         cancelled = true
         cancelAction?.invoke()
-        result = ExecResult(code = -1, stdout = terminal.plainText(), stderr = "")
+        result = ExecResult(code = -1, output = terminal.plainText())
     }
 
     /** true khi người dùng bấm Hủy: log chốt lại ngay, giữ phần đã in ra. */
@@ -190,7 +190,7 @@ class LogEntry(
         if (live.isNotEmpty()) return live
         val r = result ?: return emptyList()
         val fallback = AnsiTerminal(MAX_LIVE_LINES)
-        r.combined.lineSequence()
+        r.output.lineSequence()
             .filter { ShellText.parseProgress(it) == null }
             .forEach { fallback.write(it + "\n") }
         return fallback.snapshot()
@@ -217,15 +217,15 @@ class LogEntry(
         }
     }
 
-    /** Ghi một đoạn đầu ra (kết thúc bằng `\n` hoặc `\r`, hoặc đoạn dở). [isError] = true: stderr. Hai luồng cùng gọi nên cần khóa. */
+    /** Ghi một đoạn đầu ra (kết thúc bằng `\n` hoặc `\r`, hoặc đoạn dở); đầu ra đã gộp một pipe nên đến đúng thứ tự. Gọi từ luồng nền nên cần khóa. */
     @Synchronized
-    fun append(chunk: String, isError: Boolean = false) {
+    fun append(chunk: String) {
         val p = ShellText.parseProgress(chunk)
         if (p != null) {
             progress = p / 100f
             return
         }
-        terminal.write(chunk, isError)
+        terminal.write(chunk)
         revision++
     }
 
@@ -374,13 +374,13 @@ class FeedbackHost(private val context: Context) {
 
     private fun summaryOf(title: String, result: ExecResult): String = when {
         result.timedOut -> withOutput("$title: hết thời gian chờ", result)
-        result.ok -> outputOf(result.stdout) ?: "$title: hoàn tất"
+        result.ok -> outputOf(result.output) ?: "$title: hoàn tất"
         else -> withOutput("$title: lỗi (mã ${result.code})", result)
     }
 
-    /** Tiêu đề lỗi, xuống dòng rồi tới toàn bộ phần lệnh in ra (stdout và stderr) nếu có. */
+    /** Tiêu đề lỗi, xuống dòng rồi tới toàn bộ phần lệnh in ra nếu có. */
     private fun withOutput(head: String, result: ExecResult): String =
-        outputOf(result.combined)?.let { "$head\n$it" } ?: head
+        outputOf(result.output)?.let { "$head\n$it" } ?: head
 
     /** Phần lệnh in ra để làm nội dung banner / thông báo (bỏ dòng `@progress`); null nếu không có gì. */
     private fun outputOf(text: String): String? =

@@ -133,7 +133,7 @@ class RenderEnv(
         onDone: (ExecResult) -> Unit = {},
     ) {
         if (varsOnly || command.isNullOrBlank()) {
-            onDone(ExecResult(0, "", ""))
+            onDone(ExecResult(0, ""))
             return
         }
         val notifies = item.shell == ShellMode.Banner || item.shell == ShellMode.Notice
@@ -150,7 +150,7 @@ class RenderEnv(
                         val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
                         // Nút Hủy của log toàn màn hình: hủy coroutine đang chạy lệnh này.
                         entry.cancelAction = { coroutineContext[Job]?.cancel() }
-                        ExecutorManager.current.exec(full, item.timeoutSec) { line, isError -> entry.append(line, isError) }
+                        ExecutorManager.current.exec(full, item.timeoutSec) { chunk -> entry.append(chunk) }
                             .also { entry.finish(it) }
                     } else {
                         ExecutorManager.current.exec(full, item.timeoutSec)
@@ -318,9 +318,9 @@ private fun BinaryItem(
     LaunchedEffect(id) {
         val get = item.get
         if (!get.isNullOrBlank()) {
-            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec ?: GET_TIMEOUT_SEC)
+            val result = ExecutorManager.current.exec(ShellText.silenceStderr(ShellText.withEnv(get, env.store.snapshot())), item.timeoutSec ?: GET_TIMEOUT_SEC)
             if (result.ok) {
-                val out = result.stdout.trim().lowercase()
+                val out = result.output.trim().lowercase()
                 env.store[id] = if (out == "1" || out == "true" || out == "on") "1" else "0"
             }
         }
@@ -393,8 +393,8 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
     LaunchedEffect(id) {
         val get = item.get
         if (!get.isNullOrBlank()) {
-            val result = ExecutorManager.current.exec(ShellText.withEnv(get, env.store.snapshot()), item.timeoutSec ?: GET_TIMEOUT_SEC)
-            val number = result.stdout.trim().toFloatOrNull()
+            val result = ExecutorManager.current.exec(ShellText.silenceStderr(ShellText.withEnv(get, env.store.snapshot())), item.timeoutSec ?: GET_TIMEOUT_SEC)
+            val number = result.output.trim().toFloatOrNull()
             if (result.ok && number != null) env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
         }
     }
