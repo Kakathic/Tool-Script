@@ -501,7 +501,7 @@ fun rememberFeedbackHost(): FeedbackHost {
 /** Lề ngoài của log và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
 private val LogMargin = 12.dp
 
-/** Mọi lề và khoảng cách giữa các khối của log toàn màn hình (trên, dưới, trái, phải, giữa các khối). */
+/** Mọi lề và khoảng cách giữa các khối của log toàn màn hình (trên, dưới, trái, phải, giữa các khối); cũng là khoảng cách giữa hai nút ở hàng dưới cùng. */
 private val LogFullMargin = 16.dp
 
 /** Tỉ lệ chiều cao màn hình mà cả cửa sổ log thường chiếm (khung log cố định, thêm dòng thì cuộn chứ không nở ra). */
@@ -520,8 +520,6 @@ private fun logCardHeight(): Dp {
 /** Chiều cao ô giữ chỗ của thanh tiến trình. */
 private val LogProgressHeight = 3.dp
 
-/** Khoảng cách trên và dưới thanh tiến trình (nhỏ để khi thanh ẩn, khoảng trống còn lại vẫn cân đối). */
-private val LogProgressGap = 6.dp
 
 private val LogYellow = Color(0xFFFFC107)
 
@@ -545,9 +543,10 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onH
             val output = shown.output
             Column {
                 LogHeader(shown, onHide)
-                Spacer(Modifier.height(LogProgressGap))
-                LogProgress(shown)
-                Spacer(Modifier.height(LogProgressGap))
+                // Ô giữ chỗ cao đúng [LogMargin], bằng khoảng cách khung log - hàng nút: thanh tiến trình nằm giữa, ẩn đi thì vẫn 12dp.
+                Box(Modifier.fillMaxWidth().height(LogMargin), contentAlignment = Alignment.Center) {
+                    LogProgress(shown)
+                }
                 LogSelectableCard(shown, output, Modifier.height(logCardHeight()), fillHeight = false)
                 Spacer(Modifier.height(LogMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
@@ -674,7 +673,7 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
 @Composable
 private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    Row(horizontalArrangement = Arrangement.spacedBy(LogMargin)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(LogFullMargin)) {
         TextButton(
             text = "Chia sẻ",
             onClick = { shareText(context, entry.title, output.ifBlank { "(không có đầu ra)" }) },
