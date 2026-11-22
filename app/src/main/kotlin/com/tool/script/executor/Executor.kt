@@ -43,7 +43,8 @@ interface ShellExecutor {
     val rootMode: String
 
     /**
-     * Chạy [command]; [onLine] nhận từng dòng đầu ra ngay khi lệnh in ra, theo thứ tự đến:
+     * Chạy [command]; [onLine] nhận từng đoạn đầu ra ngay khi lệnh in ra, theo thứ tự đến:
+     * mỗi đoạn kết thúc bằng `\n` hoặc `\r` (đoạn cuối có thể không có), nên chữ ghi đè bằng `\r` đến được ngay.
      * `isError` = false là stdout, true là stderr (có thể gọi từ luồng nền).
      * [timeoutSec] = null là không giới hạn thời gian; có giá trị thì quá số giây đó lệnh bị dừng và báo hết giờ.
      */
@@ -51,14 +52,53 @@ interface ShellExecutor {
 }
 
 /**
- * Đọc từng dòng của [stream] tới khi hết. Luồng bị ngắt khi hủy lệnh hoặc tiến trình bị dừng sẽ ném IOException
+ * Đọc [stream] tới khi hết, gọi [onSegment] cho từng đoạn kết thúc bằng `\n` hoặc `\r` (kể cả dấu kết thúc), đoạn cuối còn dở thì gọi khi hết luồng.
+ * Tách theo `\r` để thanh tiến trình in bằng `\r` hiện ra ngay thay vì chờ tới `\n`.
+ * Luồng bị ngắt khi hủy lệnh hoặc tiến trình bị dừng sẽ ném IOException
  * (ví dụ InterruptedIOException "read interrupted"), ở đây coi là hết đầu ra để lỗi này không làm app crash.
  */
-private fun readLines(stream: java.io.InputStream, onLine: (String) -> Unit) {
+private fun readSegments(stream: java.io.InputStream, onSegment: (String) -> Unit) {
+    val seg = StringBuilder()
     try {
-        stream.bufferedReader().forEachLine(onLine)
+        val reader = stream.reader(Charsets.UTF_8)
+        val buf = CharArray(4096)
+        while (true) {
+            val n = reader.read(buf)
+            if (n < 0) break
+            for (i in 0 until n) {
+                val c = buf[i]
+                seg.append(c)
+                if (c == '\n' || c == '\r') {
+                    onSegment(seg.toString())
+                    seg.setLength(0)
+                }
+            }
+        }
     } catch (_: IOException) {
         // hết đầu ra
+    }
+    if (seg.isNotEmpty()) onSegment(seg.toString())
+}
+
+/**
+ * Gom các đoạn của [readSegments] về dạng từng dòng như trước (`\n`, `\r`, `\r\n` đều là một lần xuống dòng) cho [ExecResult].
+ */
+private class LineJoiner(private val sb: StringBuilder) {
+    private var afterCr = false
+
+    fun add(segment: String) {
+        if (segment == "\n" && afterCr) {
+            afterCr = false
+            return
+        }
+        val last = segment.last()
+        if (last == '\r') {
+            sb.append(segment, 0, segment.length - 1).append('\n')
+            afterCr = true
+        } else {
+            sb.append(segment)
+            afterCr = false
+        }
     }
 }
 
@@ -100,15 +140,17 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
             val err = StringBuilder()
             try {
                 coroutineScope {
+                    val outJoin = LineJoiner(out)
+                    val errJoin = LineJoiner(err)
                     val outJob = async {
-                        readLines(process.inputStream) {
-                            out.appendLine(it)
+                        readSegments(process.inputStream) {
+                            outJoin.add(it)
                             onLine?.invoke(it, false)
                         }
                     }
                     val errJob = async {
-                        readLines(process.errorStream) {
-                            err.appendLine(it)
+                        readSegments(process.errorStream) {
+                            errJoin.add(it)
                             onLine?.invoke(it, true)
                         }
                     }
@@ -146,7 +188,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
         }
 }
 
-/** Shell root qua libsu. [onLine] nhận từng dòng stdout và stderr ngay khi lệnh in ra. */
+/** Shell root qua libsu. [onLine] nhận từng dòng stdout và stderr (thêm `\n` cuối dòng) ngay khi lệnh in ra; libsu đã tách dòng sẵn nên `\r` giữa chừng không được giữ lại. */
 class SuExecutor : ShellExecutor {
     override val rootMode: String = "root"
 
@@ -164,13 +206,13 @@ class SuExecutor : ShellExecutor {
             val outLines = object : CallbackList<String>(Executor { it.run() }) {
                 override fun onAddElement(e: String) {
                     out += e
-                    onLine?.invoke(e, false)
+                    onLine?.invoke(e + "\n", false)
                 }
             }
             val errLines = object : CallbackList<String>(Executor { it.run() }) {
                 override fun onAddElement(e: String) {
                     err += e
-                    onLine?.invoke(e, true)
+                    onLine?.invoke(e + "\n", true)
                 }
             }
             val parallel = inFlight.getAndIncrement() > 0

@@ -74,6 +74,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -81,7 +82,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
@@ -94,6 +97,7 @@ import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.executor.ExecResult
+import com.tool.script.util.AnsiTerminal
 import com.tool.script.util.copyToClipboard
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
@@ -124,10 +128,14 @@ class LogEntry(
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
 ) {
-    /** Một dòng log: [isError] = true là stderr (hiện màu đỏ). Thứ tự dòng trong danh sách chính là thứ tự đến. */
-    class Line(val text: String, val isError: Boolean)
+    private val terminal = AnsiTerminal(MAX_LIVE_LINES)
 
-    private val lines = mutableStateListOf<Line>()
+    /** Tăng sau mỗi lần nội dung log đổi (kể cả ghi đè bằng `\r`), để giao diện vẽ lại và tự cuộn xuống. */
+    var revision by mutableIntStateOf(0)
+        private set
+
+    /** Bật: ngắt dòng dài trong khung log; tắt (mặc định): giữ nguyên một dòng và cuộn ngang. */
+    var wrap by mutableStateOf(false)
     var result by mutableStateOf(initialResult)
         private set
 
@@ -149,7 +157,7 @@ class LogEntry(
         if (!running) return
         cancelled = true
         cancelAction?.invoke()
-        result = ExecResult(code = -1, stdout = lines.joinToString("\n") { it.text }, stderr = "")
+        result = ExecResult(code = -1, stdout = terminal.plainText(), stderr = "")
     }
 
     /** true khi người dùng bấm Hủy: log chốt lại ngay, giữ phần đã in ra. */
@@ -169,44 +177,50 @@ class LogEntry(
 
     val exitCode: Int? get() = result?.takeIf { !it.timedOut && !cancelled }?.code
 
-    /** Các dòng đang hiện, theo đúng thứ tự đến (stdout và stderr xen kẽ), bỏ dòng trống ở cuối. */
-    private fun shownLines(): List<Line> = lines.toList().dropLastWhile { it.text.isBlank() }
+    /** Các dòng đang hiện; không có dòng nào được phát trực tiếp thì dùng đầu ra gom lại khi xong. */
+    private fun shownRows(): List<List<AnsiTerminal.Run>> {
+        revision
+        val live = terminal.snapshot()
+        if (live.isNotEmpty()) return live
+        val r = result ?: return emptyList()
+        val fallback = AnsiTerminal(MAX_LIVE_LINES)
+        r.combined.lineSequence()
+            .filter { ShellText.parseProgress(it) == null }
+            .forEach { fallback.write(it + "\n") }
+        return fallback.snapshot()
+    }
 
-    /** Văn bản log theo đúng thứ tự đến; dùng cho khung log và nút Chia sẻ. */
+    /** Văn bản thuần của log (không mã ANSI); dùng cho nút Chia sẻ. */
     val output: String
-        get() {
-            val shown = shownLines()
-            if (shown.isNotEmpty()) return shown.joinToString("\n") { it.text }
-            // Không có dòng nào được phát trực tiếp: dùng đầu ra gom lại khi xong.
-            val r = result ?: return ""
-            return r.combined.lineSequence()
-                .filter { ShellText.parseProgress(it) == null }
-                .joinToString("\n")
-                .trimEnd('\n', '\r')
-        }
+        get() = shownRows().joinToString("\n") { row -> row.joinToString("") { it.text } }
 
-    /** Cùng nội dung với [output]: dòng stderr màu [errorColor]. */
-    fun styled(errorColor: Color): AnnotatedString {
-        val shown = shownLines()
-        if (shown.isEmpty()) return AnnotatedString(output)
+    /**
+     * Cùng nội dung với [output] kèm màu: mã ANSI theo bảng màu sáng / tối ([dark]), stderr mặc định màu [errorColor],
+     * chữ không có màu riêng dùng [textColor], nền đảo màu dùng [backgroundColor].
+     */
+    fun styled(errorColor: Color, textColor: Color, backgroundColor: Color, dark: Boolean): AnnotatedString {
+        val rows = shownRows()
         return buildAnnotatedString {
-            shown.forEachIndexed { i, line ->
+            rows.forEachIndexed { i, row ->
                 if (i > 0) append('\n')
-                if (line.isError) withStyle(SpanStyle(color = errorColor)) { append(line.text) } else append(line.text)
+                for (run in row) {
+                    val style = spanOf(run.style, errorColor, textColor, backgroundColor, dark)
+                    if (style == null) append(run.text) else withStyle(style) { append(run.text) }
+                }
             }
         }
     }
 
-    /** [isError] = true: dòng stderr. Hai luồng đọc stdout / stderr cùng gọi nên cần khóa để giữ đúng thứ tự. */
+    /** Ghi một đoạn đầu ra (kết thúc bằng `\n` hoặc `\r`, hoặc đoạn dở). [isError] = true: stderr. Hai luồng cùng gọi nên cần khóa. */
     @Synchronized
-    fun append(line: String, isError: Boolean = false) {
-        val p = ShellText.parseProgress(line)
+    fun append(chunk: String, isError: Boolean = false) {
+        val p = ShellText.parseProgress(chunk)
         if (p != null) {
             progress = p / 100f
             return
         }
-        lines += Line(line, isError)
-        while (lines.size > MAX_LIVE_LINES) lines.removeAt(0)
+        terminal.write(chunk, isError)
+        revision++
     }
 
     fun finish(result: ExecResult) {
@@ -219,6 +233,40 @@ class LogEntry(
     private companion object {
         const val MAX_LIVE_LINES = 2000
     }
+}
+
+private val DarkPalette = intArrayOf(
+    0x6E7681, 0xF47067, 0x57AB5A, 0xC69026, 0x6CB6FF, 0xDCBDFB, 0x39C5CF, 0xCDD9E5,
+    0x909DAB, 0xFF938A, 0x6BC46D, 0xDAAA3F, 0x96D0FF, 0xDCBDFB, 0x56D4DD, 0xFFFFFF,
+)
+
+private val LightPalette = intArrayOf(
+    0x24292F, 0xCF222E, 0x116329, 0x9A6700, 0x0969DA, 0x8250DF, 0x1B7C83, 0x6E7781,
+    0x57606A, 0xA40E26, 0x1A7F37, 0x7D4E00, 0x218BFF, 0xA475F9, 0x3192AA, 0x8C959F,
+)
+
+private fun ansiColor(c: AnsiTerminal.Color, dark: Boolean): Color {
+    val rgb = if (c.isPalette) (if (dark) DarkPalette else LightPalette)[c.palette] else c.rgb
+    return Color(0xFF000000.toInt() or rgb)
+}
+
+/** Kiểu Compose của một ô chữ; null khi là chữ thường không cần kiểu riêng. */
+private fun spanOf(style: AnsiTerminal.Style, errorColor: Color, textColor: Color, backgroundColor: Color, dark: Boolean): SpanStyle? {
+    if (style == AnsiTerminal.Style.DEFAULT) return null
+    var fg = style.fg?.let { ansiColor(it, dark) } ?: if (style.error) errorColor else null
+    var bg = style.bg?.let { ansiColor(it, dark) }
+    if (style.inverse) {
+        val newBg = fg ?: textColor
+        fg = bg ?: backgroundColor
+        bg = newBg
+    }
+    return SpanStyle(
+        color = fg ?: Color.Unspecified,
+        background = bg ?: Color.Unspecified,
+        fontWeight = if (style.bold) FontWeight.Bold else null,
+        fontStyle = if (style.italic) FontStyle.Italic else null,
+        textDecoration = if (style.underline) TextDecoration.Underline else null,
+    )
 }
 
 class FeedbackHost(private val context: Context) {
@@ -418,7 +466,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
         last?.let { shown ->
             val output = shown.output
             Column(verticalArrangement = Arrangement.spacedBy(LogMargin)) {
-                LogHeader(shown.title, "Toàn màn hình", onClick = { shown.full = true })
+                LogHeader(shown, "Toàn màn hình", onClick = { shown.full = true })
                 LogStatusBlock(shown)
                 LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
@@ -453,7 +501,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
                     .padding(horizontal = LogMargin),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                LogHeader(entry.title, "Thu nhỏ", onClick = { entry.full = false })
+                LogHeader(entry, "Thu nhỏ", onClick = { entry.full = false })
             }
             Column(
                 modifier = Modifier
@@ -470,18 +518,21 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
     }
 }
 
-/** Hàng tiêu đề dùng chung: tên lệnh bên trái, nút dạng viên thuốc (Toàn màn hình / Thu nhỏ) bên phải. */
+/** Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là nút Ngắt dòng (bật / tắt) và nút Toàn màn hình / Thu nhỏ. */
 @Composable
-private fun LogHeader(title: String, pillText: String, onClick: () -> Unit) {
+private fun LogHeader(entry: LogEntry, pillText: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = title,
+            text = entry.title,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        Spacer(Modifier.width(8.dp))
+        LogPillButton(text = "Ngắt dòng", selected = entry.wrap, onClick = { entry.wrap = !entry.wrap })
+        Spacer(Modifier.width(8.dp))
         LogPillButton(text = pillText, onClick = onClick)
     }
 }
@@ -531,13 +582,15 @@ private fun LogActionRow(entry: LogEntry, output: String, onCancel: () -> Unit, 
     }
 }
 
-// Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang, tự cuộn xuống dòng mới nhất khi đang chạy.
+// Khung log: nhấn giữ để chọn chữ (thanh công cụ hệ thống có Sao chép), cuộn dọc và ngang (bật Ngắt dòng thì chỉ cuộn dọc), tự cuộn xuống dòng mới nhất khi đang chạy.
 // Cùng kiểu với khung log của màn hình lỗi. [fillHeight] = true: nội dung phủ kín khung (toàn màn hình, vuốt chỗ trống cũng cuộn được);
 // false: khung ôm theo nội dung tới chiều cao tối đa do [modifier] đặt (bảng log thường).
 @Composable
 private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifier, fillHeight: Boolean) {
     val vertical = rememberScrollState()
-    LaunchedEffect(output) {
+    val horizontal = rememberScrollState()
+    val revision = entry.revision
+    LaunchedEffect(output, revision) {
         if (entry.running) vertical.scrollTo(vertical.maxValue)
     }
     Card(modifier = modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
@@ -551,7 +604,7 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
             SelectionContainer(
                 modifier = (if (fillHeight) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
                     .verticalScroll(vertical)
-                    .horizontalScroll(rememberScrollState())
+                    .then(if (entry.wrap) Modifier else Modifier.horizontalScroll(horizontal))
                     .padding(12.dp),
             ) {
                 if (output.isBlank()) {
@@ -561,11 +614,18 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                         fontSize = 12.sp,
                     )
                 } else {
+                    val scheme = MiuixTheme.colorScheme
                     Text(
-                        text = entry.styled(errorColor = LogRed),
+                        text = entry.styled(
+                            errorColor = LogRed,
+                            textColor = scheme.onSurface,
+                            backgroundColor = scheme.surface,
+                            dark = scheme.background.luminance() < 0.5f,
+                        ),
+                        color = scheme.onSurface,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
-                        softWrap = false,
+                        softWrap = entry.wrap,
                     )
                 }
             }
@@ -573,15 +633,15 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     }
 }
 
-/** Nút dạng viên thuốc ở hàng tiêu đề (cùng kiểu nút Chia sẻ của màn hình lỗi): chữ trong khung bo, nền xám nhạt. */
+/** Nút dạng viên thuốc ở hàng tiêu đề (cùng kiểu nút Chia sẻ của màn hình lỗi): chữ trong khung bo, nền xám nhạt; [selected] = đang bật thì tô màu chủ đạo. */
 @Composable
-private fun LogPillButton(text: String, onClick: () -> Unit) {
-    val content = MiuixTheme.colorScheme.onSurface
+private fun LogPillButton(text: String, onClick: () -> Unit, selected: Boolean = false) {
+    val content = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
             .height(36.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(content.copy(alpha = 0.08f))
+            .background(content.copy(alpha = if (selected) 0.16f else 0.08f))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
