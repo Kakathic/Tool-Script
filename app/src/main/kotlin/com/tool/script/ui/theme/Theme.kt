@@ -24,6 +24,23 @@ enum class ThemeMode(val key: String, val label: String, val monet: Boolean) {
     MonetSystem("monet_system", "Màu động (theo hệ thống)", true),
     MonetLight("monet_light", "Màu động - Sáng", true),
     MonetDark("monet_dark", "Màu động - Tối", true),
+    ;
+
+    /** Nhánh cơ bản (Theo hệ thống / Sáng / Tối), bỏ phần Màu động. */
+    val base: ThemeMode
+        get() = when (this) {
+            MonetSystem -> System
+            MonetLight -> Light
+            MonetDark -> Dark
+            else -> this
+        }
+
+    /** Cùng nhánh cơ bản nhưng bật / tắt Màu động. */
+    fun withMonet(enabled: Boolean): ThemeMode = when (base) {
+        System -> if (enabled) MonetSystem else System
+        Light -> if (enabled) MonetLight else Light
+        else -> if (enabled) MonetDark else Dark
+    }
 }
 
 /** Lưu lựa chọn chủ đề vào SharedPreferences để lần sau mở app vẫn giữ. */

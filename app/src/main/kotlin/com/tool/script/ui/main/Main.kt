@@ -320,10 +320,7 @@ fun MainScreen(
                                                 current = themeMode,
                                                 onOpen = { showThemeMenu = true },
                                                 onDismiss = { showThemeMenu = false },
-                                                onSelect = {
-                                                    showThemeMenu = false
-                                                    onThemeChange(it)
-                                                },
+                                                onSelect = onThemeChange,
                                                 haptic = hapticEnabled,
                                                 onHapticChange = onHapticChange,
                                                 blur = blurEnabled,
@@ -490,6 +487,8 @@ private fun AppTopBar(
 
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
+/** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
+private val LargeTitleTopPadding = 44.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -507,6 +506,9 @@ private fun LargeTitleTopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val state = scrollBehavior.state
+    val density = LocalDensity.current
+    // Quãng thanh co lại khi thu gọn = đệm trên chữ lớn + chiều cao chữ + đệm dưới - chiều cao thanh thu gọn.
+    val extraPx = with(density) { (LargeTitleTopPadding + LargeTitleBottomPadding - BarCollapsedHeight).roundToPx() }
     // Chữ nhỏ chỉ hiện khi đã thu gần hết (giống Miuix: 1/3 quãng thu gọn).
     val smallVisible by remember(state) { derivedStateOf { state.collapsedFraction * 3f >= 1f } }
     val smallAlpha by animateFloatAsState(
@@ -547,7 +549,7 @@ private fun LargeTitleTopBar(
             Box(
                 modifier = Modifier
                     .layoutId("large")
-                    .padding(top = BarCollapsedHeight)
+                    .padding(top = LargeTitleTopPadding)
                     .padding(horizontal = LargeTitleHorizontalPadding)
                     .graphicsLayer { alpha = 1f - (state.collapsedFraction * 3f).coerceIn(0f, 1f) },
             ) {
@@ -556,7 +558,7 @@ private fun LargeTitleTopBar(
                     modifier = Modifier
                         .offset { IntOffset(0, state.heightOffset.roundToInt()) }
                         .onSizeChanged { size ->
-                            val limit = -size.height.toFloat()
+                            val limit = -(size.height + extraPx).toFloat()
                             if (state.heightOffsetLimit != limit) state.heightOffsetLimit = limit
                         },
                     fontSize = MiuixTheme.textStyles.title1.fontSize,
@@ -578,12 +580,10 @@ private fun LargeTitleTopBar(
             .measure(constraints.copy(minHeight = collapsedPx, maxHeight = collapsedPx))
         val large = measurables.first { it.layoutId == "large" }
             .measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-        // Phần mở rộng = chiều cao chữ lớn (hộp chữ lớn đã có đệm trên bằng đúng hàng thanh thu gọn).
-        val expansion = (large.height - collapsedPx).coerceAtLeast(0)
-        val offset = state.heightOffset
-        val collapse = if (expansion > 0 && !offset.isNaN()) (kotlin.math.abs(offset) / expansion).coerceIn(0f, 1f) else 1f
-        val openPart = 1f - collapse
-        val height = collapsedPx + ((expansion + bottomPadPx) * openPart).roundToInt()
+        // Chiều cao lúc mở rộng = hộp chữ lớn (gồm đệm trên) + đệm dưới; heightOffsetLimit đúng bằng phần chênh so với lúc thu gọn nên thanh co lại 1:1 với ngón tay.
+        val expandedHeight = maxOf(collapsedPx, large.height + bottomPadPx)
+        val collapse = state.collapsedFraction.let { if (it.isNaN()) 0f else it.coerceIn(0f, 1f) }
+        val height = collapsedPx + ((expandedHeight - collapsedPx) * (1f - collapse)).roundToInt()
         layout(constraints.maxWidth, height) {
             large.placeRelative(0, 0)
             bar.placeRelative(0, 0)

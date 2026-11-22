@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
@@ -50,7 +51,7 @@ import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
@@ -240,16 +241,16 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     }
 }
 
-// Mục menu có nút gạt bên phải: bấm cả hàng hoặc nút gạt đều đổi trạng thái.
+// Mục menu có ô tích bên phải: bấm cả hàng hoặc ô tích đều đổi trạng thái, menu giữ nguyên.
 @Composable
-internal fun MenuSwitchItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(12.dp))
             .clickable { onChange(!checked) }
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -259,7 +260,10 @@ internal fun MenuSwitchItem(label: String, checked: Boolean, onChange: (Boolean)
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Checkbox(
+            state = if (checked) ToggleableState.On else ToggleableState.Off,
+            onClick = { onChange(!checked) },
+        )
     }
 }
 
@@ -274,7 +278,11 @@ private fun MenuDivider() {
     )
 }
 
-/** Nút chủ đề: menu chọn chủ đề Theo hệ thống / Sáng / Tối / Màu động. Chọn xong áp dụng ngay và đóng menu. */
+/**
+ * Nút chủ đề: menu tùy chỉnh giao diện.
+ * Nhóm trên chọn một: Theo hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
+ * Nhóm dưới là các ô tích: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
+ */
 @Composable
 fun ThemeMenu(
     expanded: Boolean,
@@ -294,16 +302,20 @@ fun ThemeMenu(
         onOpen = onOpen,
         onDismiss = onDismiss,
     ) {
-        for ((index, mode) in ThemeMode.entries.withIndex()) {
-            // Vạch ngăn giữa nhóm cơ bản và nhóm "Màu động".
-            if (index > 0 && mode.monet && !ThemeMode.entries[index - 1].monet) MenuDivider()
-            MenuItem(label = mode.label, selected = mode == current) { onSelect(mode) }
+        for (mode in BASE_THEME_MODES) {
+            MenuItem(label = mode.label, selected = mode == current.base) {
+                onSelect(mode.withMonet(current.monet))
+                onDismiss()
+            }
         }
         MenuDivider()
-        MenuSwitchItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
-        if (isBlurSupported()) MenuSwitchItem(label = "Làm mờ nền", checked = blur, onChange = onBlurChange)
+        MenuCheckItem(label = "Màu động", checked = current.monet, onChange = { onSelect(current.withMonet(it)) })
+        MenuCheckItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
+        if (isBlurSupported()) MenuCheckItem(label = "Làm mờ nền", checked = blur, onChange = onBlurChange)
     }
 }
+
+private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
 
 /** Nút nguồn: menu chọn kiểu khởi động lại. Việc xác nhận và thực thi do nơi gọi xử lý. */
 @Composable
