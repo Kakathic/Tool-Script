@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -63,7 +64,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * Vùng chạm 48dp, hiệu ứng nhấn là gợn sóng tròn nhỏ ([CompactRipple]) thay cho ô chữ nhật phủ kín mặc định.
  */
 @Composable
-fun TopBarIcon(icon: String, description: String, onClick: () -> Unit) {
+fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: Boolean = false) {
     val interactionSource = remember { MutableInteractionSource() }
     val rippleColor = MiuixTheme.colorScheme.onBackground
     val ripple = remember(rippleColor) { CompactRipple(color = rippleColor) }
@@ -78,12 +79,30 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit) {
             ),
         contentAlignment = Alignment.Center,
     ) {
-        AsyncImage(
-            model = Util.iconModel(icon),
-            contentDescription = description,
-            modifier = Modifier.size(24.dp),
-            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
-        )
+        if (circle) {
+            // Nền tròn bo quanh icon để nút nổi rõ trên thanh (dùng cho X / tích của dialog).
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = Util.iconModel(icon),
+                    contentDescription = description,
+                    modifier = Modifier.size(20.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                )
+            }
+        } else {
+            AsyncImage(
+                model = Util.iconModel(icon),
+                contentDescription = description,
+                modifier = Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
+            )
+        }
     }
 }
 

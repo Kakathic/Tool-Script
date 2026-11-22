@@ -488,7 +488,7 @@ private fun AppTopBar(
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 22.dp
+private val LargeTitleTopPadding = 44.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -593,7 +593,7 @@ private fun LargeTitleTopBar(
 
 /**
  * Thanh trên của dialog sheet (kiểu OverlayBottomSheet của Miuix): tiêu đề ở giữa, X bên trái, tích bên phải.
- * [onCancel] / [onConfirm] = null thì ẩn nút tương ứng (sheet full dùng nút Hủy / Xác nhận ở dưới).
+ * X và tích nằm trong nền tròn cho rõ. [onCancel] / [onConfirm] = null thì ẩn nút tương ứng (sheet full vẫn có X, tích thì dùng nút Xác nhận ở dưới).
  */
 @Composable
 private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -> Unit)?) {
@@ -616,10 +616,10 @@ private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -
             overflow = TextOverflow.Ellipsis,
         )
         if (onCancel != null) {
-            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = AppIcons.BarClose, description = "Hủy", onClick = onCancel) }
+            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = AppIcons.BarClose, description = "Hủy", onClick = onCancel, circle = true) }
         }
         if (onConfirm != null) {
-            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = AppIcons.BarCheck, description = "Xác nhận", onClick = onConfirm) }
+            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = AppIcons.BarCheck, description = "Xác nhận", onClick = onConfirm, circle = true) }
         }
     }
 }
@@ -645,8 +645,8 @@ private fun SubPageScreen(
         topBar = {
             Box(topBarModifier) {
                 if (page.dialog) {
-                    // Dialog chưa full: X = Hủy, tích = Xác nhận; full thì hai nút nằm ở thanh dưới.
-                    SheetTopBar(page.title, onCancel = if (sheetFull) null else onBack, onConfirm = if (sheetFull) null else onConfirm)
+                    // X = Hủy luôn có; tích = Xác nhận chỉ khi chưa full (full thì hai nút Hủy / Xác nhận cũng nằm ở thanh dưới).
+                    SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull) null else onConfirm)
                 } else {
                     AppTopBar(title = page.title, onBack = onBack, closeStyle = false, backdrop = backdrop)
                 }
@@ -756,7 +756,7 @@ private fun DialogContentMeasurer(page: SubPage, env: RenderEnv, onHeight: (Int)
 
 /**
  * Sheet của dialog, neo ở đáy màn hình; [heightPx] là chiều cao hiện tại (kéo xuống thì các mục phía trên bị che dần).
- * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới. Full màn hình: hiện hai nút Hủy / Xác nhận ở dưới.
+ * Chưa full: thanh trên có X (Hủy) và tích (Xác nhận), không có thanh nút dưới. Full màn hình: thanh trên còn X, hai nút Hủy / Xác nhận hiện ở dưới.
  * Kéo thanh trên xuống từ trạng thái full thì rời full ngay (không bật lại), thả dưới mức tối thiểu thì đóng như Hủy.
  * Chiều cao mở = chiều cao nội dung thật (tối thiểu [SHEET_MIN_FRACTION] màn hình); nếu nội dung vượt [SHEET_FULL_FRACTION] thì mở toàn màn hình.
  * Thả tay: dưới [SHEET_MIN_FRACTION] thì đóng như Hủy, trên [SHEET_FULL_FRACTION] thì lên toàn màn hình, ở giữa thì giữ nguyên chiều cao.
