@@ -54,7 +54,6 @@ import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.RadioButton
@@ -294,10 +293,10 @@ internal fun SelectFullScreen(
                 )
                 Spacer(Modifier.height(SCREEN_MARGIN))
 
-                // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền và bo góc với các thẻ trong app, cả sáng lẫn tối),
-                // lề ngoài 16dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
+                // Vùng danh sách: không bọc khung đặc (không Card), các dòng nằm thẳng trên nền màn hình
+                // nên khi có blur thì list hiện trên trang phía sau đã làm mờ. Lề ngoài 16dp hai bên.
                 // Ô Chọn tất cả nằm trên cùng, cách danh sách bằng một đường kẻ.
-                Card(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
