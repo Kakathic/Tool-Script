@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,8 +69,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /** Số mục tối thiểu để chuyển từ hộp thoại nhỏ sang toàn màn hình. */
 internal const val FULLSCREEN_MIN_OPTIONS = 6
 
-/** Lề hai bên của mọi thành phần trong màn hình chọn toàn màn hình. */
+/**
+ * Lề bốn phía và khoảng cách giữa các khối (tiêu đề, ô tìm, danh sách, hai nút) của màn hình chọn toàn màn hình: 16dp,
+ * cùng mức với log shell toàn màn hình (LogFullMargin trong Feedback.kt).
+ */
 private val SCREEN_MARGIN = 16.dp
+
+/** Lề trong mỗi dòng danh sách: chỉ lề trên dưới; hai bên 0 để chữ thẳng hàng với tiêu đề và ô tìm (đã cách mép 16dp) vì danh sách không còn khung. */
+private val ListRowMargin = PaddingValues(start = 0.dp, top = 12.dp, end = 0.dp, bottom = 12.dp)
 
 private val COMBINING_MARKS = Regex("\\p{M}+")
 
@@ -231,8 +238,8 @@ internal fun SelectFullScreen(
             enter = slideInVertically(animationSpec = tween(300)) { it },
             exit = slideOutVertically(animationSpec = tween(220)) { it },
         ) {
-            // Lề ngoài hai bên 16dp (SCREEN_MARGIN) cho mọi thành phần: tiêu đề, ô tìm, thẻ danh sách, hai nút.
-            // Mỗi dòng trong thẻ vẫn bấm được trên toàn chiều ngang thẻ.
+            // Lề bốn phía 16dp và khoảng cách giữa các khối 16dp (SCREEN_MARGIN), giống log shell toàn màn hình:
+            // tiêu đề, ô tìm, danh sách, hai nút. Mỗi dòng trong danh sách vẫn bấm được trên toàn chiều ngang.
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -252,7 +259,7 @@ internal fun SelectFullScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 16.dp, bottom = 12.dp),
+                        .padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -285,7 +292,7 @@ internal fun SelectFullScreen(
                     label = "Tìm kiếm",
                     singleLine = true,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(SCREEN_MARGIN))
 
                 // Vùng danh sách: dùng chính Card của Miuix (cùng màu nền và bo góc với các thẻ trong app, cả sáng lẫn tối),
                 // lề ngoài 16dp hai bên. Không tự chọn màu `surface`: ở chủ đề tối nó gần như đen, trùng nền màn hình.
@@ -298,7 +305,7 @@ internal fun SelectFullScreen(
                 ) {
                     if (multi) {
                         BasicComponent(
-                            insideMargin = CardInsideMargin,
+                            insideMargin = ListRowMargin,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(
@@ -316,7 +323,7 @@ internal fun SelectFullScreen(
                                 )
                             },
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider()
                     }
                     if (visible.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -340,7 +347,7 @@ internal fun SelectFullScreen(
                                     }
                                 }
                                 BasicComponent(
-                                    insideMargin = CardInsideMargin,
+                                    insideMargin = ListRowMargin,
                                     // Bấm cả dòng nhưng không có hiệu ứng nhấn (indication = null, không dùng onClick của BasicComponent).
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -372,8 +379,8 @@ internal fun SelectFullScreen(
                 }
 
                 Row(
-                    modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = 12.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
+                    horizontalArrangement = Arrangement.spacedBy(SCREEN_MARGIN),
                 ) {
                     TextButton(text = "Hủy", onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
                     TextButton(
