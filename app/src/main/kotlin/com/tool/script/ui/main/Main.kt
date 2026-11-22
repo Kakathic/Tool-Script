@@ -145,6 +145,7 @@ import kotlin.math.max
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
  * @param onShowDetails mở Trung tâm lỗi với (tiêu đề, nội dung).
+ * @param openLogId mã log đã ẩn cần mở lại (khi chạm vào thông báo); mở xong gọi [onLogOpened].
  */
 @Composable
 fun MainScreen(
@@ -156,11 +157,19 @@ fun MainScreen(
     blurEnabled: Boolean,
     onBlurChange: (Boolean) -> Unit,
     onShowDetails: (title: String, text: String) -> Unit,
+    openLogId: Int? = null,
+    onLogOpened: () -> Unit = {},
 ) {
     val config = result.config
     val pages = config.pages
     val scope = rememberCoroutineScope()
     val feedback = rememberFeedbackHost()
+    // Chạm vào thông báo của log đã ẩn: mở lại màn hình log đó.
+    LaunchedEffect(openLogId) {
+        val id = openLogId ?: return@LaunchedEffect
+        if (!feedback.showHiddenLog(id)) feedback.toast("Log này không còn nữa")
+        onLogOpened()
+    }
     val pagerState = rememberPagerState { pages.size }
     // Trạng thái thu gọn của tiêu đề lớn, dùng chung cho mọi tab (xem LargeTitleTopBar).
     val titleScroll = MiuixScrollBehavior()
@@ -497,7 +506,7 @@ private fun AppTopBar(
 // Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 20.dp
+private val LargeTitleTopPadding = 24.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -1018,8 +1027,18 @@ private fun variableIds(items: List<Item>): Set<String> = buildSet {
 /** BlurDialog / OverlayDialog của Miuix cần nằm trong Scaffold (nội dung), đặt ngoài thì không hiện. */
 @Composable
 private fun FeedbackDialogs(feedback: FeedbackHost, env: RenderEnv) {
-    LogDialog(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.log?.cancel() })
-    LogFullScreen(entry = feedback.log, onDismiss = { feedback.log = null }, onCancel = { feedback.log?.cancel() })
+    LogDialog(
+        entry = feedback.log,
+        onDismiss = { feedback.log = null },
+        onCancel = { feedback.log?.cancel() },
+        onHide = { feedback.log?.let { feedback.hideLog(it) } },
+    )
+    LogFullScreen(
+        entry = feedback.log,
+        onDismiss = { feedback.log = null },
+        onCancel = { feedback.log?.cancel() },
+        onHide = { feedback.log?.let { feedback.hideLog(it) } },
+    )
     val confirm = env.confirm
     ConfirmDialog(
         message = confirm?.message,

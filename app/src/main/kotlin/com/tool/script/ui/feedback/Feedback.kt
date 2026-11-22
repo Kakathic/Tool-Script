@@ -110,6 +110,7 @@ import com.tool.script.util.AnsiTerminal
 import com.tool.script.util.copyToClipboard
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -137,6 +138,12 @@ class LogEntry(
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
 ) {
+    /** Mã riêng của log: cũng là mã thông báo Android khi log bị ẩn, và mã để mở lại log từ thông báo (xem [LogCenter]). */
+    val id: Int = nextId.getAndIncrement()
+
+    /** Vòng cập nhật thông báo khi log đang ẩn (do [LogCenter] quản lý). */
+    internal var notifyJob: Job? = null
+
     private val terminal = AnsiTerminal(MAX_LIVE_LINES)
 
     /** Tăng sau mỗi lần nội dung log đổi (kể cả ghi đè bằng `\r`), để giao diện vẽ lại và tự cuộn xuống. */
@@ -199,6 +206,12 @@ class LogEntry(
         return fallback.snapshot()
     }
 
+    /** Tối đa [maxChars] ký tự cuối của log (văn bản thuần), cắt thừa thì thêm "…" ở đầu; dùng cho nội dung thông báo. */
+    fun tail(maxChars: Int): String {
+        val text = output
+        return if (text.length > maxChars) "…" + text.takeLast(maxChars) else text
+    }
+
     /** Văn bản thuần của log (không mã ANSI); dùng cho nút Chia sẻ. */
     val output: String
         get() = shownRows().joinToString("\n") { row -> row.joinToString("") { it.text } }
@@ -241,6 +254,7 @@ class LogEntry(
 
     private companion object {
         const val MAX_LIVE_LINES = 2000
+        val nextId = AtomicInteger(1000)
     }
 }
 
@@ -361,6 +375,29 @@ class FeedbackHost(private val context: Context) {
     fun startLive(title: String, command: String, full: Boolean = false): LogEntry =
         LogEntry(title, command, startFull = full).also { log = it }
 
+    /**
+     * Ẩn log đang xem: đóng màn hình log, lệnh vẫn chạy nền để làm việc khác; mọi dòng log gửi lên thông báo Android
+     * (tiêu đề = tên tính năng), chạm vào thông báo thì mở lại ([showHiddenLog]). Chưa có quyền thông báo (Android 13+) thì xin luôn.
+     */
+    fun hideLog(entry: LogEntry) {
+        if (log === entry) log = null
+        if (Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNoticePermission?.invoke()
+        }
+        LogCenter.hide(entry)
+    }
+
+    /** Mở lại log đã ẩn có mã [id] (từ thông báo). false nếu không còn (đã bị bỏ, hoặc ứng dụng đã khởi động lại). */
+    fun showHiddenLog(id: Int): Boolean {
+        val entry = LogCenter.take(id) ?: return false
+        // Đang xem một log khác còn chạy thì ẩn nó đi, khỏi mất dấu.
+        log?.takeIf { it !== entry && it.running }?.let { LogCenter.hide(it) }
+        log = entry
+        return true
+    }
+
     fun report(item: Item, command: String, result: ExecResult, runId: Int = 0) {
         val summary = summaryOf(item.title, result)
         when (item.shell) {
@@ -411,6 +448,10 @@ class FeedbackHost(private val context: Context) {
     }
 
     internal fun onNoticePermissionResult(granted: Boolean) {
+        // Từ chối quyền khi vừa ẩn log: không có thông báo thì không mở lại log đã ẩn được, báo rõ cho người dùng.
+        if (!granted && pendingNotice == null && LogCenter.hasHidden()) {
+            showBanner("Chưa cấp quyền thông báo: log đã ẩn vẫn chạy nhưng sẽ không có thông báo để mở lại.", warning = true)
+        }
         val pending = pendingNotice ?: return
         pendingNotice = null
         if (granted) post(pending.first, pending.second) else showBanner(pending.second, pending.third)
@@ -462,7 +503,7 @@ private val LogRed = Color(0xFFE5534B)
 // Bảng log thường (shell = "live", hoặc Thu nhỏ từ toàn màn hình). Bố cục y hệt toàn màn hình: hàng tiêu đề có icon Toàn màn hình và icon menu,
 // nhãn trạng thái + thanh tiến trình (chỉ khi đang chạy hoặc lỗi), khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát.
 @Composable
-fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
+fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onHide: () -> Unit) {
     var last by remember { mutableStateOf(entry) }
     if (entry != null) last = entry
     BlurDialog(
@@ -475,7 +516,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
         last?.let { shown ->
             val output = shown.output
             Column(verticalArrangement = Arrangement.spacedBy(LogMargin)) {
-                LogHeader(shown)
+                LogHeader(shown, onHide)
                 LogStatusBlock(shown)
                 LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
@@ -489,7 +530,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
 // Nút cuối: đang chạy là Hủy (vàng, chỉ dừng lệnh, log vẫn mở), xong hoặc đã hủy là Thoát (xanh dương), lỗi là "Thoát: <mã>" (đỏ nhạt).
 // Back của máy thì đóng log, lệnh vẫn chạy tiếp.
 @Composable
-fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
+fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit, onHide: () -> Unit) {
     if (entry == null || !entry.full) return
     val output = entry.output
     Dialog(
@@ -510,7 +551,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
                     .padding(horizontal = LogMargin),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                LogHeader(entry)
+                LogHeader(entry, onHide)
             }
             Column(
                 modifier = Modifier
@@ -528,11 +569,11 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
 }
 
 /**
- * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là icon Toàn màn hình / Thu nhỏ rồi icon menu (ba chấm).
+ * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là icon Ẩn (chỉ khi đang chạy), icon Toàn màn hình / Thu nhỏ rồi icon menu (ba chấm).
  * Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng [MenuItem].
  */
 @Composable
-private fun LogHeader(entry: LogEntry) {
+private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -543,6 +584,11 @@ private fun LogHeader(entry: LogEntry) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
+        if (entry.running) {
+            Spacer(Modifier.width(8.dp))
+            LogIconButton(R.drawable.ic_hide, "Ẩn (chạy nền)", onHide)
+        }
         Spacer(Modifier.width(8.dp))
         if (entry.full) {
             LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }

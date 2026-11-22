@@ -151,8 +151,13 @@ class RenderEnv(
                         val entry = feedback.startLive(item.title, command, full = item.shell == ShellMode.Full)
                         // Nút Hủy của log toàn màn hình: hủy coroutine đang chạy lệnh này.
                         entry.cancelAction = { coroutineContext[Job]?.cancel() }
-                        ExecutorManager.current.exec(full, item.timeoutSec) { chunk -> entry.append(chunk) }
-                            .also { entry.finish(it) }
+                        try {
+                            ExecutorManager.current.exec(full, item.timeoutSec) { chunk -> entry.append(chunk) }
+                                .also { entry.finish(it) }
+                        } finally {
+                            // Coroutine bị hủy giữa chừng (vd thoát ứng dụng) mà log chưa chốt: chốt là "Đã hủy", để log ẩn / thông báo không treo ở "Đang chạy".
+                            if (entry.running) entry.cancel()
+                        }
                     } else {
                         ExecutorManager.current.exec(full, item.timeoutSec)
                     }

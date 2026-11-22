@@ -1,5 +1,6 @@
 package com.tool.script
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,6 +25,7 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import com.tool.script.boot.BootViewModel
 import com.tool.script.boot.SplashScreen
 import com.tool.script.crash.CrashActivity
+import com.tool.script.ui.feedback.LogCenter
 import com.tool.script.ui.main.MainScreen
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.ui.theme.ThemePrefs
@@ -32,9 +34,23 @@ import com.tool.script.ui.theme.isDarkTheme
 import com.tool.script.util.Util
 
 class MainActivity : ComponentActivity() {
+    /** Mã log đã ẩn cần mở lại (do chạm vào thông báo); MainScreen mở xong thì xóa. */
+    private var openLogId by mutableStateOf<Int?>(null)
+
+    private fun readLogId(intent: Intent?): Int? =
+        intent?.getIntExtra(LogCenter.EXTRA_LOG_ID, -1)?.takeIf { it >= 0 }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readLogId(intent)?.let { openLogId = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Chỉ lần mở mới: Activity dựng lại (xoay màn hình) thì Intent cũ còn nguyên, không mở lại log lần nữa.
+        if (savedInstanceState == null) openLogId = readLogId(intent)
         setContent {
             val context = LocalContext.current
             var themeMode by remember { mutableStateOf(ThemePrefs.load(context)) }
@@ -72,6 +88,8 @@ class MainActivity : ComponentActivity() {
                             ThemePrefs.save(context, it)
                         },
                         onExit = { finish() },
+                        openLogId = openLogId,
+                        onLogOpened = { openLogId = null },
                     )
                 }
             }
@@ -91,6 +109,8 @@ private fun AppRoot(
     onBlurChange: (Boolean) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onExit: () -> Unit,
+    openLogId: Int?,
+    onLogOpened: () -> Unit,
 ) {
     val context = LocalContext.current
     val vm: BootViewModel = viewModel()
@@ -140,6 +160,8 @@ private fun AppRoot(
             blurEnabled = blurEnabled,
             onBlurChange = onBlurChange,
             onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },
+            openLogId = openLogId,
+            onLogOpened = onLogOpened,
         )
     } else {
         SplashScreen(state)
