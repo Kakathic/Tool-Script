@@ -99,7 +99,7 @@ Giai đoạn 1: khung ứng dụng
 
 Giai đoạn 2: giao diện
 
-- [x] Màn hình chính: tiêu đề, `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
+- [x] Màn hình chính: tiêu đề lớn kiểu Miuix thu gọn khi vuốt lên (`LargeTitleTopBar`, dùng `MiuixScrollBehavior`), `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
 - [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
 - [x] Icon Thông tin (menu chủ đề) và Nguồn (menu khởi động lại) ở thanh trên cùng, dạng menu thả xuống ngay dưới icon.
@@ -115,6 +115,7 @@ Giai đoạn 3: kiểm chứng trên máy thật (code đã viết, chưa thử 
 - [ ] Chế độ không root: những lệnh nào bị SELinux chặn (`pm`, `settings put`, `dumpsys`...).
 - [ ] Hiển thị kết quả lệnh: bảng log, banner, thông báo hệ thống (xin quyền `POST_NOTIFICATIONS`), toast khi `hidden` bị lỗi.
 - [ ] Hộp thoại xác nhận và menu Khởi động lại: khởi động lại app, `reboot` máy.
+- [ ] Tiêu đề lớn thu gọn: thử khi bật / tắt làm mờ, khi đổi tab lúc đã thu gọn, khi mở rồi đóng trang con.
 - [ ] Quyền `ACCESS_LOCAL_NETWORK` (Android 17): chưa rõ kết nối loopback tới adbd có cần không.
 
 Giai đoạn 4: backend mở rộng

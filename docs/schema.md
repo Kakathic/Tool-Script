@@ -128,7 +128,7 @@ lock_mode = "readonly"
 
 ## 5. Bố cục
 
-- Thanh trên cùng: tiêu đề là tên app (`[app] name`).
+- Thanh trên cùng: tiêu đề là tên app (`[app] name`), lúc mở rộng hiện chữ lớn kiểu Miuix bên dưới hàng icon; vuốt lên thì thu thành chữ nhỏ căn trái, vuốt xuống tới đầu danh sách thì mở rộng lại (một trạng thái chung cho mọi tab).
   Bên phải có 2 icon riêng biệt: Thông tin (menu thả xuống tùy chỉnh chủ đề: Theo hệ thống / Sáng / Tối / 3 chế độ Màu động (Monet) có sẵn của Miuix,
   lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
 - Lề ngoài thẻ 16dp (trái, phải, trên, dưới), khoảng cách giữa các thẻ 16dp, đệm bên trong thẻ: trái, phải 16dp, trên và dưới 12dp. Tiêu đề group nằm ngoài thẻ, dính sát thẻ của nó.

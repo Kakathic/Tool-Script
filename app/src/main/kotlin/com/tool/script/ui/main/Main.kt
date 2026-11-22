@@ -52,6 +52,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -73,7 +75,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -112,7 +117,9 @@ import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -129,7 +136,7 @@ import kotlin.math.roundToInt
 import kotlin.math.min
 import kotlin.math.max
 
-// Màn hình chính: tiêu đề = tên app (căn trái, cỡ cố định), HorizontalPager + thanh tab dưới.
+// Màn hình chính: tiêu đề = tên app (chữ lớn kiểu Miuix, vuốt lên thì thu thành chữ nhỏ căn trái), HorizontalPager + thanh tab dưới.
 // Thanh tab là cửa sổ trượt rộng 4 ô (tối thiểu 2); chỉ 1 tab thì ẩn thanh tab. Logic cửa sổ: TabWindow.kt.
 
 /**
@@ -152,6 +159,8 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val feedback = rememberFeedbackHost()
     val pagerState = rememberPagerState { pages.size }
+    // Trạng thái thu gọn của tiêu đề lớn, dùng chung cho mọi tab (xem LargeTitleTopBar).
+    val titleScroll = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
     var showThemeMenu by remember { mutableStateOf(false) }
@@ -291,10 +300,18 @@ fun MainScreen(
                             SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, blur = blurEnabled)
                         } else {
                             val backdrop = rememberBarBackdrop(blurEnabled)
+                            // Rời màn hình chính (mở trang con) thì danh sách cuộn mất vị trí, nên trả tiêu đề về trạng thái mở rộng.
+                            DisposableEffect(Unit) {
+                                onDispose {
+                                    titleScroll.state.heightOffset = 0f
+                                    titleScroll.state.contentOffset = 0f
+                                }
+                            }
                             Scaffold(
                                 topBar = {
-                                    AppTopBar(
+                                    LargeTitleTopBar(
                                         title = config.app.name,
+                                        scrollBehavior = titleScroll,
                                         backdrop = backdrop,
                                         actions = {
                                             // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
@@ -377,6 +394,7 @@ fun MainScreen(
                                 Column(
                                     Modifier
                                         .fillMaxSize()
+                                        .nestedScroll(titleScroll.nestedScrollConnection)
                                         .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
                                 ) {
                                     if (bannerShown) {
@@ -467,6 +485,109 @@ private fun AppTopBar(
             overflow = TextOverflow.Ellipsis,
         )
         actions()
+    }
+}
+
+// Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
+private val BarCollapsedHeight = 56.dp
+private val LargeTitleHorizontalPadding = 26.dp
+private val LargeTitleBottomPadding = 4.dp
+
+/**
+ * Thanh trên của màn hình chính: lúc mở rộng hiện tên app chữ lớn bên dưới hàng icon; vuốt lên thì chữ lớn
+ * mờ dần rồi thu lại, tên chữ nhỏ hiện ở vị trí cũ (căn trái, cao 56dp, icon bên phải). Vuốt xuống tới đầu danh sách thì mở rộng lại.
+ * Trạng thái nằm trong [scrollBehavior]; gắn `Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)` vào vùng nội dung cuộn.
+ * [backdrop] khác null: nền thanh trong suốt và làm mờ phần nội dung cuộn phía dưới (xem BarBlur.kt).
+ */
+@Composable
+private fun LargeTitleTopBar(
+    title: String,
+    scrollBehavior: ScrollBehavior,
+    backdrop: LayerBackdrop? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    val state = scrollBehavior.state
+    // Chữ nhỏ chỉ hiện khi đã thu gần hết (giống Miuix: 1/3 quãng thu gọn).
+    val smallVisible by remember(state) { derivedStateOf { state.collapsedFraction * 3f >= 1f } }
+    val smallAlpha by animateFloatAsState(
+        targetValue = if (smallVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = if (smallVisible) 220 else 120),
+        label = "smallTitleAlpha",
+    )
+    val smallShift by animateFloatAsState(
+        targetValue = if (smallVisible) 0f else 20f,
+        animationSpec = tween(durationMillis = if (smallVisible) 220 else 120),
+        label = "smallTitleShift",
+    )
+
+    Layout(
+        content = {
+            // Hàng thanh thu gọn: giữ đúng vị trí cũ (lề trái 16dp, icon bên phải).
+            Row(
+                modifier = Modifier.layoutId("bar").padding(start = 16.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier
+                        .weight(1f)
+                        .graphicsLayer {
+                            alpha = smallAlpha
+                            translationY = smallShift
+                        },
+                    fontSize = TopBarTitleSize,
+                    fontWeight = FontWeight.Medium,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                actions()
+            }
+            // Chữ lớn nằm dưới hàng thanh; đọc state trong lớp vẽ / bố cục để cuộn không làm recompose.
+            Box(
+                modifier = Modifier
+                    .layoutId("large")
+                    .padding(top = BarCollapsedHeight)
+                    .padding(horizontal = LargeTitleHorizontalPadding)
+                    .graphicsLayer { alpha = 1f - (state.collapsedFraction * 3f).coerceIn(0f, 1f) },
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier
+                        .offset { IntOffset(0, state.heightOffset.roundToInt()) }
+                        .onSizeChanged { size ->
+                            val limit = -size.height.toFloat()
+                            if (state.heightOffsetLimit != limit) state.heightOffsetLimit = limit
+                        },
+                    fontSize = MiuixTheme.textStyles.title1.fontSize,
+                    fontWeight = FontWeight.Normal,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .barBlur(backdrop)
+            .background(if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface)
+            .statusBarsPadding()
+            .clipToBounds(),
+    ) { measurables, constraints ->
+        val collapsedPx = BarCollapsedHeight.roundToPx()
+        val bottomPadPx = LargeTitleBottomPadding.roundToPx()
+        val bar = measurables.first { it.layoutId == "bar" }
+            .measure(constraints.copy(minHeight = collapsedPx, maxHeight = collapsedPx))
+        val large = measurables.first { it.layoutId == "large" }
+            .measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+        // Phần mở rộng = chiều cao chữ lớn (hộp chữ lớn đã có đệm trên bằng đúng hàng thanh thu gọn).
+        val expansion = (large.height - collapsedPx).coerceAtLeast(0)
+        val offset = state.heightOffset
+        val collapse = if (expansion > 0 && !offset.isNaN()) (kotlin.math.abs(offset) / expansion).coerceIn(0f, 1f) else 1f
+        val openPart = 1f - collapse
+        val height = collapsedPx + ((expansion + bottomPadPx) * openPart).roundToInt()
+        layout(constraints.maxWidth, height) {
+            large.placeRelative(0, 0)
+            bar.placeRelative(0, 0)
+        }
     }
 }
 
