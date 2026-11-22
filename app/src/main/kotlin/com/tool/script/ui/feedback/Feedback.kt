@@ -501,6 +501,9 @@ fun rememberFeedbackHost(): FeedbackHost {
 /** Lề ngoài của log và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
 private val LogMargin = 12.dp
 
+/** Lề và khoảng cách giữa các khối của log toàn màn hình (rộng hơn bảng log thường). */
+private val LogFullMargin = 16.dp
+
 /** Tỉ lệ chiều cao màn hình mà cả cửa sổ log thường chiếm (khung log cố định, thêm dòng thì cuộn chứ không nở ra). */
 private const val LogWindowFraction = 0.55f
 
@@ -587,7 +590,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .padding(horizontal = LogMargin),
+                    .padding(horizontal = LogFullMargin),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 LogHeader(shown, onHide)
@@ -596,12 +599,12 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(start = LogMargin, end = LogMargin, bottom = LogMargin),
+                    .padding(start = LogFullMargin, end = LogFullMargin, bottom = LogFullMargin),
             ) {
                 LogProgress(shown)
                 Spacer(Modifier.height(LogProgressGap))
                 LogSelectableCard(shown, output, Modifier.weight(1f), fillHeight = true)
-                Spacer(Modifier.height(LogMargin))
+                Spacer(Modifier.height(LogFullMargin))
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
             }
         }
