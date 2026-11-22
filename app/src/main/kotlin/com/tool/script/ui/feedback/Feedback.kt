@@ -658,7 +658,10 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
         }
     }
     BackHandler(enabled = show, onBack = onDismiss)
-    AnimatedVisibility(visible = show, enter = fadeIn(tween(220)), exit = fadeOut(tween(180))) {
+    // Đóng log (Thoát, Hủy rồi Thoát, Back, Ẩn): trượt xuống như các màn hình toàn màn hình khác.
+    // Chỉ khi "Thu nhỏ" (entry vẫn còn, chuyển sang bảng log thường) thì mờ dần để không chồng với hộp thoại hiện ra.
+    val exit = if (entry == null) slideOutVertically(tween(220)) { it } else fadeOut(tween(180))
+    AnimatedVisibility(visible = show, enter = fadeIn(tween(220)), exit = exit) {
         val shown = last ?: return@AnimatedVisibility
         val output = shown.output
         val base = MiuixTheme.colorScheme.background

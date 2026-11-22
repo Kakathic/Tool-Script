@@ -408,14 +408,37 @@ fun ThemeMenu(
 
 private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
 
-/** Nút nguồn: menu chọn kiểu khởi động lại. Việc xác nhận và thực thi do nơi gọi xử lý. */
+/**
+ * Các kiểu tắt / khởi động lại máy trong menu Nguồn, theo menu của Magisk. Chạy bằng root: [command] thử `svc power` trước,
+ * không được thì dùng `reboot` (cùng cách Magisk gọi). [confirm] là câu hỏi xác nhận trước khi chạy.
+ */
+enum class PowerAction(val label: String, val confirm: String, val command: String) {
+    PowerOff("Tắt máy", "Tắt máy? Máy sẽ tắt hẳn, cần bấm nút nguồn để bật lại.", "/system/bin/svc power shutdown || /system/bin/reboot -p"),
+    Reboot("Khởi động lại máy", "Khởi động lại máy? Máy sẽ tắt và bật lại ngay.", rebootCommand("")),
+    SoftReboot("Khởi động lại mềm", "Khởi động lại mềm? Chỉ khởi động lại hệ thống Android, máy không tắt.", "killall zygote || setprop ctl.restart zygote"),
+    Recovery("Khởi động lại vào Recovery", "Khởi động lại vào Recovery?", rebootCommand("recovery")),
+    Bootloader("Khởi động lại vào Bootloader", "Khởi động lại vào Bootloader (Fastboot)?", rebootCommand("bootloader")),
+    Download("Khởi động lại vào Download", "Khởi động lại vào chế độ Download (Odin, máy Samsung)? Máy khác có thể không hỗ trợ.", rebootCommand("download")),
+    Edl("Khởi động lại vào EDL", "Khởi động lại vào EDL (chế độ cứu hộ Qualcomm)? Màn hình sẽ tối đen, cần giữ nút nguồn lâu để thoát.", rebootCommand("edl")),
+}
+
+private fun rebootCommand(reason: String): String {
+    val arg = if (reason.isEmpty()) "" else " $reason"
+    return "/system/bin/svc power reboot$arg || /system/bin/reboot$arg"
+}
+
+/**
+ * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy theo [PowerAction] (cần root).
+ * Việc xác nhận và thực thi do nơi gọi xử lý.
+ */
 @Composable
 fun PowerMenu(
     expanded: Boolean,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
     onRestartApp: () -> Unit,
-    onRebootDevice: () -> Unit,
+    onCloseApp: () -> Unit,
+    onDeviceAction: (PowerAction) -> Unit,
 ) {
     TopBarMenu(
         icon = AppIcons.BarPower,
@@ -425,6 +448,11 @@ fun PowerMenu(
         onDismiss = onDismiss,
     ) {
         MenuItem(label = "Khởi động lại ứng dụng", onClick = onRestartApp)
-        MenuItem(label = "Khởi động lại máy (cần root)", onClick = onRebootDevice)
+        MenuItem(label = "Đóng ứng dụng", onClick = onCloseApp)
+        MenuDivider()
+        MenuSectionLabel("Thiết bị (cần root)")
+        PowerAction.entries.forEach { action ->
+            MenuItem(label = action.label) { onDeviceAction(action) }
+        }
     }
 }

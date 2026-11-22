@@ -346,7 +346,7 @@ fun MainScreen(
                                                     blur = blurEnabled,
                                                     onBlurChange = onBlurChange,
                                                 )
-                                                // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
+                                                // Nút nguồn: khởi động lại / đóng app, tắt và khởi động lại máy (kiểu Magisk), thả xuống ngay dưới icon.
                                                 PowerMenu(
                                                     expanded = showRestartMenu,
                                                     onOpen = { showRestartMenu = true },
@@ -355,12 +355,16 @@ fun MainScreen(
                                                         showRestartMenu = false
                                                         env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
                                                     },
-                                                    onRebootDevice = {
+                                                    onCloseApp = {
                                                         showRestartMenu = false
-                                                        env.confirm = ConfirmRequest("Khởi động lại máy? Máy sẽ tắt và bật lại ngay.") {
+                                                        env.confirm = ConfirmRequest("Đóng ứng dụng? Các lệnh đang chạy sẽ bị dừng.") { Util.exitApp(context) }
+                                                    },
+                                                    onDeviceAction = { action ->
+                                                        showRestartMenu = false
+                                                        env.confirm = ConfirmRequest(action.confirm) {
                                                             scope.launch {
-                                                                val result = ExecutorManager.current.exec("reboot", 10)
-                                                                if (!result.ok) feedback.toast(rebootErrorText(result))
+                                                                val result = ExecutorManager.current.exec(action.command, 10)
+                                                                if (!result.ok) feedback.toast(powerErrorText(action, result))
                                                             }
                                                         }
                                                     },
@@ -1179,10 +1183,10 @@ private fun buildDetails(result: BootResult): String = buildString {
     result.bootLog.forEach { appendLine(it) }
 }
 
-private fun rebootErrorText(result: ExecResult): String {
-    if (result.timedOut) return "Khởi động lại máy: hết thời gian chờ"
+private fun powerErrorText(action: PowerAction, result: ExecResult): String {
+    if (result.timedOut) return "${action.label}: hết thời gian chờ"
     val firstLine = result.output.lineSequence().firstOrNull { it.isNotBlank() }
-    return "Không khởi động lại được máy (cần root)" + (firstLine?.let { ": $it" } ?: "")
+    return "Không thực hiện được \"${action.label}\" (cần root)" + (firstLine?.let { ": $it" } ?: "")
 }
 
 private const val DIALOG_MILLIS = 280

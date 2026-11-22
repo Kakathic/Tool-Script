@@ -1,8 +1,10 @@
 package com.tool.script.util
 
 import android.Manifest
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -48,6 +50,15 @@ object Util {
     /** Mở lại app từ đầu (chạy lại cả khâu khởi động) rồi thoát tiến trình hiện tại. */
     fun restartApp(context: Context) {
         context.startActivity(Intent.makeRestartActivityTask(ComponentName(context, MainActivity::class.java)))
+        Runtime.getRuntime().exit(0)
+    }
+
+    /** Đóng hẳn app: gỡ khỏi danh sách gần đây rồi thoát tiến trình (lệnh đang chạy bị dừng). */
+    fun exitApp(context: Context) {
+        generateSequence(context) { (it as? ContextWrapper)?.baseContext }
+            .filterIsInstance<Activity>()
+            .firstOrNull()
+            ?.finishAndRemoveTask()
         Runtime.getRuntime().exit(0)
     }
 
