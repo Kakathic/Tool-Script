@@ -75,6 +75,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -96,6 +99,8 @@ import com.tool.script.R
 import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
+import com.tool.script.ui.main.MenuItem
+import com.tool.script.ui.main.MenuPopup
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.AnsiTerminal
 import com.tool.script.util.copyToClipboard
@@ -111,6 +116,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -450,7 +456,7 @@ private val LogYellow = Color(0xFFFFC107)
 /** Màu dòng stderr trong log. */
 private val LogRed = Color(0xFFE5534B)
 
-// Bảng log thường (shell = "live", hoặc Thu nhỏ từ toàn màn hình). Bố cục y hệt toàn màn hình: hàng tiêu đề có nút Toàn màn hình,
+// Bảng log thường (shell = "live", hoặc Thu nhỏ từ toàn màn hình). Bố cục y hệt toàn màn hình: hàng tiêu đề có icon Toàn màn hình và icon menu,
 // nhãn trạng thái + thanh tiến trình (chỉ khi đang chạy hoặc lỗi), khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát.
 @Composable
 fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
@@ -466,7 +472,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
         last?.let { shown ->
             val output = shown.output
             Column(verticalArrangement = Arrangement.spacedBy(LogMargin)) {
-                LogHeader(shown, "Toàn màn hình", onClick = { shown.full = true })
+                LogHeader(shown)
                 LogStatusBlock(shown)
                 LogSelectableCard(shown, output, Modifier.heightIn(max = 320.dp), fillHeight = false)
                 LogActionRow(shown, output, onCancel = onCancel, onDismiss = onDismiss)
@@ -476,7 +482,7 @@ fun LogDialog(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit) {
 }
 
 // Log live toàn màn hình: mở khi shell = "full" hoặc bấm "Toàn màn hình". Bố cục giống màn hình lỗi (crash/CrashActivity):
-// hàng tiêu đề có nút Thu nhỏ, khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát ở dưới.
+// hàng tiêu đề có icon Thu nhỏ và icon menu, khung log chọn / sao chép được, hàng nút Chia sẻ và Hủy / Thoát ở dưới.
 // Nút cuối: đang chạy là Hủy (vàng, chỉ dừng lệnh, log vẫn mở), xong hoặc đã hủy là Thoát (xanh dương), lỗi là "Thoát: <mã>" (đỏ nhạt).
 // Back của máy thì đóng log, lệnh vẫn chạy tiếp.
 @Composable
@@ -501,7 +507,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
                     .padding(horizontal = LogMargin),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                LogHeader(entry, "Thu nhỏ", onClick = { entry.full = false })
+                LogHeader(entry)
             }
             Column(
                 modifier = Modifier
@@ -518,9 +524,13 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit)
     }
 }
 
-/** Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là nút Ngắt dòng (bật / tắt) và nút Toàn màn hình / Thu nhỏ. */
+/**
+ * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là icon Toàn màn hình / Thu nhỏ rồi icon menu (ba chấm).
+ * Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng [MenuItem].
+ */
 @Composable
-private fun LogHeader(entry: LogEntry, pillText: String, onClick: () -> Unit) {
+private fun LogHeader(entry: LogEntry) {
+    var menuOpen by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = entry.title,
@@ -531,9 +541,23 @@ private fun LogHeader(entry: LogEntry, pillText: String, onClick: () -> Unit) {
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
-        LogPillButton(text = "Ngắt dòng", selected = entry.wrap, onClick = { entry.wrap = !entry.wrap })
+        if (entry.full) {
+            LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }
+        } else {
+            LogIconButton(R.drawable.ic_fullscreen, "Toàn màn hình") { entry.full = true }
+        }
         Spacer(Modifier.width(8.dp))
-        LogPillButton(text = pillText, onClick = onClick)
+        Box {
+            LogIconButton(R.drawable.ic_more_vert, "Menu") { menuOpen = true }
+            if (menuOpen) {
+                MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
+                    MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
+                        entry.wrap = !entry.wrap
+                        menuOpen = false
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -633,20 +657,24 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     }
 }
 
-/** Nút dạng viên thuốc ở hàng tiêu đề (cùng kiểu nút Chia sẻ của màn hình lỗi): chữ trong khung bo, nền xám nhạt; [selected] = đang bật thì tô màu chủ đạo. */
+/** Nút icon tròn ở hàng tiêu đề (nền xám nhạt cùng kiểu nút Chia sẻ của màn hình lỗi); [icon] là vector drawable. */
 @Composable
-private fun LogPillButton(text: String, onClick: () -> Unit, selected: Boolean = false) {
-    val content = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+private fun LogIconButton(icon: Int, description: String, onClick: () -> Unit) {
+    val content = MiuixTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
-            .height(36.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(content.copy(alpha = if (selected) 0.16f else 0.08f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(content.copy(alpha = 0.08f))
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = content)
+        Icon(
+            imageVector = ImageVector.vectorResource(icon),
+            contentDescription = description,
+            tint = content,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
