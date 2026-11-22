@@ -152,6 +152,8 @@ class LogEntry(
     initialResult: ExecResult? = null,
     startFull: Boolean = false,
     val desc: String? = null,
+    initialWrap: Boolean = false,
+    initialMono: Boolean = true,
 ) {
     /** Mã riêng của log: cũng là mã thông báo Android khi log bị ẩn, và mã để mở lại log từ thông báo (xem [LogCenter]). */
     val id: Int = nextId.getAndIncrement()
@@ -175,8 +177,10 @@ class LogEntry(
         private set
 
     /** Bật: ngắt dòng dài trong khung log; tắt (mặc định): giữ nguyên một dòng và cuộn ngang. */
-    var wrap by mutableStateOf(false)
-    var mono by mutableStateOf(true)
+    var wrap by mutableStateOf(initialWrap)
+
+    /** Bật (mặc định): font monospace; tắt: font mặc định. Giá trị ban đầu của [wrap] và [mono] đọc từ [LogPrefs]. */
+    var mono by mutableStateOf(initialMono)
     var result by mutableStateOf(initialResult)
         private set
 
@@ -456,7 +460,11 @@ class FeedbackHost(private val context: Context) {
     }
 
     fun startLive(title: String, command: String, full: Boolean = false, desc: String? = null): LogEntry =
-        LogEntry(title, command, startFull = full, desc = desc).also { log = it }
+        LogEntry(
+            title, command, startFull = full, desc = desc,
+            initialWrap = LogPrefs.loadWrap(context),
+            initialMono = LogPrefs.loadMono(context),
+        ).also { log = it }
 
     /**
      * Ẩn log đang xem: đóng màn hình log, lệnh vẫn chạy nền để làm việc khác; mọi dòng log gửi lên thông báo Android
@@ -687,6 +695,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
  */
 @Composable
 private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
+    val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
@@ -733,10 +742,12 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
                     MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
                         MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
                             entry.wrap = !entry.wrap
+                            LogPrefs.saveWrap(context, entry.wrap)
                             menuOpen = false
                         }
                         MenuItem(label = "Font mono", selected = entry.mono) {
                             entry.mono = !entry.mono
+                            LogPrefs.saveMono(context, entry.mono)
                             menuOpen = false
                         }
                     }
