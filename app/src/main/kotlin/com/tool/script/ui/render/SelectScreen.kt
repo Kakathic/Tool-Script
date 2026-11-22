@@ -1,5 +1,6 @@
 package com.tool.script.ui.render
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -24,11 +25,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tool.script.config.SelectOption
+import com.tool.script.ui.main.LocalBlurRequests
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
@@ -72,6 +79,78 @@ internal fun foldSearch(text: String): String =
         .replace(COMBINING_MARKS, "")
         .replace('đ', 'd')
 
+/** Độ đục của nền màn hình chọn khi có blur: phần còn lại là trang phía sau đã làm mờ (cùng mức với log toàn màn hình). */
+private const val GLASS_ALPHA = 0.6f
+
+/** Một lần mở màn hình chọn toàn màn hình, gửi lên [SelectHost] để vẽ ở gốc cây giao diện. */
+@Stable
+internal class SelectRequest(
+    val title: String,
+    val options: List<SelectOption>,
+    val multi: Boolean,
+    val selected: Set<String>,
+    val onDismiss: () -> Unit,
+    val onConfirm: (Set<String>) -> Unit,
+)
+
+/**
+ * Chỗ vẽ màn hình chọn toàn màn hình. Item chọn nằm sâu trong trang nên không phủ kín màn hình được và không dùng chung nền mờ của trang;
+ * vì vậy item gửi yêu cầu lên đây ([SelectFullScreenSlot]) và [SelectFullScreenHost] ở gốc Main vẽ nó (giống log toàn màn hình).
+ */
+@Stable
+class SelectHost {
+    internal var request by mutableStateOf<SelectRequest?>(null)
+}
+
+/** [SelectHost] của Main; null (không có host) thì màn hình chọn mở bằng cửa sổ riêng, nền đặc như trước. */
+val LocalSelectHost = staticCompositionLocalOf<SelectHost?> { null }
+
+/**
+ * Chỗ item `singleselect` / `multiselect` gọi: [show] = true thì mở màn hình chọn toàn màn hình (qua [LocalSelectHost], không có thì mở cửa sổ riêng),
+ * false hoặc item rời khỏi cây thì đóng. Mỗi lần mở bắt đầu lại từ [selected].
+ */
+@Composable
+internal fun SelectFullScreenSlot(
+    show: Boolean,
+    title: String,
+    options: List<SelectOption>,
+    multi: Boolean,
+    selected: Set<String>,
+    onDismiss: () -> Unit,
+    onConfirm: (Set<String>) -> Unit,
+) {
+    val host = LocalSelectHost.current
+    if (host == null) {
+        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm)
+    } else {
+        val latestDismiss by rememberUpdatedState(onDismiss)
+        val latestConfirm by rememberUpdatedState(onConfirm)
+        DisposableEffect(show) {
+            if (!show) return@DisposableEffect onDispose {}
+            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) })
+            host.request = request
+            onDispose { if (host.request === request) host.request = null }
+        }
+    }
+}
+
+/** Đặt ở gốc Main, trên trang và dưới các popup: vẽ màn hình chọn đang được yêu cầu (nếu có). */
+@Composable
+fun SelectFullScreenHost(host: SelectHost) {
+    val request = host.request ?: return
+    key(request) {
+        SelectFullScreen(
+            title = request.title,
+            options = request.options,
+            multi = request.multi,
+            selected = request.selected,
+            onDismiss = request.onDismiss,
+            onConfirm = request.onConfirm,
+            inline = true,
+        )
+    }
+}
+
 /**
  * Màn hình chọn toàn màn hình: tiêu đề, ô tìm kiếm, (multiselect) ô Chọn tất cả, danh sách, rồi Hủy / Xác nhận.
  *
@@ -81,6 +160,9 @@ internal fun foldSearch(text: String): String =
  * - Chỉ khi bấm Xác nhận mới gọi [onConfirm]; Hủy, Back hoặc chạm ra ngoài thì [onDismiss] và bỏ thay đổi.
  *
  * Gọi khi cần hiện (`if (show) SelectFullScreen(...)`) để mỗi lần mở bắt đầu lại từ [selected].
+ *
+ * [inline] = true: vẽ thẳng trong cây giao diện (do [SelectFullScreenHost] gọi). Có blur thì nền bán trong suốt, trang phía sau mờ và tối nhẹ
+ * (dùng chung DialogBlurScrim); không có blur thì nền đặc. [inline] = false: mở bằng cửa sổ riêng, nền đặc.
  */
 @Composable
 internal fun SelectFullScreen(
@@ -90,6 +172,7 @@ internal fun SelectFullScreen(
     selected: Set<String>,
     onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
+    inline: Boolean = false,
 ) {
     var draft by remember { mutableStateOf(selected) }
     var query by remember { mutableStateOf("") }
@@ -131,10 +214,18 @@ internal fun SelectFullScreen(
         if (after != null && !transition.currentState && transition.isIdle) after()
     }
 
-    Dialog(
-        onDismissRequest = { close(onDismiss) },
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
+    // Có blur (chỉ ở chế độ inline): đăng ký để DialogBlurScrim làm mờ trang phía sau; bỏ đăng ký ngay khi bắt đầu đóng để nền mờ tan cùng lúc màn hình trượt xuống.
+    val requests = LocalBlurRequests.current
+    val glass = inline && requests != null
+    if (glass && requests != null) {
+        val open = transition.targetState
+        DisposableEffect(open) {
+            if (open) requests.dialogs++
+            onDispose { if (open) requests.dialogs-- }
+        }
+    }
+
+    val screen: @Composable () -> Unit = {
         AnimatedVisibility(
             visibleState = transition,
             enter = slideInVertically(animationSpec = tween(300)) { it },
@@ -145,7 +236,15 @@ internal fun SelectFullScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MiuixTheme.colorScheme.background)
+                    .background(MiuixTheme.colorScheme.background.let { if (glass) it.copy(alpha = GLASS_ALPHA) else it })
+                    // Inline: chặn chạm xuyên xuống trang phía sau qua phần nền bán trong suốt.
+                    .then(
+                        if (inline) {
+                            Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                        } else {
+                            Modifier
+                        },
+                    )
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .imePadding(),
@@ -289,5 +388,16 @@ internal fun SelectFullScreen(
                 }
             }
         }
+    }
+
+    if (inline) {
+        // Back đóng màn hình chọn (trượt xuống rồi mới gọi onDismiss). Chỉ có mặt khi đang hiện nên được ưu tiên hơn Back của trang.
+        BackHandler { close(onDismiss) }
+        screen()
+    } else {
+        Dialog(
+            onDismissRequest = { close(onDismiss) },
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        ) { screen() }
     }
 }

@@ -113,8 +113,11 @@ import com.tool.script.ui.feedback.LogFullScreen
 import com.tool.script.ui.feedback.rememberFeedbackHost
 import com.tool.script.ui.render.ConfirmRequest
 import com.tool.script.ui.render.ItemRenderer
+import com.tool.script.ui.render.LocalSelectHost
 import com.tool.script.ui.render.PageErrorCard
 import com.tool.script.ui.render.RenderEnv
+import com.tool.script.ui.render.SelectFullScreenHost
+import com.tool.script.ui.render.SelectHost
 import com.tool.script.ui.render.isShown
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
@@ -278,10 +281,13 @@ fun MainScreen(
     val pageBackdrop = rememberBarBackdrop(blurEnabled)
     val fullBackdrop = rememberBarBackdrop(blurEnabled)
     val blurRequests = remember { BlurRequests() }
+    // Màn hình chọn toàn màn hình (singleselect / multiselect từ 6 mục) vẽ ở gốc để dùng chung nền mờ của trang.
+    val selectHost = remember { SelectHost() }
     CompositionLocalProvider(
         LocalPageWarnings provides pageWarningHost,
         LocalPageScroll provides scrollStates,
         LocalBlurRequests provides (if (fullBackdrop != null) blurRequests else null),
+        LocalSelectHost provides selectHost,
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.
         Scaffold { _ ->
@@ -452,6 +458,8 @@ fun MainScreen(
                     }
                     if (fullBackdrop != null) DialogBlurScrim(blurRequests, fullBackdrop)
                 }
+                // Chọn toàn màn hình: cùng chỗ với log toàn màn hình (ngoài lớp bị menu làm mờ, trên trang và dialog sheet).
+                SelectFullScreenHost(selectHost)
                 // Log toàn màn hình nằm ngoài lớp bị menu làm mờ, để menu ba chấm của chính log không làm mờ log.
                 LogFullScreen(
                     entry = feedback.log,
@@ -618,16 +626,19 @@ private fun LargeTitleTopBar(
     }
 }
 
+/** Độ đục của nền sheet dialog khi full màn hình và có blur (cùng mức với log và chọn toàn màn hình): phần còn lại là trang phía sau đã làm mờ. */
+private const val SheetGlassAlpha = 0.6f
+
 /**
  * Thanh trên của dialog sheet (kiểu OverlayBottomSheet của Miuix): tiêu đề ở giữa, X bên trái, tích bên phải.
  * X và tích nằm trong nền tròn cho rõ. [onCancel] / [onConfirm] = null thì ẩn nút tương ứng (sheet full vẫn có X, tích thì dùng nút Xác nhận ở dưới).
  */
 @Composable
-private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -> Unit)?) {
+private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -> Unit)?, surfaceAlpha: Float = 1f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface)
+            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .statusBarsPadding()
             .height(DIALOG_TOP_BAR_HEIGHT)
             .padding(horizontal = 4.dp),
@@ -665,6 +676,9 @@ private fun SubPageScreen(
     sheetFull: Boolean = false,
     sheetHeld: Boolean = true,
 ) {
+    // Sheet dialog full màn hình + có blur: nền (Scaffold, thanh trên, thanh nút) bán trong suốt, trang phía sau mờ lộ ra; đổi mức thì chuyển dần.
+    val glass = page.dialog && sheetFull && LocalBlurRequests.current != null
+    val surfaceAlpha by animateFloatAsState(if (glass) SheetGlassAlpha else 1f, tween(200), label = "sheetGlass")
     // Dialog chỉ truyền biến: item không chạy lệnh, nút Xác nhận mới chạy lệnh của link.
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
     // Dialog không làm mờ: chiều cao sheet được đo theo bố cục cũ (xem DialogContentMeasurer).
@@ -674,14 +688,15 @@ private fun SubPageScreen(
             Box(topBarModifier) {
                 if (page.dialog) {
                     // X = Hủy luôn có; tích = Xác nhận chỉ khi chưa full (full thì hai nút Hủy / Xác nhận cũng nằm ở thanh dưới).
-                    SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull || !sheetHeld) null else onConfirm)
+                    SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull || !sheetHeld) null else onConfirm, surfaceAlpha = surfaceAlpha)
                 } else {
                     AppTopBar(title = page.title, onBack = onBack, closeStyle = false, backdrop = backdrop)
                 }
             }
         },
         snackbarHost = { SnackbarHost(feedback.snackbarState) },
-        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
+        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm, surfaceAlpha = surfaceAlpha) },
+        containerColor = MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha),
     ) { inner ->
         Column(
             Modifier
@@ -732,7 +747,8 @@ private fun AnimatedVisibilityScope.DialogLayer(
 ) {
     val sheet = remember { SheetState() }
     Box(Modifier.fillMaxSize()) {
-        if (!sheet.full) {
+        // Có blur: nền mờ giữ cả khi sheet full (sheet lúc đó bán trong suốt, xem SubPageScreen); không blur thì sheet full phủ kín nên bỏ nền.
+        if (!sheet.full || backdrop != null) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -1006,11 +1022,11 @@ private fun DialogSheet(
 
 /** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). */
 @Composable
-private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
+private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit, surfaceAlpha: Float = 1f) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface)
+            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

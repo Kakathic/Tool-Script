@@ -518,24 +518,23 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     }
     // Từ FULLSCREEN_MIN_OPTIONS mục trở lên: chọn toàn màn hình (có ô tìm và Chọn tất cả); ít hơn thì hộp thoại nhỏ.
     val fullScreen = item.options.size >= FULLSCREEN_MIN_OPTIONS
-    if (fullScreen && showDialog) {
-        SelectFullScreen(
-            title = item.title,
-            options = item.options,
-            multi = true,
-            selected = currentSet,
-            onDismiss = { showDialog = false },
-            onConfirm = { chosen ->
-                showDialog = false
-                val newValue = item.options.filter { it.value in chosen }.joinToString(item.separator) { it.value }
-                if (newValue != current) {
-                    env.run(item, item.run, mapOf(id to newValue)) { result ->
-                        if (result.ok) env.store[id] = newValue
-                    }
+    SelectFullScreenSlot(
+        show = fullScreen && showDialog,
+        title = item.title,
+        options = item.options,
+        multi = true,
+        selected = currentSet,
+        onDismiss = { showDialog = false },
+        onConfirm = { chosen ->
+            showDialog = false
+            val newValue = item.options.filter { it.value in chosen }.joinToString(item.separator) { it.value }
+            if (newValue != current) {
+                env.run(item, item.run, mapOf(id to newValue)) { result ->
+                    if (result.ok) env.store[id] = newValue
                 }
-            },
-        )
-    }
+            }
+        },
+    )
     BlurDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item.options.chunked(item.columns).forEach { rowOptions ->
@@ -661,24 +660,23 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
     }
     // Từ FULLSCREEN_MIN_OPTIONS mục trở lên: chọn toàn màn hình (có ô tìm); ít hơn thì hộp thoại nhỏ.
     val fullScreen = item.options.size >= FULLSCREEN_MIN_OPTIONS
-    if (fullScreen && showDialog) {
-        SelectFullScreen(
-            title = item.title,
-            options = item.options,
-            multi = false,
-            selected = setOf(current),
-            onDismiss = { showDialog = false },
-            onConfirm = { chosen ->
-                showDialog = false
-                val newValue = chosen.firstOrNull() ?: current
-                if (newValue != current) {
-                    env.run(item, item.run, mapOf(id to newValue)) { result ->
-                        if (result.ok) env.store[id] = newValue
-                    }
+    SelectFullScreenSlot(
+        show = fullScreen && showDialog,
+        title = item.title,
+        options = item.options,
+        multi = false,
+        selected = setOf(current),
+        onDismiss = { showDialog = false },
+        onConfirm = { chosen ->
+            showDialog = false
+            val newValue = chosen.firstOrNull() ?: current
+            if (newValue != current) {
+                env.run(item, item.run, mapOf(id to newValue)) { result ->
+                    if (result.ok) env.store[id] = newValue
                 }
-            },
-        )
-    }
+            }
+        },
+    )
     BlurDialog(show = showDialog && !fullScreen, title = item.title, onDismissRequest = { showDialog = false }) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item.options.chunked(item.columns).forEach { rowOptions ->
