@@ -281,6 +281,8 @@ fun ThemeMenu(
     onSelect: (ThemeMode) -> Unit,
     haptic: Boolean,
     onHapticChange: (Boolean) -> Unit,
+    blur: Boolean,
+    onBlurChange: (Boolean) -> Unit,
 ) {
     TopBarMenu(
         icon = "icons/bar_theme.svg",
@@ -296,6 +298,7 @@ fun ThemeMenu(
         }
         MenuDivider()
         MenuSwitchItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
+        if (isBlurSupported()) MenuSwitchItem(label = "Làm mờ nền", checked = blur, onChange = onBlurChange)
     }
 }
 

@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- miuix-blur yêu cầu Android 13 (API 33) còn app hỗ trợ từ API 24: cho phép gộp, code chỉ bật blur khi máy từ API 33 (isRuntimeShaderSupported). -->
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
+
     <!-- Quyền bộ nhớ: xin lúc khởi động, từ chối thì thoát app.
          Android 11+ (API 30+): "Truy cập tất cả tệp" (MANAGE_EXTERNAL_STORAGE).
          Android 7 đến 10 (API 24-29): READ/WRITE_EXTERNAL_STORAGE xin lúc chạy; từ Android 11 hai quyền này không còn dùng nữa. -->

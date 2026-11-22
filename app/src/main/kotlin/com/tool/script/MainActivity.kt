@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             var themeMode by remember { mutableStateOf(ThemePrefs.load(context)) }
             var hapticEnabled by remember { mutableStateOf(ThemePrefs.loadHaptic(context)) }
+            var blurEnabled by remember { mutableStateOf(ThemePrefs.loadBlur(context)) }
             val dark = isDarkTheme(themeMode)
             // Thanh trạng thái / thanh điều hướng đổi màu icon theo chủ đề app (có thể khác chủ đề hệ thống).
             DisposableEffect(dark) {
@@ -61,6 +62,11 @@ class MainActivity : ComponentActivity() {
                             hapticEnabled = it
                             ThemePrefs.saveHaptic(context, it)
                         },
+                        blurEnabled = blurEnabled,
+                        onBlurChange = {
+                            blurEnabled = it
+                            ThemePrefs.saveBlur(context, it)
+                        },
                         onThemeChange = {
                             themeMode = it
                             ThemePrefs.save(context, it)
@@ -81,6 +87,8 @@ private fun AppRoot(
     themeMode: ThemeMode,
     hapticEnabled: Boolean,
     onHapticChange: (Boolean) -> Unit,
+    blurEnabled: Boolean,
+    onBlurChange: (Boolean) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onExit: () -> Unit,
 ) {
@@ -129,6 +137,8 @@ private fun AppRoot(
             onThemeChange = onThemeChange,
             hapticEnabled = hapticEnabled,
             onHapticChange = onHapticChange,
+            blurEnabled = blurEnabled,
+            onBlurChange = onBlurChange,
             onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },
         )
     } else {

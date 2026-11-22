@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.icons)
+    implementation(libs.miuix.blur)
 
     // TOML
     implementation(libs.tomlkt)

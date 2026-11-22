@@ -79,6 +79,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -137,6 +139,8 @@ fun MainScreen(
     onThemeChange: (ThemeMode) -> Unit,
     hapticEnabled: Boolean,
     onHapticChange: (Boolean) -> Unit,
+    blurEnabled: Boolean,
+    onBlurChange: (Boolean) -> Unit,
     onShowDetails: (title: String, text: String) -> Unit,
 ) {
     val config = result.config
@@ -268,12 +272,14 @@ fun MainScreen(
             ) { file ->
                 val subPage = file?.let { config.subPages[it] }
                 if (subPage != null) {
-                    SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) })
+                    SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, blur = blurEnabled)
                 } else {
+                    val backdrop = rememberBarBackdrop(blurEnabled)
                     Scaffold(
                         topBar = {
                             AppTopBar(
                                 title = config.app.name,
+                                backdrop = backdrop,
                                 actions = {
                                     // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
                                     ThemeMenu(
@@ -287,6 +293,8 @@ fun MainScreen(
                                         },
                                         haptic = hapticEnabled,
                                         onHapticChange = onHapticChange,
+                                        blur = blurEnabled,
+                                        onBlurChange = onBlurChange,
                                     )
                                     // Nút nguồn: menu khởi động lại, thả xuống ngay dưới icon.
                                     PowerMenu(
@@ -313,7 +321,10 @@ fun MainScreen(
                         snackbarHost = { SnackbarHost(feedback.snackbarState) },
                         bottomBar = {
                             if (pages.size >= 2) {
-                                NavigationBar {
+                                NavigationBar(
+                                    modifier = Modifier.barBlur(backdrop),
+                                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                                ) {
                                     // Cửa sổ tab trượt mượt: cả hàng tab nằm trong một khung cắt, dịch sang trái / phải theo windowStart.
                                     val slide by animateFloatAsState(
                                         targetValue = windowStart.toFloat(),
@@ -344,16 +355,19 @@ fun MainScreen(
                             }
                         },
                     ) { inner ->
+                        // Có blur: nội dung kéo xuống dưới thanh trên (thẻ cuộn qua thanh thì bị làm mờ), chừa chỗ bằng padding của danh sách.
+                        val barTop = inner.calculateTopPadding()
+                        val bannerShown = warningText.isNotEmpty() && !warningDismissed
                         Column(
                             Modifier
                                 .fillMaxSize()
-                                .padding(top = inner.calculateTopPadding()),
+                                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
                         ) {
-                            if (warningText.isNotEmpty() && !warningDismissed) {
+                            if (bannerShown) {
                                 Banner(
                                     message = warningText,
                                     warning = true,
-                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = if (backdrop != null) barTop + 8.dp else 8.dp),
                                     actionLabel = "Xem",
                                     onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
                                     onDismiss = { warningDismissed = true },
@@ -368,6 +382,7 @@ fun MainScreen(
                                     warnings = page.warnings,
                                     env = env,
                                     bottomInset = inner.calculateBottomPadding(),
+                                    topInset = if (backdrop != null && !bannerShown) barTop else 0.dp,
                                 )
                             }
                             FeedbackDialogs(feedback, env)
@@ -394,18 +409,21 @@ private val TopBarTitleSize = 22.sp
 /**
  * Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn.
  * Có [onBack] thì thêm nút ở đầu thanh: mũi tên quay lại (trang con) hoặc dấu X khi [closeStyle] (dialog).
+ * [backdrop] khác null: nền thanh trong suốt và làm mờ phần nội dung cuộn phía dưới (xem BarBlur.kt).
  */
 @Composable
 private fun AppTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
     closeStyle: Boolean = false,
+    backdrop: LayerBackdrop? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface)
+            .barBlur(backdrop)
+            .background(if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface)
             .statusBarsPadding()
             .height(56.dp)
             .padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
@@ -443,18 +461,21 @@ private fun SubPageScreen(
     onConfirm: () -> Unit,
     topBarModifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier,
+    blur: Boolean = false,
 ) {
     // Dialog chỉ truyền biến: item không chạy lệnh, nút Xác nhận mới chạy lệnh của link.
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
+    // Dialog không làm mờ: chiều cao sheet được đo theo bố cục cũ (xem DialogContentMeasurer).
+    val backdrop = rememberBarBackdrop(blur && !page.dialog)
     Scaffold(
-        topBar = { Box(topBarModifier) { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog) } },
+        topBar = { Box(topBarModifier) { AppTopBar(title = page.title, onBack = onBack, closeStyle = page.dialog, backdrop = backdrop) } },
         snackbarHost = { SnackbarHost(feedback.snackbarState) },
         bottomBar = { if (page.dialog) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
     ) { inner ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(top = inner.calculateTopPadding())
+                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = inner.calculateTopPadding()))
                 .then(contentModifier),
         ) {
             Box(Modifier.weight(1f)) {
@@ -465,6 +486,7 @@ private fun SubPageScreen(
                     warnings = page.warnings,
                     env = pageEnv,
                     bottomInset = inner.calculateBottomPadding(),
+                    topInset = if (backdrop != null) inner.calculateTopPadding() else 0.dp,
                 )
             }
             FeedbackDialogs(feedback, env)
@@ -746,11 +768,12 @@ private fun PageList(
     warnings: List<String>,
     env: RenderEnv,
     bottomInset: androidx.compose.ui.unit.Dp,
+    topInset: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     val showWarnings = shouldShowPageWarnings(file, warnings)
     LazyColumn(
         modifier = Modifier.fillMaxSize().imePadding(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + bottomInset),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Banner nằm trong danh sách nên cuộn cùng nội dung, không che mục nào.

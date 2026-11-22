@@ -31,6 +31,7 @@ object ThemePrefs {
     private const val FILE = "theme_prefs"
     private const val KEY_MODE = "mode"
     private const val KEY_HAPTIC = "haptic"
+    private const val KEY_BLUR = "blur"
 
     fun load(context: Context): ThemeMode {
         val key = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_MODE, null)
@@ -46,6 +47,14 @@ object ThemePrefs {
 
     fun saveHaptic(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_HAPTIC, enabled).apply()
+    }
+
+    /** Làm mờ nền thanh trên / thanh tab; mặc định bật (chỉ có tác dụng trên Android 13+). */
+    fun loadBlur(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_BLUR, true)
+
+    fun saveBlur(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_BLUR, enabled).apply()
     }
 }
 
