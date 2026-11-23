@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,12 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
@@ -66,7 +69,6 @@ import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
@@ -338,26 +340,64 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
     }
 }
 
-// Mục menu có công tắc bên phải: bấm cả hàng hoặc công tắc đều đổi trạng thái, menu giữ nguyên.
+/** Một ô bật / tắt trong [MenuToggleGrid]. */
+internal class MenuToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
+
+/**
+ * Lưới ô bật / tắt 2 cột (thay cho công tắc): ô bo góc, tắt thì nền xám nhạt, bật thì nền màu chủ đạo nhạt, chữ màu chủ đạo và dấu tích.
+ * Bấm ô để đổi trạng thái, menu giữ nguyên. Hai ô cùng hàng luôn cao bằng nhau; hàng lẻ chừa ô trống bên phải.
+ */
 @Composable
-internal fun MenuCheckItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun MenuToggleGrid(toggles: List<MenuToggle>) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        toggles.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowItems.forEach { toggle ->
+                    MenuToggleTile(toggle, Modifier.weight(1f).fillMaxHeight())
+                }
+                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
+    val on = toggle.checked
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable { onChange(!checked) }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .background(if (on) MiuixTheme.colorScheme.primary.copy(alpha = MenuSelectedAlpha) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .clickable { toggle.onChange(!on) }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = label,
-            color = MiuixTheme.colorScheme.onSurface,
-            fontSize = 16.sp,
+            text = toggle.label,
+            color = if (on) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 2,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(24.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Spacer(Modifier.width(6.dp))
+        // Ô dấu tích luôn chiếm chỗ để chữ không xê dịch khi bật / tắt.
+        Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+            if (on) {
+                AsyncImage(
+                    model = Util.iconModel(AppIcons.BarCheck),
+                    contentDescription = stringResource(R.string.state_selected),
+                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                )
+            }
+        }
     }
 }
 
@@ -375,7 +415,7 @@ private fun MenuDivider() {
 /**
  * Nút chủ đề: menu tùy chỉnh giao diện.
  * Nhóm "Giao diện": chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
- * Nhóm "Tùy chọn" là các công tắc: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
+ * Nhóm "Tùy chọn" là lưới ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
  */
 @Composable
 fun ThemeMenu(
@@ -408,9 +448,14 @@ fun ThemeMenu(
         )
         MenuDivider()
         MenuSectionLabel(stringResource(R.string.menu_section_options))
-        MenuCheckItem(label = stringResource(R.string.option_dynamic_color), checked = current.monet, onChange = { onSelect(current.withMonet(it)) })
-        MenuCheckItem(label = stringResource(R.string.option_haptic), checked = haptic, onChange = onHapticChange)
-        if (isBlurSupported()) MenuCheckItem(label = stringResource(R.string.option_blur), checked = blur, onChange = onBlurChange)
+        MenuToggleGrid(
+            buildList {
+                add(MenuToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+                add(MenuToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+                if (isBlurSupported()) add(MenuToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+            },
+        )
+        Spacer(Modifier.height(4.dp))
     }
 }
 
@@ -513,8 +558,6 @@ fun PowerMenu(
         expanded = expanded,
         onOpen = onOpen,
         onDismiss = onDismiss,
-        // Đủ rộng cho mục dài nhất trong nhóm nâng cao, để menu không đổi chiều rộng khi mở / thu nhóm.
-        minWidth = 280.dp,
     ) {
         var advanced by remember { mutableStateOf(false) }
         MenuItem(label = stringResource(R.string.power_restart_app), onClick = onRestartApp)
@@ -530,6 +573,14 @@ fun PowerMenu(
             MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
         }
         MenuExpandItem(label = stringResource(R.string.power_advanced), expanded = advanced, onClick = { advanced = !advanced })
+        // Khi nhóm nâng cao đang thu: đưa bản ẩn cao 0dp của nó vào phép đo để menu tự co theo mục dài nhất mà không đổi rộng khi mở / thu.
+        if (!advanced) {
+            Column(Modifier.height(0.dp).clipToBounds().clearAndSetSemantics { }) {
+                PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
+                    MenuItem(label = stringResource(action.labelRes)) { }
+                }
+            }
+        }
         AnimatedVisibility(
             visible = advanced,
             enter = expandVertically(tween(180)),
