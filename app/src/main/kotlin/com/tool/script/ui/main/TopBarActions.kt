@@ -420,8 +420,8 @@ private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMo
 enum class PowerAction(val label: String, val confirm: String, val command: String) {
     PowerOff("Tắt máy", "Tắt máy? Máy sẽ tắt hẳn, cần bấm nút nguồn để bật lại.", "/system/bin/svc power shutdown || /system/bin/reboot -p"),
     Reboot("Khởi động lại máy", "Khởi động lại máy? Máy sẽ tắt và bật lại ngay.", rebootCommand("")),
-    SoftReboot("Khởi động lại mềm", "Khởi động lại mềm? Chỉ khởi động lại hệ thống Android, máy không tắt.", "killall zygote || setprop ctl.restart zygote"),
     Recovery("Khởi động lại vào Recovery", "Khởi động lại vào Recovery?", rebootCommand("recovery")),
+    SoftReboot("Khởi động lại mềm", "Khởi động lại mềm? Chỉ khởi động lại hệ thống Android, máy không tắt.", "killall zygote || setprop ctl.restart zygote"),
     Bootloader("Khởi động lại vào Bootloader", "Khởi động lại vào Bootloader (Fastboot)?", rebootCommand("bootloader")),
     Download("Khởi động lại vào Download", "Khởi động lại vào chế độ Download (Odin, máy Samsung)? Máy khác có thể không hỗ trợ.", rebootCommand("download")),
     Edl("Khởi động lại vào EDL", "Khởi động lại vào EDL (chế độ cứu hộ Qualcomm)? Màn hình sẽ tối đen, cần giữ nút nguồn lâu để thoát.", rebootCommand("edl")),
@@ -432,8 +432,8 @@ private fun rebootCommand(reason: String): String {
     return "/system/bin/svc power reboot$arg || /system/bin/reboot$arg"
 }
 
-/** Hai kiểu hay dùng, luôn hiện sẵn trong menu Nguồn; các kiểu còn lại gom vào nhóm [POWER_ADVANCED_LABEL] (bấm để mở / thu). */
-private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot)
+/** Ba kiểu hay dùng (Tắt máy, Khởi động lại máy, Recovery), luôn hiện sẵn trong menu Nguồn; các kiểu còn lại gom vào nhóm [POWER_ADVANCED_LABEL] (bấm để mở / thu). */
+private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot, PowerAction.Recovery)
 
 private const val POWER_ADVANCED_LABEL = "Khởi động lại nâng cao"
 
@@ -469,7 +469,7 @@ private fun MenuExpandItem(label: String, expanded: Boolean, onClick: () -> Unit
 
 /**
  * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy (cần root).
- * Nhóm máy chỉ hiện sẵn Tắt máy và Khởi động lại máy cho menu ngắn gọn; Khởi động lại mềm, Recovery, Bootloader, Download, EDL
+ * Nhóm máy chỉ hiện sẵn Tắt máy, Khởi động lại máy và Recovery cho menu ngắn gọn; Khởi động lại mềm, Bootloader, Download, EDL
  * gom vào dòng "Khởi động lại nâng cao" (mở / thu, mỗi lần mở menu bắt đầu ở trạng thái thu).
  * Việc xác nhận và thực thi do nơi gọi xử lý.
  */
@@ -505,8 +505,8 @@ fun PowerMenu(
             enter = expandVertically(tween(180)),
             exit = shrinkVertically(tween(150)),
         ) {
-            // Thụt vào một chút để thấy các mục thuộc nhóm "Khởi động lại nâng cao".
-            Column(Modifier.padding(start = 12.dp)) {
+            // Các mục nhóm nâng cao thẳng hàng với các mục khác, không thụt vào.
+            Column {
                 PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
                     MenuItem(label = action.label) { onDeviceAction(action) }
                 }
