@@ -241,7 +241,7 @@ private class PreludeExecutor(private val inner: ShellExecutor) : ShellExecutor 
         // Hết giờ cũng do đây tính (bên trong chạy không giới hạn) để dùng được killtree.
         val run = async(NonCancellable) {
             inner.exec(withHead(command, withPid = true), null) { line ->
-                val p = parsePid(line)
+                val p = if (pid.get() == null) parsePid(line) else null
                 if (p != null) pid.compareAndSet(null, p) else onOutput?.invoke(line)
             }
         }

@@ -10,18 +10,27 @@ import java.io.OutputStreamWriter
 
 /**
  * Tệp log đầy đủ của từng [LogEntry], nằm ở cache/logs. Màn hình chỉ giữ vài trăm dòng cuối cho nhẹ, còn nút Chia sẻ gửi tệp này nên không bị cắt.
- * Thư mục được xóa sạch mỗi lần ứng dụng khởi động (gọi từ [LogCenter.init]).
+ * Mỗi lần ứng dụng khởi động (gọi từ [LogCenter.init]) chỉ xóa các tệp log_*.txt; tệp trong share chỉ xóa khi quá [SHARE_MAX_AGE_MS].
+ * Không xóa share ngay vì tiến trình chính được khởi động lại khi ứng dụng nhận đọc tệp chia sẻ từ màn hình lỗi.
  */
 object LogFiles {
     /** Mỗi log ghi tối đa chừng này; quá thì ngừng ghi và thêm một dòng ghi chú ở cuối tệp. */
-    const val MAX_BYTES = 100L * 1024 * 1024
+    const val MAX_BYTES = 10L * 1024 * 1024
+
+    private const val SHARE_MAX_AGE_MS = 24L * 60 * 60 * 1000
 
     private var dir: File? = null
 
     fun init(context: Context) {
-        dir = File(context.cacheDir, "logs").also {
-            it.deleteRecursively()
-            it.mkdirs()
+        dir = File(context.cacheDir, "logs").also { logs ->
+            logs.mkdirs()
+            logs.listFiles()?.forEach { f ->
+                if (f.isFile && f.name.startsWith("log_")) f.delete()
+            }
+            val now = System.currentTimeMillis()
+            File(logs, "share").listFiles()?.forEach { f ->
+                if (now - f.lastModified() > SHARE_MAX_AGE_MS) f.deleteRecursively()
+            }
         }
     }
 
@@ -62,8 +71,8 @@ internal class PlainLogWriter(private val file: File?) {
 
     /** Chốt tệp: ghi nốt dòng dở rồi đóng. */
     fun close() {
-        if (file == null || stopped) return
-        if (line.isNotEmpty()) flushLine()
+        if (file == null) return
+        if (!stopped && line.isNotEmpty()) flushLine()
         stopped = true
         runCatching { out?.close() }
         out = null
@@ -77,7 +86,7 @@ internal class PlainLogWriter(private val file: File?) {
             val w = out ?: BufferedWriter(OutputStreamWriter(FileOutputStream(target, true), Charsets.UTF_8), 32 * 1024).also { out = it }
             w.write(text)
             w.write("\n")
-            bytes += text.length + 1
+            bytes += text.toByteArray(Charsets.UTF_8).size + 1
             if (bytes > LogFiles.MAX_BYTES) {
                 w.write(AppText.get(R.string.log_write_stopped, (LogFiles.MAX_BYTES / 1024 / 1024).toString()) + "\n")
                 w.flush()

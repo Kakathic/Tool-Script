@@ -87,6 +87,18 @@ class VariableStore(
 
     fun contains(name: String): Boolean = values.containsKey(name)
 
+    private val fetched = HashSet<String>()
+
+    /** Đánh dấu id đang/đã đọc bằng `get`; trả về false nếu đã có (để mỗi id chỉ đọc một lần, không chạy lại khi cuộn hay đổi tab). */
+    @Synchronized
+    fun claimFetch(id: String): Boolean = fetched.add(id)
+
+    /** Bỏ đánh dấu khi lần đọc không thành công, để lần hiện sau đọc lại. */
+    @Synchronized
+    fun releaseFetch(id: String) {
+        fetched.remove(id)
+    }
+
     fun snapshot(): Map<String, String> = values.toMap()
 
     fun evaluate(condition: String): Boolean = ConditionEvaluator.evaluate(condition, ::get)

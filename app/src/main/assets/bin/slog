@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # kakathic
 
-if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ -z "$1" ]; then
+if [ "$1" = '-h' ] || [ "$1" = '--help' ] || [ -z "$1" ]; then
     echo "Use: slog key 1" >&2
     echo "Delete: slog -d key" >&2
     exit 1
@@ -9,12 +9,14 @@ fi
 
 [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
 
-if [ "$2" ]; then
-    if [ "$1" == "-d" ] || [ "$1" == "--delete" ]; then
-    [ -f "$STATE_DIR/$2" ] && rm -f "$STATE_DIR/$2"
-    else
-    echo "$2" > "$STATE_DIR/$1"
+if [ "$1" = "-d" ] || [ "$1" = "--delete" ]; then
+    if [ -z "$2" ]; then
+        echo "Delete: slog -d key" >&2
+        exit 1
     fi
+    rm -f "$STATE_DIR/$2"
+elif [ "$2" ]; then
+    printf '%s\n' "$2" > "$STATE_DIR/$1"
 else
-    [ "$1" ] && echo -n > "$STATE_DIR/$1"
+    : > "$STATE_DIR/$1"
 fi

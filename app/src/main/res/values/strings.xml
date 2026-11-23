@@ -139,6 +139,7 @@
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) is missing id, ignored</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" is invalid (letters, digits and underscore only; can\'t start with a digit), ignored</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": duplicate id \"%3$s\", ignored</string>
+    <string name="cfg_reserved_id">%1$s \"%2$s\": id \"%3$s\" is reserved for environment variables, ignored</string>
     <string name="cfg_link_missing_target">%1$s \"%2$s\" (link) is missing tab or page, ignored</string>
     <string name="cfg_link_both">%1$s \"%2$s\": has both tab and page, using tab</string>
     <string name="cfg_invalid_style">%1$s \"%2$s\": style = \"%3$s\" is invalid, using page</string>
@@ -165,6 +166,7 @@
     <string name="boot_assets_copied">assets: copied %1$s/%2$s files</string>
     <string name="boot_assets_error">assets: error %1$s</string>
     <string name="boot_assets_failed">assets: couldn\'t copy: %1$s</string>
+    <string name="boot_duplicate_id">Duplicate id \"%1$s\" across pages: they share one value, the last item's options and range apply</string>
     <string name="boot_env_unknown_key">env.sh: unknown key %1$s, kept as is</string>
     <string name="boot_env_failed">Couldn\'t prepare env.sh: %1$s</string>
     <string name="boot_init_timed_out">timed out</string>

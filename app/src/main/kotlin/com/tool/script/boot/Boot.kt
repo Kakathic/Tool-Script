@@ -162,8 +162,10 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         // Giá trị đã lưu: mỗi item có id một file trong files/state (tên file = id), chỉ được tạo khi giá trị đổi.
         // Có file hợp lệ thì lấy giá trị trong đó; chưa có file thì dùng mặc định (không ghi gì); file hỏng thì xóa. Item không id không lưu.
         val specs = LinkedHashMap<String, Item>()
-        config.pages.forEach { collectPersisted(it.items, specs) }
-        config.subPages.values.forEach { collectPersisted(it.items, specs) }
+        val duplicateIds = LinkedHashSet<String>()
+        config.pages.forEach { collectPersisted(it.items, specs, duplicateIds) }
+        config.subPages.values.forEach { collectPersisted(it.items, specs, duplicateIds) }
+        duplicateIds.forEach { log(app.getString(R.string.boot_duplicate_id, it)) }
         val files = StateFiles(File(app.filesDir, "state"))
         val values = LinkedHashMap(defaults)
         withContext(Dispatchers.IO) {
@@ -203,14 +205,16 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Các item có `id` và có giá trị để lưu (không gồm text / button / link). Trùng id thì item sau thắng, như [collectDefaults]. */
-    private fun collectPersisted(items: List<Item>, out: MutableMap<String, Item>) {
+    /** Các item có `id` và có giá trị để lưu (không gồm text / button / link). Trùng id giữa các trang thì item sau thắng, như [collectDefaults], và id được ghi vào [duplicates] để báo. */
+    private fun collectPersisted(items: List<Item>, out: MutableMap<String, Item>, duplicates: MutableSet<String>) {
         for (item in items) {
             val id = item.id
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Radio, ItemType.Dropdown,
-                ItemType.MultiSelect, ItemType.SingleSelect, ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) out[id] = item
-                ItemType.Group -> collectPersisted(item.children, out)
+                ItemType.MultiSelect, ItemType.SingleSelect, ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) {
+                    if (out.put(id, item) != null) duplicates += id
+                }
+                ItemType.Group -> collectPersisted(item.children, out, duplicates)
                 else -> Unit
             }
         }

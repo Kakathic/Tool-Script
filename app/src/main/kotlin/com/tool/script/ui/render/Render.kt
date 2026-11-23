@@ -336,15 +336,22 @@ private fun BinaryItem(
     val checked = env.store[id] == "1"
     val haptic = LocalHapticFeedback.current
 
-    // Tùy chọn: có `get` thì đọc trạng thái thật bằng shell khi item xuất hiện lần đầu.
+    // Tùy chọn: có `get` thì đọc trạng thái thật bằng shell khi item xuất hiện lần đầu (bản đo của dialog không đọc; đọc lỗi thì lần hiện sau đọc lại).
     LaunchedEffect(id) {
         val get = item.get
-        if (!get.isNullOrBlank()) {
+        if (env.varsOnly || get.isNullOrBlank() || !env.store.claimFetch(id)) return@LaunchedEffect
+        var done = false
+        try {
+            val before = env.store[id]
             val result = ExecutorManager.current.exec(ShellText.silenceStderr(ShellText.withEnv(get, env.store.snapshot())), item.timeoutSec ?: GET_TIMEOUT_SEC)
             if (result.ok) {
+                done = true
                 val out = result.output.trim().lowercase()
-                env.store[id] = if (out == "1" || out == "true" || out == "on") "1" else "0"
+                // Người dùng đã đổi giá trị trong lúc chờ thì không ghi đè.
+                if (env.store[id] == before) env.store[id] = if (out == "1" || out == "true" || out == "on") "1" else "0"
             }
+        } finally {
+            if (!done) env.store.releaseFetch(id)
         }
     }
 
@@ -414,10 +421,17 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
 
     LaunchedEffect(id) {
         val get = item.get
-        if (!get.isNullOrBlank()) {
+        if (env.varsOnly || get.isNullOrBlank() || !env.store.claimFetch(id)) return@LaunchedEffect
+        var done = false
+        try {
             val result = ExecutorManager.current.exec(ShellText.silenceStderr(ShellText.withEnv(get, env.store.snapshot())), item.timeoutSec ?: GET_TIMEOUT_SEC)
             val number = result.output.trim().toFloatOrNull()
-            if (result.ok && number != null) env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
+            if (result.ok && number != null) {
+                done = true
+                env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
+            }
+        } finally {
+            if (!done) env.store.releaseFetch(id)
         }
     }
 

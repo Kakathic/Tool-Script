@@ -137,6 +137,7 @@
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) thiếu id, bỏ qua</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" không hợp lệ (chỉ chữ, số, gạch dưới; không bắt đầu bằng số), bỏ qua</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": trùng id \"%3$s\", bỏ qua</string>
+    <string name="cfg_reserved_id">%1$s \"%2$s\": id \"%3$s\" trùng tên biến môi trường dành riêng, bỏ qua</string>
     <string name="cfg_link_missing_target">%1$s \"%2$s\" (link) thiếu tab hoặc page, bỏ qua</string>
     <string name="cfg_link_both">%1$s \"%2$s\": có cả tab và page, dùng tab</string>
     <string name="cfg_invalid_style">%1$s \"%2$s\": style = \"%3$s\" không hợp lệ, dùng page</string>
@@ -163,6 +164,7 @@
     <string name="boot_assets_copied">assets: chép %1$s/%2$s tệp</string>
     <string name="boot_assets_error">assets: lỗi %1$s</string>
     <string name="boot_assets_failed">assets: không chép được: %1$s</string>
+    <string name="boot_duplicate_id">Id \"%1$s\" trùng giữa các trang: dùng chung một giá trị, tùy chọn và khoảng giá trị của item cuối được áp dụng</string>
     <string name="boot_env_unknown_key">env.sh: key lạ %1$s, giữ nguyên</string>
     <string name="boot_env_failed">Không chuẩn bị được env.sh: %1$s</string>
     <string name="boot_init_timed_out">hết thời gian chờ</string>

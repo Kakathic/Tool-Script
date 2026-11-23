@@ -176,6 +176,13 @@ object TomlParser {
         return info to pages
     }
 
+    /** Tên biến môi trường của app (env.sh, biến dựng sẵn) và shell: item đặt id trùng sẽ đè môi trường của mọi lệnh. */
+    private val RESERVED_IDS = setOf(
+        "PACKAGE", "APP_DIR", "FILES_DIR", "CACHE_DIR", "SCRIPTS_DIR", "STATE_DIR", "HOME", "BIN_DIR", "LIB_DIR",
+        "ABI", "ARCH", "EXT_ROOT", "EXT_DIR", "SDK", "ROOT_MODE",
+        "PATH", "LD_LIBRARY_PATH", "IFS", "PWD", "shell_progres",
+    )
+
     /** Dòng mở bảng `[[item]]` / `[[group]]` ở cấp trang (không khớp `[[group.item]]`). */
     private val BLOCK_HEADER = Regex("""^[ \t]*\[\[[ \t]*(item|group)[ \t]*\]\]""", RegexOption.MULTILINE)
 
@@ -274,6 +281,10 @@ object TomlParser {
             }
             if (!ShellText.isValidVarName(id)) {
                 warnings += AppText.get(R.string.cfg_invalid_id, label, title, id)
+                return null
+            }
+            if (id in RESERVED_IDS) {
+                warnings += AppText.get(R.string.cfg_reserved_id, label, title, id)
                 return null
             }
             if (!ids.add(id)) {
@@ -422,10 +433,10 @@ object TomlParser {
 
 /**
  * multiselect: giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options.
- * Separator mặc định là xuống dòng; khi đó `raw` kiểu cũ cách nhau bằng dấu phẩy (default, file đã lưu) vẫn đọc được.
+ * Tách `raw` chỉ theo [Item.separator] (mặc định xuống dòng), nên option có giá trị chứa dấu phẩy vẫn giữ nguyên.
  */
 fun Item.normalizeMulti(raw: String): String {
-    val parts = if (separator == "\n") raw.split("\n", ",") else raw.split(separator)
+    val parts = raw.split(separator)
     val chosen = parts.map { it.trim() }.toSet()
     return options.filter { it.value in chosen }.joinToString(separator) { it.value }
 }
