@@ -166,7 +166,7 @@
     <string name="boot_assets_copied">assets: copied %1$s/%2$s files</string>
     <string name="boot_assets_error">assets: error %1$s</string>
     <string name="boot_assets_failed">assets: couldn\'t copy: %1$s</string>
-    <string name="boot_duplicate_id">Duplicate id \"%1$s\" across pages: they share one value, the last item's options and range apply</string>
+    <string name="boot_duplicate_id">Duplicate id \"%1$s\" across pages: they share one value, the last item\'s options and range apply</string>
     <string name="boot_env_unknown_key">env.sh: unknown key %1$s, kept as is</string>
     <string name="boot_env_failed">Couldn\'t prepare env.sh: %1$s</string>
     <string name="boot_init_timed_out">timed out</string>
