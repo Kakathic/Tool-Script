@@ -761,6 +761,14 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
 private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
+    // Toàn màn hình có blur: viên thuốc nằm trên lớp kính nên phủ trắng nhẹ cho nổi (tối 14%, sáng 60%); còn lại giữ nền onSurface 8%.
+    val glass = entry.full && LocalBlurRequests.current != null
+    val darkUi = MiuixTheme.colorScheme.background.luminance() < 0.5f
+    val pillColor = when {
+        glass && darkUi -> Color.White.copy(alpha = 0.14f)
+        glass -> Color.White.copy(alpha = 0.6f)
+        else -> MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
@@ -784,7 +792,7 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
         Row(
             modifier = Modifier
                 .clip(CircleShape)
-                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                .background(pillColor)
                 .padding(2.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
