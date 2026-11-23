@@ -1055,8 +1055,10 @@ fun Banner(
                 // Các nút (Xem, Ẩn, Hủy...) cách chữ và cách nhau 8dp; Banner dùng chung cho thông báo script và lỗi cấu hình.
                 Spacer(Modifier.width(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
-                    if (onDismiss != null) TextButton(text = stringResource(R.string.action_hide), onClick = onDismiss)
+                    // Nền nút lấy từ màu chữ của banner (pha 14%) nên ở chế độ sáng vẫn tách khỏi nền banner, không trùng màu như mặc định của Miuix.
+                    val buttonColors = ButtonDefaults.textButtonColors(color = content.copy(alpha = 0.14f), textColor = content)
+                    if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction, colors = buttonColors)
+                    if (onDismiss != null) TextButton(text = stringResource(R.string.action_hide), onClick = onDismiss, colors = buttonColors)
                 }
             }
         }
