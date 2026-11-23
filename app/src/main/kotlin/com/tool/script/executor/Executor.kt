@@ -323,6 +323,11 @@ object ExecutorManager {
 
     private const val DETECT_TIMEOUT_MS = 5_000L
 
+    /** Đã có quyền root (su) hay chưa, cập nhật sau mỗi lần [detect]; menu Nguồn dùng để ẩn nhóm thiết bị. */
+    @Volatile
+    var hasRoot: Boolean = false
+        private set
+
     @OptIn(DelicateCoroutinesApi::class)
     suspend fun detect(): DetectResult {
         val notes = mutableListOf<String>()
@@ -335,6 +340,7 @@ object ExecutorManager {
             }.getOrDefault(false)
         }
         val hasRoot = withTimeoutOrNull(DETECT_TIMEOUT_MS) { probe.await() }
+        ExecutorManager.hasRoot = hasRoot == true
         if (hasRoot == true) {
             notes += "Backend: root (su)"
             return DetectResult(SuExecutor(), notes).also { current = PreludeExecutor(it.executor) }

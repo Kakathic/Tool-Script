@@ -357,6 +357,7 @@ fun MainScreen(
                                                     expanded = showRestartMenu,
                                                     onOpen = { showRestartMenu = true },
                                                     onDismiss = { showRestartMenu = false },
+                                                    hasRoot = ExecutorManager.hasRoot,
                                                     onRestartApp = {
                                                         showRestartMenu = false
                                                         env.confirm = ConfirmRequest(context.getString(R.string.confirm_restart_app)) { Util.restartApp(context) }

@@ -81,6 +81,7 @@
 
     <!-- Menu nguồn -->
     <string name="power_menu_description">Power</string>
+    <string name="power_need_root">Root required to show</string>
     <string name="power_restart_app">Restart app</string>
     <string name="power_close_app">Close app</string>
     <string name="power_section_device">Device (root required)</string>

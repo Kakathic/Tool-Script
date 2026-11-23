@@ -875,7 +875,8 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     val cardColors = if (glass) {
         CardDefaults.defaultColors(color = Color.Black.copy(alpha = 0.35f), contentColor = Color(0xFFE6EDF3))
     } else {
-        CardDefaults.defaultColors()
+        // Bảng log nhỏ: thẻ trong suốt, không có khung đục riêng (chế độ màu động pha màu thẻ khác nền dialog nên hiện khung).
+        CardDefaults.defaultColors(color = Color.Transparent)
     }
     Card(modifier = modifier.fillMaxWidth(), colors = cardColors, insideMargin = PaddingValues(0.dp)) {
         val primary = MiuixTheme.colorScheme.primary

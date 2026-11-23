@@ -79,6 +79,7 @@
 
     <!-- Menu nguồn -->
     <string name="power_menu_description">Nguồn</string>
+    <string name="power_need_root">Cần root để hiển thị</string>
     <string name="power_restart_app">Khởi động lại ứng dụng</string>
     <string name="power_close_app">Đóng ứng dụng</string>
     <string name="power_section_device">Thiết bị (cần root)</string>

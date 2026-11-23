@@ -468,10 +468,33 @@ private fun MenuExpandItem(label: String, expanded: Boolean, onClick: () -> Unit
     }
 }
 
+/** Dòng khóa (mờ, không bấm được) có icon khóa bên trái, dùng khi tính năng cần root mà máy chưa có. */
+@Composable
+private fun MenuLockedItem(label: String) {
+    val color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = MenuItemGap)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AsyncImage(
+            model = Util.iconModel(AppIcons.BarLock),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(color),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(text = label, color = color, fontSize = 16.sp, modifier = Modifier.weight(1f))
+    }
+}
+
 /**
  * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy (cần root).
  * Nhóm máy chỉ hiện sẵn Tắt máy, Khởi động lại máy và Recovery cho menu ngắn gọn; Khởi động lại mềm, Bootloader, Download, EDL
  * gom vào dòng "Khởi động lại nâng cao" (mở / thu, mỗi lần mở menu bắt đầu ở trạng thái thu).
+ * Chưa có root ([hasRoot] = false): nhóm máy được thay bằng một dòng khóa "Cần root để hiển thị".
  * Việc xác nhận và thực thi do nơi gọi xử lý.
  */
 @Composable
@@ -482,6 +505,7 @@ fun PowerMenu(
     onRestartApp: () -> Unit,
     onCloseApp: () -> Unit,
     onDeviceAction: (PowerAction) -> Unit,
+    hasRoot: Boolean = true,
 ) {
     TopBarMenu(
         icon = AppIcons.BarPower,
@@ -496,6 +520,11 @@ fun PowerMenu(
         MenuItem(label = stringResource(R.string.power_restart_app), onClick = onRestartApp)
         MenuItem(label = stringResource(R.string.power_close_app), onClick = onCloseApp)
         MenuDivider()
+        if (!hasRoot) {
+            // Chưa có root: không hiện nhóm thiết bị, chỉ một dòng khóa mờ, không bấm được.
+            MenuLockedItem(label = stringResource(R.string.power_need_root))
+            return@TopBarMenu
+        }
         MenuSectionLabel(stringResource(R.string.power_section_device))
         BASIC_POWER_ACTIONS.forEach { action ->
             MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
