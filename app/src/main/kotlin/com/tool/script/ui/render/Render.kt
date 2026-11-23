@@ -69,6 +69,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.SwitchDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -76,6 +77,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import com.tool.script.ui.main.BlurDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.tool.script.ui.theme.LocalMonetEnabled
 import kotlin.math.roundToInt
 
 // Renderer: ánh xạ type trong TOML sang composable Miuix.
@@ -293,7 +295,13 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
 private fun SwitchItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     // Bấm cả hàng (tiêu đề / mô tả) cũng đổi trạng thái; bấm trực tiếp vào công tắc thì dùng rung riêng của Switch.
     BinaryItem(item, env, modifier, enabled, inGroup, rowClickable = true, hapticOnControl = false) { checked, isEnabled, onChange ->
-        Switch(checked = checked, enabled = isEnabled, onCheckedChange = onChange)
+        // Màu động: nút tròn lúc tắt bị Miuix pha xám, trông như bị khóa; dùng màu chủ đạo nhạt cho sáng hơn.
+        val colors = if (LocalMonetEnabled.current) {
+            SwitchDefaults.switchColors(uncheckedThumbColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.6f))
+        } else {
+            SwitchDefaults.switchColors()
+        }
+        Switch(checked = checked, enabled = isEnabled, onCheckedChange = onChange, colors = colors)
     }
 }
 

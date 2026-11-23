@@ -99,7 +99,7 @@ fun ToolScriptTheme(mode: ThemeMode = ThemeMode.System, haptic: Boolean = true, 
         }
     }
     val feedback = if (haptic) LocalHapticFeedback.current else NoHapticFeedback
-    CompositionLocalProvider(LocalHapticFeedback provides feedback, LocalHapticEnabled provides haptic) {
+    CompositionLocalProvider(LocalHapticFeedback provides feedback, LocalHapticEnabled provides haptic, LocalMonetEnabled provides mode.monet) {
         MiuixTheme(controller = controller, content = content)
     }
 }
@@ -110,3 +110,6 @@ private object NoHapticFeedback : HapticFeedback {
 }
 
 val LocalHapticEnabled = staticCompositionLocalOf { true }
+
+/** Đang bật Màu động (Monet) hay không; để các thành phần chỉnh lại màu mà Miuix pha xám ở chế độ này. */
+val LocalMonetEnabled = staticCompositionLocalOf { false }
