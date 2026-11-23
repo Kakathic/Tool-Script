@@ -1,5 +1,6 @@
 package com.tool.script.crash
 
+import androidx.compose.ui.res.stringResource
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
@@ -68,8 +69,8 @@ class CrashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Lỗi"
-        val text = intent.getStringExtra(EXTRA_TEXT) ?: "(không có nội dung)"
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: getString(R.string.crash_title_default)
+        val text = intent.getStringExtra(EXTRA_TEXT) ?: getString(R.string.crash_no_content)
         val fatal = intent.getBooleanExtra(EXTRA_FATAL, true)
         val filePath = intent.getStringExtra(EXTRA_FILE)
         setContent {
@@ -102,7 +103,7 @@ class CrashActivity : ComponentActivity() {
                 putExtra(Intent.EXTRA_TEXT, text)
             }
         }
-        startActivity(Intent.createChooser(send, "Chia sẻ lỗi"))
+        startActivity(Intent.createChooser(send, getString(R.string.crash_share_error)))
     }
 
     private fun restart() {
@@ -131,7 +132,7 @@ class CrashActivity : ComponentActivity() {
          * Mở Trung tâm lỗi. [fatal] = true: tách task mới (dùng khi app chính sắp bị đóng).
          */
         fun launch(context: Context, title: String, text: String, fatal: Boolean) {
-            val shortened = if (text.length > MAX_CHARS) text.take(MAX_CHARS) + "\n... (đã cắt bớt)" else text
+            val shortened = if (text.length > MAX_CHARS) text.take(MAX_CHARS) + "\n" + context.getString(R.string.crash_truncated) else text
             val file = runCatching { saveFull(context, text) }.getOrNull()
             val intent = Intent(context, CrashActivity::class.java)
                 .putExtra(EXTRA_TITLE, title)
@@ -150,9 +151,9 @@ class CrashActivity : ComponentActivity() {
         }
 
         /** Nội dung báo cáo cho một exception không bắt được. */
-        fun report(thread: Thread, throwable: Throwable): String = buildString {
-            appendLine("Luồng: ${thread.name}")
-            appendLine("Thiết bị: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+        fun report(context: Context, thread: Thread, throwable: Throwable): String = buildString {
+            appendLine(context.getString(R.string.crash_report_thread, thread.name))
+            appendLine(context.getString(R.string.crash_report_device, Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE, Build.VERSION.SDK_INT.toString()))
             appendLine()
             append(throwable.stackTraceToString())
         }
@@ -235,8 +236,8 @@ private fun CrashScreen(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(CrashMargin)) {
-                TextButton(text = "Khởi động lại", onClick = onRestart, modifier = Modifier.weight(1f))
-                TextButton(text = if (fatal) "Thoát" else "Đóng", onClick = onExit, modifier = Modifier.weight(1f))
+                TextButton(text = stringResource(R.string.action_restart), onClick = onRestart, modifier = Modifier.weight(1f))
+                TextButton(text = stringResource(if (fatal) R.string.action_exit else R.string.action_close), onClick = onExit, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -262,6 +263,6 @@ private fun ShareButton(onClick: () -> Unit) {
             modifier = Modifier.size(18.dp),
         )
         Spacer(Modifier.width(6.dp))
-        Text(text = "Chia sẻ", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = content)
+        Text(text = stringResource(R.string.action_share), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = content)
     }
 }

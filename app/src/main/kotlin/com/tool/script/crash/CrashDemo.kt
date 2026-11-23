@@ -1,5 +1,8 @@
 package com.tool.script.crash
 
+import com.tool.script.R
+import com.tool.script.util.AppText
+
 /**
  * Lệnh demo để thử màn hình lỗi (CrashActivity) mà không cần sửa code.
  * Dùng làm giá trị `run` của một button trong TOML (nên kèm `confirm`, vì app sẽ thoát thật):
@@ -16,10 +19,10 @@ object CrashDemo {
 
     /** @return true nếu [command] là lệnh demo crash đã được xử lý (luồng chính thì không bao giờ quay lại vì ném lỗi). */
     fun trigger(command: String): Boolean = when (command.trim()) {
-        MAIN_THREAD -> throw IllegalStateException("Demo crash: lỗi ném từ luồng chính (run = \"$MAIN_THREAD\")")
+        MAIN_THREAD -> throw IllegalStateException(AppText.get(R.string.crash_demo_main, MAIN_THREAD))
         BACKGROUND_THREAD -> {
             Thread(
-                { throw IllegalStateException("Demo crash: lỗi ném từ luồng nền (run = \"$BACKGROUND_THREAD\")") },
+                { throw IllegalStateException(AppText.get(R.string.crash_demo_background, BACKGROUND_THREAD)) },
                 "crash-demo",
             ).start()
             true

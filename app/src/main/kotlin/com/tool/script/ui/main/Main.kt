@@ -1,5 +1,8 @@
 package com.tool.script.ui.main
 
+import android.content.Context
+import com.tool.script.R
+import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -166,7 +169,7 @@ fun MainScreen(
     // Chạm vào thông báo của log đã ẩn: mở lại màn hình log đó.
     LaunchedEffect(openLogId) {
         val id = openLogId ?: return@LaunchedEffect
-        if (!feedback.showHiddenLog(id)) feedback.toast("Log này không còn nữa")
+        if (!feedback.showHiddenLog(id)) feedback.toast(R.string.log_gone)
         onLogOpened()
     }
     val pagerState = rememberPagerState { pages.size }
@@ -252,9 +255,12 @@ fun MainScreen(
     // Thẻ cảnh báo chung chỉ cho lỗi toàn app (script khởi động, main.toml), ẩn được; hiện ở đầu danh sách mỗi tab (xem PageList).
     // Cảnh báo cấu hình của từng trang hiện riêng trong trang đó (xem PageWarningBanner).
     var warningDismissed by rememberSaveable { mutableStateOf(false) }
+    val bootScriptWarning = stringResource(R.string.warn_boot_script)
+    val mainConfigWarning = stringResource(R.string.warn_main_config_count, config.appWarnings.size)
+    val viewLabel = stringResource(R.string.action_view)
     val warningText = buildList {
-        result.scriptError?.let { add("Script khởi động lỗi.") }
-        if (config.appWarnings.isNotEmpty()) add("${config.appWarnings.size} cảnh báo cấu hình (main.toml).")
+        result.scriptError?.let { add(bootScriptWarning) }
+        if (config.appWarnings.isNotEmpty()) add(mainConfigWarning)
     }.joinToString(" ")
 
     // "Ẩn" của banner từng trang nhớ theo file (các file ngăn cách bằng xuống dòng).
@@ -263,7 +269,7 @@ fun MainScreen(
         PageWarningHost(
             dismissed = dismissedPages.split('\n'),
             onDismiss = { file -> dismissedPages += file + "\n" },
-            onShow = { file, list -> onShowDetails("Cảnh báo cấu hình", buildPageDetails(file, list)) },
+            onShow = { file, list -> onShowDetails(context.getString(R.string.warn_config_title), buildPageDetails(context, file, list)) },
         )
     }
 
@@ -353,18 +359,18 @@ fun MainScreen(
                                                     onDismiss = { showRestartMenu = false },
                                                     onRestartApp = {
                                                         showRestartMenu = false
-                                                        env.confirm = ConfirmRequest("Khởi động lại ứng dụng?") { Util.restartApp(context) }
+                                                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_restart_app)) { Util.restartApp(context) }
                                                     },
                                                     onCloseApp = {
                                                         showRestartMenu = false
-                                                        env.confirm = ConfirmRequest("Đóng ứng dụng? Các lệnh đang chạy sẽ bị dừng.") { Util.exitApp(context) }
+                                                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_close_app)) { Util.exitApp(context) }
                                                     },
                                                     onDeviceAction = { action ->
                                                         showRestartMenu = false
-                                                        env.confirm = ConfirmRequest(action.confirm) {
+                                                        env.confirm = ConfirmRequest(context.getString(action.confirmRes)) {
                                                             scope.launch {
                                                                 val result = ExecutorManager.current.exec(action.command, 10)
-                                                                if (!result.ok) feedback.toast(powerErrorText(action, result))
+                                                                if (!result.ok) feedback.toast(powerErrorText(context, action, result))
                                                             }
                                                         }
                                                     },
@@ -433,8 +439,8 @@ fun MainScreen(
                                                         Banner(
                                                             message = warningText,
                                                             warning = true,
-                                                            actionLabel = "Xem",
-                                                            onAction = { onShowDetails("Cảnh báo khi khởi động", buildDetails(result)) },
+                                                            actionLabel = viewLabel,
+                                                            onAction = { onShowDetails(context.getString(R.string.warn_startup_title), buildDetails(context, result)) },
                                                             onDismiss = { warningDismissed = true },
                                                         )
                                                     }
@@ -501,7 +507,7 @@ private fun AppTopBar(
         if (onBack != null) {
             TopBarIcon(
                 icon = if (closeStyle) AppIcons.BarClose else AppIcons.BarBack,
-                description = if (closeStyle) "Đóng" else "Quay lại",
+                description = stringResource(if (closeStyle) R.string.action_close else R.string.action_back),
                 onClick = onBack,
             )
         }
@@ -654,10 +660,10 @@ private fun SheetTopBar(title: String, onCancel: (() -> Unit)?, onConfirm: (() -
             overflow = TextOverflow.Ellipsis,
         )
         if (onCancel != null) {
-            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = AppIcons.BarClose, description = "Hủy", onClick = onCancel, circle = true) }
+            Box(Modifier.align(Alignment.CenterStart)) { TopBarIcon(icon = AppIcons.BarClose, description = stringResource(R.string.action_cancel), onClick = onCancel, circle = true) }
         }
         if (onConfirm != null) {
-            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = AppIcons.BarCheck, description = "Xác nhận", onClick = onConfirm, circle = true) }
+            Box(Modifier.align(Alignment.CenterEnd)) { TopBarIcon(icon = AppIcons.BarCheck, description = stringResource(R.string.action_confirm), onClick = onConfirm, circle = true) }
         }
     }
 }
@@ -998,9 +1004,9 @@ private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit, surfaceAl
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(text = "Hủy", onClick = onCancel, modifier = Modifier.weight(1f))
+        TextButton(text = stringResource(R.string.action_cancel), onClick = onCancel, modifier = Modifier.weight(1f))
         TextButton(
-            text = "Xác nhận",
+            text = stringResource(R.string.action_confirm),
             onClick = onConfirm,
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -1129,16 +1135,16 @@ private fun shouldShowPageWarnings(file: String, warnings: List<String>): Boolea
 private fun PageWarningBanner(file: String, warnings: List<String>) {
     val host = LocalPageWarnings.current ?: return
     Banner(
-        message = "${warnings.size} cảnh báo cấu hình ở trang này.",
+        message = stringResource(R.string.warn_page_count, warnings.size),
         warning = true,
-        actionLabel = "Xem",
+        actionLabel = stringResource(R.string.action_view),
         onAction = { host.onShow(file, warnings) },
         onDismiss = { host.onDismiss(file) },
     )
 }
 
-private fun buildPageDetails(file: String, warnings: List<String>): String = buildString {
-    appendLine("== Cảnh báo cấu hình: $file ==")
+private fun buildPageDetails(context: Context, file: String, warnings: List<String>): String = buildString {
+    appendLine(context.getString(R.string.details_page_warnings, file))
     warnings.forEach { appendLine("- $it") }
 }
 
@@ -1168,25 +1174,26 @@ private fun RowScope.TabItem(ref: PageRef, selected: Boolean, onClick: () -> Uni
     }
 }
 
-private fun buildDetails(result: BootResult): String = buildString {
+private fun buildDetails(context: Context, result: BootResult): String = buildString {
     result.scriptError?.let {
-        appendLine("== Script khởi động ==")
+        appendLine(context.getString(R.string.details_boot_script))
         appendLine(it)
         appendLine()
     }
     if (result.config.appWarnings.isNotEmpty()) {
-        appendLine("== Cảnh báo cấu hình (main.toml) ==")
+        appendLine(context.getString(R.string.details_main_config))
         result.config.appWarnings.forEach { appendLine("- $it") }
         appendLine()
     }
-    appendLine("== Log khởi động ==")
+    appendLine(context.getString(R.string.details_boot_log))
     result.bootLog.forEach { appendLine(it) }
 }
 
-private fun powerErrorText(action: PowerAction, result: ExecResult): String {
-    if (result.timedOut) return "${action.label}: hết thời gian chờ"
+private fun powerErrorText(context: Context, action: PowerAction, result: ExecResult): String {
+    val label = context.getString(action.labelRes)
+    if (result.timedOut) return context.getString(R.string.power_error_timeout, label)
     val firstLine = result.output.lineSequence().firstOrNull { it.isNotBlank() }
-    return "Không thực hiện được \"${action.label}\" (cần root)" + (firstLine?.let { ": $it" } ?: "")
+    return context.getString(R.string.power_error_failed, label) + (firstLine?.let { ": $it" } ?: "")
 }
 
 private const val DIALOG_MILLIS = 280

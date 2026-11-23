@@ -1,5 +1,7 @@
 package com.tool.script.executor
 
+import com.tool.script.util.AppText
+import com.tool.script.R
 import android.os.Build
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
@@ -133,7 +135,7 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
                 // Một pipe duy nhất cho cả stdout và stderr: thứ tự đọc ra chính là thứ tự lệnh ghi vào.
                 ProcessBuilder("sh", "-c", command).redirectErrorStream(true).start()
             } catch (e: IOException) {
-                return@withContext ExecResult(127, e.message ?: "không chạy được sh")
+                return@withContext ExecResult(127, e.message ?: AppText.get(R.string.exec_sh_failed))
             }
             runCatching { process.outputStream.close() }
             val out = StringBuilder()
@@ -337,13 +339,13 @@ object ExecutorManager {
             notes += "Backend: root (su)"
             return DetectResult(SuExecutor(), notes).also { current = PreludeExecutor(it.executor) }
         }
-        notes += if (hasRoot == null) "su: hết thời gian chờ, hạ cấp" else "su: không có quyền root"
+        notes += AppText.get(if (hasRoot == null) R.string.exec_su_timeout else R.string.exec_su_denied)
 
         // 2. ROM, 3. adb: chưa cài đặt (xem README, Bước tiếp theo).
-        notes += "ROM / adb: chưa hỗ trợ, dùng shell thường"
+        notes += AppText.get(R.string.exec_rom_adb)
 
         // 4. Không root.
-        notes += "Backend: shell thường (ROOT_MODE = any)"
+        notes += AppText.get(R.string.exec_backend_plain)
         return DetectResult(LocalExecutor("any"), notes).also { current = PreludeExecutor(it.executor) }
     }
 }

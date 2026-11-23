@@ -1,5 +1,7 @@
 package com.tool.script.ui.feedback
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
 import android.Manifest
 import android.app.Activity
@@ -325,7 +327,7 @@ class LogEntry(
             src.copyTo(dest, overwrite = true)
             if (pending.isNotEmpty()) dest.appendText(pending + "\n")
         } else {
-            dest.writeText(output.ifBlank { "(không có đầu ra)" })
+            dest.writeText(output.ifBlank { context.getString(R.string.log_no_output_file) })
         }
         return dest
     }
@@ -392,7 +394,7 @@ class FeedbackHost(private val context: Context) {
 
     /** Bắt đầu một lượt chạy: thêm banner "Đang chạy script…" của riêng [item]; trả về mã lượt cho [attachJob] / [endRun] / [report]. */
     fun beginRun(item: Item): Int {
-        val entry = BannerEntry(++lastRun, item, RUNNING_TEXT, warning = false, running = true)
+        val entry = BannerEntry(++lastRun, item, context.getString(R.string.banner_running), warning = false, running = true)
         banners.add(entry)
         return entry.id
     }
@@ -428,7 +430,7 @@ class FeedbackHost(private val context: Context) {
         entry.job?.cancel()
         entry.job = null
         dismissBanner(entry)
-        toast("Đã hủy")
+        toast(R.string.status_cancelled)
     }
 
     /** Ẩn banner: chạy hiệu ứng thu lại rồi mới gỡ khỏi danh sách. Banner coi như hết "đang chạy" ngay. */
@@ -462,6 +464,8 @@ class FeedbackHost(private val context: Context) {
     fun toast(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
+
+    fun toast(@StringRes message: Int) = toast(context.getString(message))
 
     fun startLive(title: String, command: String, full: Boolean = false, desc: String? = null): LogEntry =
         LogEntry(
@@ -506,9 +510,9 @@ class FeedbackHost(private val context: Context) {
     }
 
     private fun summaryOf(title: String, result: ExecResult): String = when {
-        result.timedOut -> withOutput("$title: hết thời gian chờ", result)
-        result.ok -> outputOf(result.output) ?: "$title: hoàn tất"
-        else -> withOutput("$title: lỗi (mã ${result.code})", result)
+        result.timedOut -> withOutput(context.getString(R.string.result_timed_out, title), result)
+        result.ok -> outputOf(result.output) ?: context.getString(R.string.result_done, title)
+        else -> withOutput(context.getString(R.string.result_error, title, result.code.toString()), result)
     }
 
     /** Tiêu đề lỗi, xuống dòng rồi tới toàn bộ phần lệnh in ra nếu có. */
@@ -535,7 +539,7 @@ class FeedbackHost(private val context: Context) {
     internal fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
             context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Kết quả lệnh", NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CHANNEL_ID, context.getString(R.string.notice_channel_result), NotificationManager.IMPORTANCE_DEFAULT),
             )
         }
     }
@@ -556,7 +560,7 @@ class FeedbackHost(private val context: Context) {
     }
 
     private fun noPermissionMessage(title: String): String =
-        "Không có quyền thông báo: không gửi được thông báo \"$title\". Hãy cấp quyền trong Cài đặt > Ứng dụng > Thông báo."
+        context.getString(R.string.notice_no_permission, title)
 
     internal fun onNoticePermissionResult(granted: Boolean) {
         val pending = pendingNotice
@@ -569,7 +573,7 @@ class FeedbackHost(private val context: Context) {
         if (pending != null) {
             showBanner(noPermissionMessage(pending.first), warning = true)
         } else if (LogCenter.hasHidden()) {
-            showBanner("Không có quyền thông báo: log đã ẩn vẫn chạy nhưng sẽ không có thông báo để mở lại.", warning = true)
+            showBanner(context.getString(R.string.notice_no_permission_hidden_log), warning = true)
         }
     }
 
@@ -787,25 +791,25 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
         ) {
             // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
             if (entry.running) {
-                LogIconButton(R.drawable.ic_hide, "Ẩn (chạy nền)", onHide)
+                LogIconButton(R.drawable.ic_hide, stringResource(R.string.log_hide_background), onHide)
                 LogToolbarDivider()
             }
             if (entry.full) {
-                LogIconButton(R.drawable.ic_fullscreen_exit, "Thu nhỏ") { entry.full = false }
+                LogIconButton(R.drawable.ic_fullscreen_exit, stringResource(R.string.log_minimize)) { entry.full = false }
             } else {
-                LogIconButton(R.drawable.ic_fullscreen, "Toàn màn hình") { entry.full = true }
+                LogIconButton(R.drawable.ic_fullscreen, stringResource(R.string.log_fullscreen)) { entry.full = true }
             }
             LogToolbarDivider()
             Box {
-                LogIconButton(R.drawable.ic_more_vert, "Menu") { menuOpen = true }
+                LogIconButton(R.drawable.ic_more_vert, stringResource(R.string.log_menu)) { menuOpen = true }
                 if (menuOpen) {
                     MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
-                        MenuItem(label = "Ngắt dòng", selected = entry.wrap) {
+                        MenuItem(label = stringResource(R.string.log_wrap), selected = entry.wrap) {
                             entry.wrap = !entry.wrap
                             LogPrefs.saveWrap(context, entry.wrap)
                             menuOpen = false
                         }
-                        MenuItem(label = "Font mono", selected = entry.mono) {
+                        MenuItem(label = stringResource(R.string.log_mono), selected = entry.mono) {
                             entry.mono = !entry.mono
                             LogPrefs.saveMono(context, entry.mono)
                             menuOpen = false
@@ -824,20 +828,20 @@ private fun LogActionRow(entry: LogEntry, onCancel: () -> Unit, onDismiss: () ->
     val scope = rememberCoroutineScope()
     Row(horizontalArrangement = Arrangement.spacedBy(LogFullMargin)) {
         TextButton(
-            text = "Chia sẻ",
+            text = stringResource(R.string.action_share),
             onClick = {
                 scope.launch {
                     val file = withContext(Dispatchers.IO) { runCatching { entry.exportFile(context) }.getOrNull() }
                     if (file != null) shareFile(context, entry.title, file)
-                    else Toast.makeText(context, "Không tạo được tệp log để chia sẻ", Toast.LENGTH_LONG).show()
+                    else Toast.makeText(context, context.getString(R.string.log_share_failed), Toast.LENGTH_LONG).show()
                 }
             },
             modifier = Modifier.weight(1f),
         )
         val label = when (entry.status) {
-            LogStatus.Running -> "Hủy"
-            LogStatus.Done, LogStatus.Cancelled -> "Thoát"
-            LogStatus.Failed, LogStatus.TimedOut -> "Thoát: ${entry.exitCode ?: "hết giờ"}"
+            LogStatus.Running -> stringResource(R.string.action_cancel)
+            LogStatus.Done, LogStatus.Cancelled -> stringResource(R.string.action_exit)
+            LogStatus.Failed, LogStatus.TimedOut -> stringResource(R.string.log_exit_code, entry.exitCode?.toString() ?: stringResource(R.string.log_exit_timeout))
         }
         val colors = when (entry.status) {
             LogStatus.Running -> ButtonDefaults.textButtonColors(color = LogYellow, textColor = Color(0xFF1F1F1F))
@@ -891,7 +895,7 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
                 val font = if (entry.mono) FontFamily.Monospace else FontFamily.Default
                 if (output.isBlank()) {
                     Text(
-                        text = if (entry.running) "Đang chờ đầu ra..." else "Không có đầu ra",
+                        text = if (entry.running) stringResource(R.string.log_waiting_output) else stringResource(R.string.log_no_output),
                         color = if (glass) Color.White.copy(alpha = 0.6f) else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontFamily = font,
                         fontSize = 12.sp,
@@ -956,7 +960,7 @@ private fun shareFile(context: Context, subject: String, file: File) {
         clipData = ClipData.newRawUri(subject, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    val chooser = Intent.createChooser(send, "Chia sẻ log")
+    val chooser = Intent.createChooser(send, context.getString(R.string.log_share_title))
     // Context không phải Activity thì bắt buộc cờ NEW_TASK.
     val hasActivity = generateSequence(context) { (it as? ContextWrapper)?.baseContext }.any { it is Activity }
     if (!hasActivity) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -980,14 +984,14 @@ fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit
     if (message != null) last = message
     BlurDialog(
         show = message != null,
-        title = "Xác nhận",
+        title = stringResource(R.string.action_confirm),
         summary = last,
         onDismissRequest = onDismiss,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TextButton(text = "Hủy", onClick = onDismiss, modifier = Modifier.weight(1f))
+            TextButton(text = stringResource(R.string.action_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
             TextButton(
-                text = "Chạy",
+                text = stringResource(R.string.action_run),
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -1051,7 +1055,7 @@ fun Banner(
                 Spacer(Modifier.width(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (actionLabel != null) TextButton(text = actionLabel, onClick = onAction)
-                    if (onDismiss != null) TextButton(text = "Ẩn", onClick = onDismiss)
+                    if (onDismiss != null) TextButton(text = stringResource(R.string.action_hide), onClick = onDismiss)
                 }
             }
         }
@@ -1077,8 +1081,6 @@ fun Banner(
 const val BANNER_MILLIS = 5_000
 
 private const val OUTPUT_MAX_CHARS = 300
-
-private const val RUNNING_TEXT = "Đang chạy script…"
 
 /** Một banner: mỗi lượt chạy `banner` / `notice` có một cái, [item] là item đã chạy (null nếu là banner độc lập). */
 @Stable
@@ -1178,7 +1180,7 @@ private fun BannerEntryView(entry: BannerEntry, feedback: FeedbackHost, backdrop
             indeterminate = entry.running,
             runProgress = entry.progress,
             maxLines = BANNER_OUTPUT_MAX_LINES,
-            actionLabel = if (entry.running) "Hủy" else null,
+            actionLabel = if (entry.running) stringResource(R.string.action_cancel) else null,
             onAction = dismiss,
             onDismiss = if (entry.running) null else dismiss,
             backdrop = backdrop,

@@ -1,5 +1,7 @@
 package com.tool.script.ui.render
 
+import com.tool.script.R
+import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -471,7 +473,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "Chạy",
+                                text = stringResource(R.string.action_run),
                                 color = MiuixTheme.colorScheme.primary,
                                 style = MiuixTheme.textStyles.body2,
                             )
@@ -493,7 +495,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
     val current = env.store[id]
     val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     val selectedCount = item.options.count { it.value in currentSet }
-    val summary = if (selectedCount == 0) "Chưa chọn" else "Đã chọn $selectedCount"
+    val summary = if (selectedCount == 0) stringResource(R.string.selection_none) else stringResource(R.string.selection_count, selectedCount)
 
     ItemSurface(modifier, inGroup) {
         BasicComponent(
@@ -560,9 +562,9 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = "Hủy", onClick = { showDialog = false }, modifier = Modifier.weight(1f))
+                TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
                 TextButton(
-                    text = "Xác nhận",
+                    text = stringResource(R.string.action_confirm),
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     onClick = {
@@ -702,9 +704,9 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = "Hủy", onClick = { showDialog = false }, modifier = Modifier.weight(1f))
+                TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
                 TextButton(
-                    text = "Xác nhận",
+                    text = stringResource(R.string.action_confirm),
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     onClick = {
@@ -895,7 +897,7 @@ private fun LinkItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Bo
 @Composable
 fun PageErrorCard(message: String, modifier: Modifier = Modifier) {
     Card(modifier.fillMaxWidth(), insideMargin = CardInsideMargin) {
-        Text("Không đọc được trang này", style = MiuixTheme.textStyles.headline1, color = MiuixTheme.colorScheme.error)
+        Text(stringResource(R.string.page_error_title), style = MiuixTheme.textStyles.headline1, color = MiuixTheme.colorScheme.error)
         Spacer(Modifier.height(8.dp))
         Text(message, style = MiuixTheme.textStyles.body2)
     }

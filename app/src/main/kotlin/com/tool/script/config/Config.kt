@@ -1,5 +1,7 @@
 package com.tool.script.config
 
+import com.tool.script.util.AppText
+import com.tool.script.R
 import android.content.Context
 import com.tool.script.util.ShellText
 import dev.eav.tomlkt.Toml
@@ -115,7 +117,7 @@ data class LoadedConfig(
 class ConfigParseException(val file: String, val line: Int?, val detail: String) :
     Exception(buildString {
         append(file)
-        if (line != null) append(", dòng ").append(line)
+        if (line != null) append(", ").append(AppText.get(R.string.cfg_line, line))
         append(": ").append(detail)
     })
 
@@ -153,7 +155,7 @@ object TomlParser {
         )
         val pages = mutableListOf<PageRef>()
         val seen = HashSet<String>()
-        if (root["page"] != null) warnings += "$file: [[page]] đã đổi thành [[tab]], bỏ qua"
+        if (root["page"] != null) warnings += AppText.get(R.string.cfg_page_renamed, file)
         val array = root["tab"] as? TomlArray
         array?.forEachIndexed { index, element ->
             val t = element as? TomlTable
@@ -163,11 +165,11 @@ object TomlParser {
             val icon = t?.str("icon")
             val pageFile = t?.str("file")
             when {
-                t == null || id.isNullOrBlank() -> warnings += "$label thiếu id, bỏ qua"
-                title.isNullOrBlank() -> warnings += "$label ($id) thiếu title, bỏ tab này"
-                icon.isNullOrBlank() -> warnings += "$label ($id) thiếu icon, bỏ tab này"
-                pageFile.isNullOrBlank() -> warnings += "$label ($id) thiếu file, bỏ tab này"
-                !seen.add(id) -> warnings += "$label trùng id \"$id\", bỏ tab này"
+                t == null || id.isNullOrBlank() -> warnings += AppText.get(R.string.cfg_tab_missing_id, label)
+                title.isNullOrBlank() -> warnings += AppText.get(R.string.cfg_tab_missing_title, label, id)
+                icon.isNullOrBlank() -> warnings += AppText.get(R.string.cfg_tab_missing_icon, label, id)
+                pageFile.isNullOrBlank() -> warnings += AppText.get(R.string.cfg_tab_missing_file, label, id)
+                !seen.add(id) -> warnings += AppText.get(R.string.cfg_tab_duplicate_id, label, id)
                 else -> pages += PageRef(id!!, title!!, icon!!, pageFile!!)
             }
         }
@@ -213,7 +215,7 @@ object TomlParser {
     ): Item? {
         val t = element as? TomlTable
         if (t == null) {
-            warnings += "$label không phải bảng, bỏ qua"
+            warnings += AppText.get(R.string.cfg_not_table, label)
             return null
         }
         return parseItem(t, warnings, ids, label, isGroup)
@@ -226,7 +228,7 @@ object TomlParser {
         ids: MutableSet<String>,
         path: String,
     ): List<Item> {
-        if (group["group"] != null) warnings += "$path: chưa hỗ trợ group lồng group, bỏ qua [[group.group]]"
+        if (group["group"] != null) warnings += AppText.get(R.string.cfg_nested_group, path)
         val array = group["item"] as? TomlArray ?: return emptyList()
         val out = mutableListOf<Item>()
         array.forEachIndexed { index, element ->
@@ -245,18 +247,18 @@ object TomlParser {
     ): Item? {
         val typeKey = t.str("type")
         if (!isGroup && typeKey == ItemType.Group.key) {
-            warnings += "$label: type = \"group\" đã đổi thành [[group]], bỏ qua"
+            warnings += AppText.get(R.string.cfg_type_group_renamed, label)
             return null
         }
         val type = if (isGroup) ItemType.Group else ItemType.from(typeKey)
         if (type == null) {
-            warnings += "$label có type lạ \"${typeKey ?: ""}\", bỏ qua"
+            warnings += AppText.get(R.string.cfg_unknown_type, label, typeKey ?: "")
             return null
         }
         val rawTitle = t.str("title")
         // `[[group]]` không bắt buộc title: không có thì thẻ group hiện không kèm tiêu đề. Item khác vẫn bắt buộc.
         if (rawTitle.isNullOrBlank() && !isGroup) {
-            warnings += "$label (${type.key}) thiếu title, bỏ qua"
+            warnings += AppText.get(R.string.cfg_item_missing_title, label, type.key)
             return null
         }
         val title = rawTitle.orEmpty()
@@ -267,15 +269,15 @@ object TomlParser {
             type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect
         if (needsId) {
             if (id == null) {
-                warnings += "$label \"$title\" (${type.key}) thiếu id, bỏ qua"
+                warnings += AppText.get(R.string.cfg_item_missing_id, label, title, type.key)
                 return null
             }
             if (!ShellText.isValidVarName(id)) {
-                warnings += "$label \"$title\": id \"$id\" không hợp lệ (chỉ chữ, số, gạch dưới; không bắt đầu bằng số), bỏ qua"
+                warnings += AppText.get(R.string.cfg_invalid_id, label, title, id)
                 return null
             }
             if (!ids.add(id)) {
-                warnings += "$label \"$title\": trùng id \"$id\", bỏ qua"
+                warnings += AppText.get(R.string.cfg_duplicate_id, label, title, id)
                 return null
             }
         }
@@ -283,17 +285,17 @@ object TomlParser {
             val hasTab = !t.str("tab").isNullOrBlank()
             val hasPage = !t.str("page").isNullOrBlank()
             if (!hasTab && !hasPage) {
-                warnings += "$label \"$title\" (link) thiếu tab hoặc page, bỏ qua"
+                warnings += AppText.get(R.string.cfg_link_missing_target, label, title)
                 return null
             }
-            if (hasTab && hasPage) warnings += "$label \"$title\": có cả tab và page, dùng tab"
+            if (hasTab && hasPage) warnings += AppText.get(R.string.cfg_link_both, label, title)
         }
 
         val dialog = when (val style = t.str("style")?.lowercase()) {
             null, "page" -> false
             "dialog" -> true
             else -> {
-                warnings += "$label \"$title\": style = \"$style\" không hợp lệ, dùng page"
+                warnings += AppText.get(R.string.cfg_invalid_style, label, title, style.orEmpty())
                 false
             }
         }
@@ -301,7 +303,7 @@ object TomlParser {
         val shell = when (t.str("shell")?.lowercase()) {
             null, "live" -> ShellMode.Live
             "log" -> {
-                warnings += "$label \"$title\": shell = \"log\" đã bỏ, dùng live"
+                warnings += AppText.get(R.string.cfg_shell_log_removed, label, title)
                 ShellMode.Live
             }
             "full" -> ShellMode.Full
@@ -310,7 +312,7 @@ object TomlParser {
             "notice" -> ShellMode.Notice
             "snackbar" -> ShellMode.Snackbar
             else -> {
-                warnings += "$label \"$title\": shell = \"${t.str("shell")}\" không hợp lệ, dùng live"
+                warnings += AppText.get(R.string.cfg_invalid_shell, label, title, t.str("shell").orEmpty())
                 ShellMode.Live
             }
         }
@@ -318,14 +320,14 @@ object TomlParser {
             null, "1" -> 1
             "2" -> 2
             else -> {
-                warnings += "$label \"$title\": columns = \"${t.str("columns")}\" không hợp lệ (1 hoặc 2), dùng 1"
+                warnings += AppText.get(R.string.cfg_invalid_columns, label, title, t.str("columns").orEmpty())
                 1
             }
         }
         val iconSize = when (val raw = t.str("icon_size")) {
             null -> 24f
             else -> raw.toFloatOrNull()?.takeIf { it > 0f } ?: run {
-                warnings += "$label \"$title\": icon_size = \"$raw\" không hợp lệ (số dương), dùng 24"
+                warnings += AppText.get(R.string.cfg_invalid_icon_size, label, title, raw)
                 24f
             }
         }
@@ -333,7 +335,7 @@ object TomlParser {
             null, "true" -> true
             "false" -> false
             else -> {
-                warnings += "$label \"$title\": icon_tint = \"${t.str("icon_tint")}\" không hợp lệ (true hoặc false), dùng true"
+                warnings += AppText.get(R.string.cfg_invalid_icon_tint, label, title, t.str("icon_tint").orEmpty())
                 true
             }
         }
@@ -342,7 +344,7 @@ object TomlParser {
             null, "readonly" -> LockMode.Readonly
             "hide" -> LockMode.Hide
             else -> {
-                warnings += "$label \"$title\": lock_mode = \"${t.str("lock_mode")}\" không hợp lệ, dùng readonly"
+                warnings += AppText.get(R.string.cfg_invalid_lock_mode, label, title, t.str("lock_mode").orEmpty())
                 LockMode.Readonly
             }
         }
@@ -353,7 +355,7 @@ object TomlParser {
             val raw = (o as? TomlLiteral)?.content
             val option = raw?.let(::parseOption)
             if (option == null) {
-                warnings += "$label \"$title\": options #${i + 1} không hợp lệ (cần dạng \"nhãn|giá trị\"), bỏ qua"
+                warnings += AppText.get(R.string.cfg_invalid_option, label, title, (i + 1).toString())
             } else {
                 options += option
             }
@@ -362,16 +364,16 @@ object TomlParser {
             type == ItemType.SingleSelect) &&
             options.isEmpty()
         ) {
-            warnings += "$label \"$title\" (${type.key}) không có options hợp lệ"
+            warnings += AppText.get(R.string.cfg_no_valid_options, label, title, type.key)
         }
         if (type == ItemType.MultiSelect && options.any { separator in it.value }) {
-            warnings += "$label \"$title\": có giá trị trong options chứa dấu phân tách \"$separator\", kết quả sẽ sai"
+            warnings += AppText.get(R.string.cfg_separator_in_value, label, title, separator)
         }
 
         var min = t.float("min") ?: 0f
         var max = t.float("max") ?: 100f
         if (max < min) {
-            warnings += "$label \"$title\": max < min, đã đổi chỗ"
+            warnings += AppText.get(R.string.cfg_max_lt_min, label, title)
             min = max.also { max = min }
         }
         val step = (t.float("step") ?: 1f).takeIf { it > 0f } ?: 1f
@@ -444,19 +446,19 @@ object ConfigRepository {
         val mainText = try {
             readAsset(context, "main.toml")
         } catch (e: java.io.IOException) {
-            throw ConfigParseException("main.toml", null, "không đọc được file: ${e.message}")
+            throw ConfigParseException("main.toml", null, AppText.get(R.string.cfg_read_failed, e.message.orEmpty()))
         }
         val (app, refs) = TomlParser.parseMain("main.toml", mainText, appWarnings)
         if (refs.isEmpty()) {
-            throw ConfigParseException("main.toml", null, "không có [[tab]] hợp lệ nào để hiển thị")
+            throw ConfigParseException("main.toml", null, AppText.get(R.string.cfg_no_tabs))
         }
         val pages = refs.map { ref ->
             try {
                 LoadedPage(ref, TomlParser.parsePage(ref.file, readAsset(context, ref.file), byFile.warningsOf(ref.file)))
             } catch (e: ConfigParseException) {
-                LoadedPage(ref, emptyList(), error = e.message ?: "${ref.file}: lỗi parse")
+                LoadedPage(ref, emptyList(), error = e.message ?: AppText.get(R.string.cfg_parse_error, ref.file))
             } catch (e: java.io.IOException) {
-                LoadedPage(ref, emptyList(), error = "${ref.file}: không đọc được file: ${e.message}")
+                LoadedPage(ref, emptyList(), error = AppText.get(R.string.cfg_file_read_failed, ref.file, e.message.orEmpty()))
             }
         }
         val subPages = loadSubPages(context, pages, byFile)
@@ -487,12 +489,12 @@ object ConfigRepository {
                 val tab = link.tab
                 val page = link.page
                 if (tab != null) {
-                    if (tab !in tabIds) byFile.warningsOf(owner).add("$owner: link \"${link.title}\" trỏ tới tab \"$tab\" không tồn tại")
+                    if (tab !in tabIds) byFile.warningsOf(owner).add(AppText.get(R.string.cfg_link_tab_missing, owner, link.title, tab))
                 } else if (page != null) {
                     val existing = result[page]
                     if (existing != null) {
                         if (existing.dialog != link.dialog) {
-                            byFile.warningsOf(owner).add("$owner: link \"${link.title}\" khác style với link đầu tiên trỏ tới $page, dùng style của link đầu tiên")
+                            byFile.warningsOf(owner).add(AppText.get(R.string.cfg_link_style_mismatch, owner, link.title, page))
                         }
                         continue
                     }
@@ -500,9 +502,9 @@ object ConfigRepository {
                     val sub = try {
                         SubPage(page, link.title, dialogItems(page, link, TomlParser.parsePage(page, readAsset(context, page), pageWarnings), pageWarnings), dialog = link.dialog, action = link)
                     } catch (e: ConfigParseException) {
-                        SubPage(page, link.title, emptyList(), error = e.message ?: "$page: lỗi parse", dialog = link.dialog, action = link)
+                        SubPage(page, link.title, emptyList(), error = e.message ?: AppText.get(R.string.cfg_parse_error, page), dialog = link.dialog, action = link)
                     } catch (e: java.io.IOException) {
-                        SubPage(page, link.title, emptyList(), error = "$page: không đọc được file: ${e.message}", dialog = link.dialog, action = link)
+                        SubPage(page, link.title, emptyList(), error = AppText.get(R.string.cfg_file_read_failed, page, e.message.orEmpty()), dialog = link.dialog, action = link)
                     }
                     result[page] = sub
                     queue += page to sub.items
@@ -518,7 +520,7 @@ object ConfigRepository {
         fun filter(list: List<Item>): List<Item> = list.mapNotNull { item ->
             when (item.type) {
                 ItemType.Button, ItemType.Link -> {
-                    warnings += "$file: ${item.type.key} \"${item.title}\" không dùng được trong dialog (dialog chỉ để truyền biến), bỏ qua"
+                    warnings += AppText.get(R.string.cfg_dialog_item_unsupported, file, item.type.key, item.title)
                     null
                 }
                 ItemType.Group -> item.copy(children = filter(item.children))

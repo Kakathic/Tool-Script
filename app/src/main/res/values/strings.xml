@@ -1,3 +1,185 @@
 <resources>
-    <string name="app_name">Tool Script</string>
+    <string name="app_name" translatable="false">Tool Script</string>
+
+    <!-- Chung -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_run">Run</string>
+    <string name="action_hide">Hide</string>
+    <string name="action_share">Share</string>
+    <string name="action_view">View</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_restart">Restart</string>
+    <string name="action_exit">Exit</string>
+    <string name="action_collapse">Collapse</string>
+    <string name="action_expand">Expand</string>
+    <string name="state_selected">Selected</string>
+
+    <!-- Trạng thái và kết quả lệnh -->
+    <string name="status_running">Running</string>
+    <string name="status_done">Done</string>
+    <string name="status_failed">Error (code %1$s)</string>
+    <string name="status_timed_out">Timed out</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="result_timed_out">%1$s: timed out</string>
+    <string name="result_done">%1$s: done</string>
+    <string name="result_error">%1$s: error (code %2$s)</string>
+
+    <!-- Thông báo hệ thống và banner -->
+    <string name="notice_channel_result">Command results</string>
+    <string name="notice_channel_log">Background feature logs</string>
+    <string name="notice_no_permission">No notification permission: couldn\'t send the notification \"%1$s\". Grant it in Settings > Apps > Notifications.</string>
+    <string name="notice_no_permission_hidden_log">No notification permission: the hidden log keeps running, but there will be no notification to reopen it.</string>
+    <string name="banner_running">Running script…</string>
+
+    <!-- Bảng log -->
+    <string name="log_hide_background">Hide (run in background)</string>
+    <string name="log_minimize">Minimize</string>
+    <string name="log_fullscreen">Full screen</string>
+    <string name="log_menu">Menu</string>
+    <string name="log_wrap">Wrap lines</string>
+    <string name="log_mono">Monospace font</string>
+    <string name="log_share_failed">Couldn\'t create the log file to share</string>
+    <string name="log_share_title">Share log</string>
+    <string name="log_exit_code">Exit: %1$s</string>
+    <string name="log_exit_timeout">timeout</string>
+    <string name="log_waiting_output">Waiting for output...</string>
+    <string name="log_no_output">No output</string>
+    <string name="log_no_output_file">(no output)</string>
+    <string name="log_running_ellipsis">Running...</string>
+    <string name="log_gone">This log no longer exists</string>
+
+    <!-- Màn hình chính -->
+    <string name="warn_boot_script">Startup script failed.</string>
+    <string name="warn_main_config_count">%1$d config warnings (main.toml).</string>
+    <string name="warn_page_count">%1$d config warnings on this page.</string>
+    <string name="warn_config_title">Config warnings</string>
+    <string name="warn_startup_title">Startup warnings</string>
+    <string name="details_page_warnings">== Config warnings: %1$s ==</string>
+    <string name="details_boot_script">== Startup script ==</string>
+    <string name="details_main_config">== Config warnings (main.toml) ==</string>
+    <string name="details_boot_log">== Startup log ==</string>
+    <string name="confirm_restart_app">Restart the app?</string>
+    <string name="confirm_close_app">Close the app? Running commands will be stopped.</string>
+    <string name="power_error_timeout">%1$s: timed out</string>
+    <string name="power_error_failed">Couldn\'t run \"%1$s\" (root required)</string>
+
+    <!-- Menu chủ đề -->
+    <string name="theme_menu_description">Customize theme</string>
+    <string name="menu_section_appearance">Appearance</string>
+    <string name="menu_section_options">Options</string>
+    <string name="option_dynamic_color">Dynamic color</string>
+    <string name="option_haptic">Haptic feedback</string>
+    <string name="option_blur">Background blur</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_monet_system">Dynamic color (system)</string>
+    <string name="theme_monet_light">Dynamic color - Light</string>
+    <string name="theme_monet_dark">Dynamic color - Dark</string>
+
+    <!-- Menu nguồn -->
+    <string name="power_menu_description">Power</string>
+    <string name="power_restart_app">Restart app</string>
+    <string name="power_close_app">Close app</string>
+    <string name="power_section_device">Device (root required)</string>
+    <string name="power_advanced">Advanced reboot</string>
+    <string name="power_off">Power off</string>
+    <string name="power_off_confirm">Power off? The device will shut down completely and needs the power button to turn on again.</string>
+    <string name="power_reboot">Reboot</string>
+    <string name="power_reboot_confirm">Reboot? The device will turn off and on again right away.</string>
+    <string name="power_recovery">Reboot to Recovery</string>
+    <string name="power_recovery_confirm">Reboot to Recovery?</string>
+    <string name="power_soft_reboot">Soft reboot</string>
+    <string name="power_soft_reboot_confirm">Soft reboot? Only the Android system restarts; the device doesn\'t turn off.</string>
+    <string name="power_bootloader">Reboot to Bootloader</string>
+    <string name="power_bootloader_confirm">Reboot to Bootloader (Fastboot)?</string>
+    <string name="power_download">Reboot to Download</string>
+    <string name="power_download_confirm">Reboot to Download mode (Odin, Samsung devices)? Other devices may not support it.</string>
+    <string name="power_edl">Reboot to EDL</string>
+    <string name="power_edl_confirm">Reboot to EDL (Qualcomm emergency mode)? The screen will stay black; hold the power button for a long time to exit.</string>
+
+    <!-- Hiển thị item -->
+    <string name="selection_none">None selected</string>
+    <string name="selection_count">%1$d selected</string>
+    <string name="page_error_title">Can\'t read this page</string>
+    <string name="select_count_of">%1$d/%2$d selected</string>
+    <string name="select_search">Search</string>
+    <string name="select_all">Select all</string>
+    <string name="select_all_results">Select all search results</string>
+    <string name="select_no_match">No matching items</string>
+
+    <!-- Trung tâm lỗi -->
+    <string name="crash_title_default">Error</string>
+    <string name="crash_no_content">(no content)</string>
+    <string name="crash_share_error">Share error</string>
+    <string name="crash_truncated">... (truncated)</string>
+    <string name="crash_report_thread">Thread: %1$s</string>
+    <string name="crash_report_device">Device: %1$s %2$s, Android %3$s (SDK %4$s)</string>
+    <string name="crash_app_failed">App crashed</string>
+    <string name="crash_config_error">Config error</string>
+
+    <!-- Cảnh báo / lỗi cấu hình (parser TOML) -->
+    <string name="cfg_line">line %1$d</string>
+    <string name="cfg_page_renamed">%1$s: [[page]] was renamed to [[tab]], ignored</string>
+    <string name="cfg_tab_missing_id">%1$s is missing id, ignored</string>
+    <string name="cfg_tab_missing_title">%1$s (%2$s) is missing title, tab dropped</string>
+    <string name="cfg_tab_missing_icon">%1$s (%2$s) is missing icon, tab dropped</string>
+    <string name="cfg_tab_missing_file">%1$s (%2$s) is missing file, tab dropped</string>
+    <string name="cfg_tab_duplicate_id">%1$s has duplicate id \"%2$s\", tab dropped</string>
+    <string name="cfg_not_table">%1$s is not a table, ignored</string>
+    <string name="cfg_nested_group">%1$s: groups inside groups are not supported, [[group.group]] ignored</string>
+    <string name="cfg_type_group_renamed">%1$s: type = \"group\" was renamed to [[group]], ignored</string>
+    <string name="cfg_unknown_type">%1$s has unknown type \"%2$s\", ignored</string>
+    <string name="cfg_item_missing_title">%1$s (%2$s) is missing title, ignored</string>
+    <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) is missing id, ignored</string>
+    <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" is invalid (letters, digits and underscore only; can\'t start with a digit), ignored</string>
+    <string name="cfg_duplicate_id">%1$s \"%2$s\": duplicate id \"%3$s\", ignored</string>
+    <string name="cfg_link_missing_target">%1$s \"%2$s\" (link) is missing tab or page, ignored</string>
+    <string name="cfg_link_both">%1$s \"%2$s\": has both tab and page, using tab</string>
+    <string name="cfg_invalid_style">%1$s \"%2$s\": style = \"%3$s\" is invalid, using page</string>
+    <string name="cfg_shell_log_removed">%1$s \"%2$s\": shell = \"log\" was removed, using live</string>
+    <string name="cfg_invalid_shell">%1$s \"%2$s\": shell = \"%3$s\" is invalid, using live</string>
+    <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" is invalid (1 or 2), using 1</string>
+    <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" is invalid (positive number), using 24</string>
+    <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" is invalid (true or false), using true</string>
+    <string name="cfg_invalid_lock_mode">%1$s \"%2$s\": lock_mode = \"%3$s\" is invalid, using readonly</string>
+    <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s is invalid (expected \"label|value\"), ignored</string>
+    <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) has no valid options</string>
+    <string name="cfg_separator_in_value">%1$s \"%2$s\": an options value contains the separator \"%3$s\", the result will be wrong</string>
+    <string name="cfg_max_lt_min">%1$s \"%2$s\": max &lt; min, swapped</string>
+    <string name="cfg_read_failed">can\'t read file: %1$s</string>
+    <string name="cfg_no_tabs">no valid [[tab]] to show</string>
+    <string name="cfg_parse_error">%1$s: parse error</string>
+    <string name="cfg_file_read_failed">%1$s: can\'t read file: %2$s</string>
+    <string name="cfg_link_tab_missing">%1$s: link \"%2$s\" points to tab \"%3$s\", which doesn\'t exist</string>
+    <string name="cfg_link_style_mismatch">%1$s: link \"%2$s\" has a different style from the first link to %3$s, using the first link\'s style</string>
+    <string name="cfg_dialog_item_unsupported">%1$s: %2$s \"%3$s\" can\'t be used in a dialog (a dialog only passes variables), ignored</string>
+
+    <!-- Log khởi động -->
+    <string name="boot_detecting">Detecting system privileges...</string>
+    <string name="boot_assets_copied">assets: copied %1$s/%2$s files</string>
+    <string name="boot_assets_error">assets: error %1$s</string>
+    <string name="boot_assets_failed">assets: couldn\'t copy: %1$s</string>
+    <string name="boot_env_unknown_key">env.sh: unknown key %1$s, kept as is</string>
+    <string name="boot_env_failed">Couldn\'t prepare env.sh: %1$s</string>
+    <string name="boot_init_timed_out">timed out</string>
+    <string name="boot_init_exit_code">exited with code %1$s</string>
+    <string name="boot_script_failed">Startup script failed</string>
+    <string name="boot_init_not_run">Couldn\'t run init.sh: %1$s</string>
+    <string name="boot_loading_ui">Loading the interface...</string>
+    <string name="boot_config_error">Config load error</string>
+    <string name="boot_config_error_detail">Config load error: %1$s</string>
+    <string name="exec_sh_failed">couldn\'t run sh</string>
+    <string name="exec_su_timeout">su: timed out, falling back</string>
+    <string name="exec_su_denied">su: no root permission</string>
+    <string name="exec_rom_adb">ROM / adb: not supported yet, using plain shell</string>
+    <string name="exec_backend_plain">Backend: plain shell (ROOT_MODE = any)</string>
+
+    <!-- Khác -->
+    <string name="crash_demo_main">Demo crash: error thrown from the main thread (run = \"%1$s\")</string>
+    <string name="crash_demo_background">Demo crash: error thrown from a background thread (run = \"%1$s\")</string>
+    <string name="asset_rename_failed">couldn\'t rename the temp file</string>
+    <string name="log_write_stopped">[Stopped writing: log exceeds %1$sMB]</string>
 </resources>

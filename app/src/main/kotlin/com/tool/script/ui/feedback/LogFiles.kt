@@ -1,5 +1,7 @@
 package com.tool.script.ui.feedback
 
+import com.tool.script.util.AppText
+import com.tool.script.R
 import android.content.Context
 import java.io.BufferedWriter
 import java.io.File
@@ -77,7 +79,7 @@ internal class PlainLogWriter(private val file: File?) {
             w.write("\n")
             bytes += text.length + 1
             if (bytes > LogFiles.MAX_BYTES) {
-                w.write("[Đã ngừng ghi: log vượt ${LogFiles.MAX_BYTES / 1024 / 1024}MB]\n")
+                w.write(AppText.get(R.string.log_write_stopped, (LogFiles.MAX_BYTES / 1024 / 1024).toString()) + "\n")
                 w.flush()
                 stopped = true
             }

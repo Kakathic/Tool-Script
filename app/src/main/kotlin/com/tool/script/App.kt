@@ -1,5 +1,7 @@
 package com.tool.script
 
+import com.tool.script.util.AppText
+import com.tool.script.R
 import android.app.Application
 import android.os.Build
 import android.os.Process
@@ -14,6 +16,7 @@ class App : Application() {
         if (currentProcessName()?.endsWith(":crash") == true) return
 
         // Log đã ẩn cần Context của ứng dụng để gửi thông báo.
+        AppText.attach(this)
         LogCenter.init(this)
 
         // Không ghi log ra file: gửi stack trace qua Intent sang CrashActivity rồi kill tiến trình.
@@ -22,8 +25,8 @@ class App : Application() {
             try {
                 CrashActivity.launch(
                     context = this,
-                    title = "Ứng dụng bị lỗi",
-                    text = CrashActivity.report(thread, throwable),
+                    title = getString(R.string.crash_app_failed),
+                    text = CrashActivity.report(this, thread, throwable),
                     fatal = true,
                 )
             } catch (_: Throwable) {

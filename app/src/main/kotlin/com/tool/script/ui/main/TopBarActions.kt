@@ -1,5 +1,8 @@
 package com.tool.script.ui.main
 
+import androidx.annotation.StringRes
+import com.tool.script.R
+import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
 import android.content.Context
 import android.view.WindowManager
@@ -274,7 +277,7 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
                 if (selected) {
                     AsyncImage(
                         model = Util.iconModel(AppIcons.BarCheck),
-                        contentDescription = "Đang chọn",
+                        contentDescription = stringResource(R.string.state_selected),
                         modifier = Modifier.size(20.dp),
                         colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
                     )
@@ -388,15 +391,15 @@ fun ThemeMenu(
 ) {
     TopBarMenu(
         icon = AppIcons.BarTheme,
-        description = "Tùy chỉnh chủ đề",
+        description = stringResource(R.string.theme_menu_description),
         expanded = expanded,
         onOpen = onOpen,
         onDismiss = onDismiss,
         minWidth = 280.dp,
     ) {
-        MenuSectionLabel("Giao diện")
+        MenuSectionLabel(stringResource(R.string.menu_section_appearance))
         MenuSegmentedRow(
-            labels = BASE_THEME_MODES.map { it.label },
+            labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
             selectedIndex = BASE_THEME_MODES.indexOf(current.base),
             onSelect = { index ->
                 onSelect(BASE_THEME_MODES[index].withMonet(current.monet))
@@ -404,10 +407,10 @@ fun ThemeMenu(
             },
         )
         MenuDivider()
-        MenuSectionLabel("Tùy chọn")
-        MenuCheckItem(label = "Màu động", checked = current.monet, onChange = { onSelect(current.withMonet(it)) })
-        MenuCheckItem(label = "Rung khi chạm", checked = haptic, onChange = onHapticChange)
-        if (isBlurSupported()) MenuCheckItem(label = "Làm mờ nền", checked = blur, onChange = onBlurChange)
+        MenuSectionLabel(stringResource(R.string.menu_section_options))
+        MenuCheckItem(label = stringResource(R.string.option_dynamic_color), checked = current.monet, onChange = { onSelect(current.withMonet(it)) })
+        MenuCheckItem(label = stringResource(R.string.option_haptic), checked = haptic, onChange = onHapticChange)
+        if (isBlurSupported()) MenuCheckItem(label = stringResource(R.string.option_blur), checked = blur, onChange = onBlurChange)
     }
 }
 
@@ -417,14 +420,14 @@ private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMo
  * Các kiểu tắt / khởi động lại máy trong menu Nguồn, theo menu của Magisk. Chạy bằng root: [command] thử `svc power` trước,
  * không được thì dùng `reboot` (cùng cách Magisk gọi). [confirm] là câu hỏi xác nhận trước khi chạy.
  */
-enum class PowerAction(val label: String, val confirm: String, val command: String) {
-    PowerOff("Tắt máy", "Tắt máy? Máy sẽ tắt hẳn, cần bấm nút nguồn để bật lại.", "/system/bin/svc power shutdown || /system/bin/reboot -p"),
-    Reboot("Khởi động lại máy", "Khởi động lại máy? Máy sẽ tắt và bật lại ngay.", rebootCommand("")),
-    Recovery("Khởi động lại vào Recovery", "Khởi động lại vào Recovery?", rebootCommand("recovery")),
-    SoftReboot("Khởi động lại mềm", "Khởi động lại mềm? Chỉ khởi động lại hệ thống Android, máy không tắt.", "killall zygote || setprop ctl.restart zygote"),
-    Bootloader("Khởi động lại vào Bootloader", "Khởi động lại vào Bootloader (Fastboot)?", rebootCommand("bootloader")),
-    Download("Khởi động lại vào Download", "Khởi động lại vào chế độ Download (Odin, máy Samsung)? Máy khác có thể không hỗ trợ.", rebootCommand("download")),
-    Edl("Khởi động lại vào EDL", "Khởi động lại vào EDL (chế độ cứu hộ Qualcomm)? Màn hình sẽ tối đen, cần giữ nút nguồn lâu để thoát.", rebootCommand("edl")),
+enum class PowerAction(@StringRes val labelRes: Int, @StringRes val confirmRes: Int, val command: String) {
+    PowerOff(R.string.power_off, R.string.power_off_confirm, "/system/bin/svc power shutdown || /system/bin/reboot -p"),
+    Reboot(R.string.power_reboot, R.string.power_reboot_confirm, rebootCommand("")),
+    Recovery(R.string.power_recovery, R.string.power_recovery_confirm, rebootCommand("recovery")),
+    SoftReboot(R.string.power_soft_reboot, R.string.power_soft_reboot_confirm, "killall zygote || setprop ctl.restart zygote"),
+    Bootloader(R.string.power_bootloader, R.string.power_bootloader_confirm, rebootCommand("bootloader")),
+    Download(R.string.power_download, R.string.power_download_confirm, rebootCommand("download")),
+    Edl(R.string.power_edl, R.string.power_edl_confirm, rebootCommand("edl")),
 }
 
 private fun rebootCommand(reason: String): String {
@@ -434,8 +437,6 @@ private fun rebootCommand(reason: String): String {
 
 /** Ba kiểu hay dùng (Tắt máy, Khởi động lại máy, Recovery), luôn hiện sẵn trong menu Nguồn; các kiểu còn lại gom vào nhóm [POWER_ADVANCED_LABEL] (bấm để mở / thu). */
 private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot, PowerAction.Recovery)
-
-private const val POWER_ADVANCED_LABEL = "Khởi động lại nâng cao"
 
 /**
  * Dòng bấm để mở / thu một nhóm mục trong menu (cùng kiểu dáng [MenuItem]), bên phải là icon lên-xuống giống item `dropdown`.
@@ -460,7 +461,7 @@ private fun MenuExpandItem(label: String, expanded: Boolean, onClick: () -> Unit
         Spacer(Modifier.width(16.dp))
         AsyncImage(
             model = Util.iconModel(AppIcons.BarUpDown),
-            contentDescription = if (expanded) "Thu gọn" else "Mở rộng",
+            contentDescription = stringResource(if (expanded) R.string.action_collapse else R.string.action_expand),
             modifier = Modifier.size(20.dp),
             colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
         )
@@ -484,7 +485,7 @@ fun PowerMenu(
 ) {
     TopBarMenu(
         icon = AppIcons.BarPower,
-        description = "Nguồn",
+        description = stringResource(R.string.power_menu_description),
         expanded = expanded,
         onOpen = onOpen,
         onDismiss = onDismiss,
@@ -492,14 +493,14 @@ fun PowerMenu(
         minWidth = 280.dp,
     ) {
         var advanced by remember { mutableStateOf(false) }
-        MenuItem(label = "Khởi động lại ứng dụng", onClick = onRestartApp)
-        MenuItem(label = "Đóng ứng dụng", onClick = onCloseApp)
+        MenuItem(label = stringResource(R.string.power_restart_app), onClick = onRestartApp)
+        MenuItem(label = stringResource(R.string.power_close_app), onClick = onCloseApp)
         MenuDivider()
-        MenuSectionLabel("Thiết bị (cần root)")
+        MenuSectionLabel(stringResource(R.string.power_section_device))
         BASIC_POWER_ACTIONS.forEach { action ->
-            MenuItem(label = action.label) { onDeviceAction(action) }
+            MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
         }
-        MenuExpandItem(label = POWER_ADVANCED_LABEL, expanded = advanced, onClick = { advanced = !advanced })
+        MenuExpandItem(label = stringResource(R.string.power_advanced), expanded = advanced, onClick = { advanced = !advanced })
         AnimatedVisibility(
             visible = advanced,
             enter = expandVertically(tween(180)),
@@ -508,7 +509,7 @@ fun PowerMenu(
             // Các mục nhóm nâng cao thẳng hàng với các mục khác, không thụt vào.
             Column {
                 PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
-                    MenuItem(label = action.label) { onDeviceAction(action) }
+                    MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
                 }
             }
         }

@@ -68,6 +68,7 @@ app/                           # beta.jks, proguard-rules.pro, build.gradle.kts
 - Khởi động: Splash (logo, thanh tiến trình, 5 dòng log; căn giữa, lề 16dp) -> xin quyền bộ nhớ (từ chối thì thoát) -> chạy script -> nạp TOML -> màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
 - Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
 - Backend: su -> ROM -> adb -> không root, biến `ROOT_MODE`; `lock` thay cho `require`.
+- Ngôn ngữ giao diện: `res/values/strings.xml` là English (mặc định), `res/values-vi/strings.xml` là tiếng Việt; app theo ngôn ngữ hệ thống (Android 13+ còn chọn riêng cho app được nhờ `res/xml/locales_config.xml`). Mọi chuỗi trong code Kotlin đã nằm trong tài nguyên; nơi không có Context (parser TOML, executor, tệp log) lấy chuỗi qua `util/AppText.kt` (gắn Context trong `App.onCreate`). Cảnh báo cấu hình được dịch lúc nạp nên đổi ngôn ngữ thì phải mở lại app mới cập nhật. Nội dung các file TOML (tiêu đề, mô tả, nhãn) vẫn là tiếng Việt, chưa đa ngôn ngữ.
 - Hiển thị khi chạy lệnh: `shell = live | full | hidden | banner | notice | snackbar` (mặc định `live`); `hidden` mà lỗi thì hiện toast.
 - Lỗi không lưu ra file; quyền thông báo chỉ xin khi dùng tới.
 - Nhóm khai báo bằng `[[group]]`, item con là `[[group.item]]` (không còn `type = "group"`); thứ tự `[[item]]` / `[[group]]` theo thứ tự trong file. Item trong group dùng chung một thẻ lớn; item đứng ngoài group mỗi item một thẻ riêng.

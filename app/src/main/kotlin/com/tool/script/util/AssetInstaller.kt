@@ -1,5 +1,6 @@
 package com.tool.script.util
 
+import com.tool.script.R
 import android.content.Context
 import android.content.res.AssetManager
 import android.system.Os
@@ -52,7 +53,7 @@ object AssetInstaller {
                 if (stamp != 0L) tmp.setLastModified(stamp)
                 if (!tmp.renameTo(dest)) {
                     tmp.delete()
-                    throw IOException("không đổi tên được tệp tạm")
+                    throw IOException(AppText.get(R.string.asset_rename_failed))
                 }
                 copied++
             } catch (e: Exception) {

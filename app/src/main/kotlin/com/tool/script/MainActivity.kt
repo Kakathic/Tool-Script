@@ -1,5 +1,6 @@
 package com.tool.script
 
+import com.tool.script.R
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -144,7 +145,7 @@ private fun AppRoot(
     val fatal = state.fatal
     LaunchedEffect(fatal) {
         if (fatal != null) {
-            CrashActivity.launch(context, "Lỗi cấu hình", fatal, fatal = true)
+            CrashActivity.launch(context, context.getString(R.string.crash_config_error), fatal, fatal = true)
             onExit()
         }
     }

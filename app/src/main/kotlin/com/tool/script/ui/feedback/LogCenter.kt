@@ -118,10 +118,10 @@ object LogCenter {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         if (Build.VERSION.SDK_INT >= 26) {
             // Mức thấp: cập nhật liên tục không kêu / không rung / không hiện nổi.
-            nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, "Log tính năng chạy nền", NotificationManager.IMPORTANCE_LOW))
+            nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, context.getString(R.string.notice_channel_log), NotificationManager.IMPORTANCE_LOW))
         }
         val running = entry.running
-        val body = entry.tail(TAIL_CHARS).ifBlank { if (running) "Đang chạy..." else "Không có đầu ra" }
+        val body = entry.tail(TAIL_CHARS).ifBlank { context.getString(if (running) R.string.log_running_ellipsis else R.string.log_no_output) }
         val lastLine = body.lineSequence().lastOrNull { it.isNotBlank() }?.trim().orEmpty()
 
         val open = Intent(context, MainActivity::class.java).apply {
@@ -137,7 +137,7 @@ object LogCenter {
             .setContentTitle(entry.title)
             .setContentText(lastLine.ifEmpty { body })
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setSubText(statusLabel(entry))
+            .setSubText(statusLabel(context, entry))
             .setContentIntent(pending)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
@@ -152,11 +152,11 @@ object LogCenter {
         nm.notify(entry.id, builder.build())
     }
 
-    private fun statusLabel(entry: LogEntry): String = when (entry.status) {
-        LogStatus.Running -> "Đang chạy"
-        LogStatus.Done -> "Xong"
-        LogStatus.Failed -> "Lỗi (mã ${entry.exitCode ?: "?"})"
-        LogStatus.TimedOut -> "Hết thời gian chờ"
-        LogStatus.Cancelled -> "Đã hủy"
+    private fun statusLabel(context: Context, entry: LogEntry): String = when (entry.status) {
+        LogStatus.Running -> context.getString(R.string.status_running)
+        LogStatus.Done -> context.getString(R.string.status_done)
+        LogStatus.Failed -> context.getString(R.string.status_failed, entry.exitCode?.toString() ?: "?")
+        LogStatus.TimedOut -> context.getString(R.string.status_timed_out)
+        LogStatus.Cancelled -> context.getString(R.string.status_cancelled)
     }
 }

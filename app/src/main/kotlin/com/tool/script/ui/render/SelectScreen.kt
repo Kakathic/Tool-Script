@@ -1,5 +1,7 @@
 package com.tool.script.ui.render
 
+import com.tool.script.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
@@ -287,7 +289,7 @@ internal fun SelectFullScreen(
                     if (multi) {
                         // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc có nền, không viền (cùng kiểu nút Chạy).
                         Text(
-                            text = "Đã chọn ${draft.size}/${options.size}",
+                            text = stringResource(R.string.select_count_of, draft.size, options.size),
                             color = MiuixTheme.colorScheme.primary,
                             style = MiuixTheme.textStyles.body2,
                             maxLines = 1,
@@ -303,7 +305,7 @@ internal fun SelectFullScreen(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN),
-                    label = "Tìm kiếm",
+                    label = stringResource(R.string.select_search),
                     singleLine = true,
                 )
                 Spacer(Modifier.height(SCREEN_MARGIN))
@@ -327,7 +329,7 @@ internal fun SelectFullScreen(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
                                 ) { toggleAll() },
-                            title = if (query.isBlank()) "Chọn tất cả" else "Chọn tất cả kết quả tìm",
+                            title = stringResource(if (query.isBlank()) R.string.select_all else R.string.select_all_results),
                             enabled = visible.isNotEmpty(),
                             endActions = {
                                 Checkbox(
@@ -342,7 +344,7 @@ internal fun SelectFullScreen(
                     if (visible.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                             Text(
-                                text = "Không có mục nào khớp",
+                                text = stringResource(R.string.select_no_match),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 style = MiuixTheme.textStyles.body2,
                             )
@@ -396,9 +398,9 @@ internal fun SelectFullScreen(
                     modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
                     horizontalArrangement = Arrangement.spacedBy(SCREEN_MARGIN),
                 ) {
-                    TextButton(text = "Hủy", onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
+                    TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
                     TextButton(
-                        text = "Xác nhận",
+                        text = stringResource(R.string.action_confirm),
                         onClick = {
                             val result = draft
                             close { onConfirm(result) }

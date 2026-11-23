@@ -1,5 +1,6 @@
 package com.tool.script.boot
 
+import com.tool.script.R
 import android.app.Application
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
@@ -87,7 +88,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
 
         // 2. Dò backend
         _state.update { it.copy(stage = BootStage.Detect, progress = null) }
-        log("Đang dò quyền hệ thống...")
+        log(app.getString(R.string.boot_detecting))
         val detect = ExecutorManager.detect()
         detect.notes.forEach(::log)
         val executor = detect.executor
@@ -99,17 +100,17 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             // Chép các thư mục cần thiết của assets (xem AssetInstaller) ra $HOME (no_backup/home), trước khi chạy script.
             withContext(Dispatchers.IO) { runCatching { AssetInstaller.install(app) } }
                 .onSuccess { r ->
-                    if (r.copied > 0) log("assets: chép ${r.copied}/${r.total} tệp")
-                    r.failed.forEach { log("assets: lỗi $it") }
+                    if (r.copied > 0) log(app.getString(R.string.boot_assets_copied, r.copied.toString(), r.total.toString()))
+                    r.failed.forEach { log(app.getString(R.string.boot_assets_error, it.toString())) }
                 }
-                .onFailure { log("assets: không chép được: ${it.message ?: it}") }
+                .onFailure { log(app.getString(R.string.boot_assets_failed, (it.message ?: it).toString())) }
             val script = File(Util.scriptsDir(app), "init.sh")
             val envResult = withContext(Dispatchers.IO) { runCatching { EnvFile.prepare(app) } }
             envResult.getOrNull()?.let { prepared ->
                 ExecutorManager.envFile = prepared.file.absolutePath
-                prepared.unknownKeys.forEach { log("env.sh: key lạ $it, giữ nguyên") }
+                prepared.unknownKeys.forEach { log(app.getString(R.string.boot_env_unknown_key, it.toString())) }
             }
-            envResult.exceptionOrNull()?.let { log("Không chuẩn bị được env.sh: ${it.message ?: it}") }
+            envResult.exceptionOrNull()?.let { log(app.getString(R.string.boot_env_failed, (it.message ?: it).toString())) }
             val result = ExecutorManager.current.exec("sh ${ShellText.quote(script.absolutePath)}", timeoutSec = SCRIPT_TIMEOUT_SEC) { line ->
                 val p = ShellText.parseProgress(line)
                 if (p != null) {
@@ -121,28 +122,28 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             if (!result.ok) {
                 scriptError = buildString {
                     append("init.sh ")
-                    append(if (result.timedOut) "hết thời gian chờ" else "thoát với mã ${result.code}")
+                    append(if (result.timedOut) app.getString(R.string.boot_init_timed_out) else app.getString(R.string.boot_init_exit_code, result.code.toString()))
                     // Đầu ra gộp: chỉ lấy vài dòng cuối (thường là dòng lỗi) cho gọn.
                     val tail = result.output.lines().filter { it.isNotBlank() && ShellText.parseProgress(it) == null }.takeLast(ERROR_TAIL_LINES)
                     if (tail.isNotEmpty()) append("\n").append(tail.joinToString("\n"))
                 }
-                log("Script khởi động lỗi")
+                log(app.getString(R.string.boot_script_failed))
             }
         } catch (e: Exception) {
-            scriptError = "Không chạy được init.sh: ${e.message ?: e}"
-            log("Script khởi động lỗi")
+            scriptError = app.getString(R.string.boot_init_not_run, (e.message ?: e).toString())
+            log(app.getString(R.string.boot_script_failed))
         }
 
         // 4. Nạp TOML
         _state.update { it.copy(stage = BootStage.Config, progress = null) }
-        log("Đang nạp giao diện...")
+        log(app.getString(R.string.boot_loading_ui))
         val config = try {
             withContext(Dispatchers.IO) { ConfigRepository.load(app) }
         } catch (e: ConfigParseException) {
-            _state.update { it.copy(fatal = e.message ?: "Lỗi nạp cấu hình") }
+            _state.update { it.copy(fatal = e.message ?: app.getString(R.string.boot_config_error)) }
             return
         } catch (e: Exception) {
-            _state.update { it.copy(fatal = "Lỗi nạp cấu hình: ${e.message ?: e}") }
+            _state.update { it.copy(fatal = app.getString(R.string.boot_config_error_detail, (e.message ?: e).toString())) }
             return
         }
 

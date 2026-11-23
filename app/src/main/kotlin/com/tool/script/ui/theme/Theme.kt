@@ -1,5 +1,7 @@
 package com.tool.script.ui.theme
 
+import com.tool.script.R
+import androidx.annotation.StringRes
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -17,13 +19,13 @@ import top.yukonga.miuix.kmp.theme.ThemeController
  * Các chế độ chủ đề Miuix có sẵn ([ColorSchemeMode]).
  * Nhóm "Màu động" (Monet) lấy màu từ hình nền hệ thống (Android 12+); máy cũ hơn tự dùng màu mặc định.
  */
-enum class ThemeMode(val key: String, val label: String, val monet: Boolean) {
-    System("system", "Hệ thống", false),
-    Light("light", "Sáng", false),
-    Dark("dark", "Tối", false),
-    MonetSystem("monet_system", "Màu động (hệ thống)", true),
-    MonetLight("monet_light", "Màu động - Sáng", true),
-    MonetDark("monet_dark", "Màu động - Tối", true),
+enum class ThemeMode(val key: String, @StringRes val labelRes: Int, val monet: Boolean) {
+    System("system", R.string.theme_system, false),
+    Light("light", R.string.theme_light, false),
+    Dark("dark", R.string.theme_dark, false),
+    MonetSystem("monet_system", R.string.theme_monet_system, true),
+    MonetLight("monet_light", R.string.theme_monet_light, true),
+    MonetDark("monet_dark", R.string.theme_monet_dark, true),
     ;
 
     /** Nhánh cơ bản (Hệ thống / Sáng / Tối), bỏ phần Màu động. */

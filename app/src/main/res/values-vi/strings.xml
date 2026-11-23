@@ -1,0 +1,183 @@
+<resources>
+    <!-- Chung -->
+    <string name="action_cancel">Hủy</string>
+    <string name="action_confirm">Xác nhận</string>
+    <string name="action_run">Chạy</string>
+    <string name="action_hide">Ẩn</string>
+    <string name="action_share">Chia sẻ</string>
+    <string name="action_view">Xem</string>
+    <string name="action_close">Đóng</string>
+    <string name="action_back">Quay lại</string>
+    <string name="action_restart">Khởi động lại</string>
+    <string name="action_exit">Thoát</string>
+    <string name="action_collapse">Thu gọn</string>
+    <string name="action_expand">Mở rộng</string>
+    <string name="state_selected">Đang chọn</string>
+
+    <!-- Trạng thái và kết quả lệnh -->
+    <string name="status_running">Đang chạy</string>
+    <string name="status_done">Xong</string>
+    <string name="status_failed">Lỗi (mã %1$s)</string>
+    <string name="status_timed_out">Hết thời gian chờ</string>
+    <string name="status_cancelled">Đã hủy</string>
+    <string name="result_timed_out">%1$s: hết thời gian chờ</string>
+    <string name="result_done">%1$s: hoàn tất</string>
+    <string name="result_error">%1$s: lỗi (mã %2$s)</string>
+
+    <!-- Thông báo hệ thống và banner -->
+    <string name="notice_channel_result">Kết quả lệnh</string>
+    <string name="notice_channel_log">Log tính năng chạy nền</string>
+    <string name="notice_no_permission">Không có quyền thông báo: không gửi được thông báo \"%1$s\". Hãy cấp quyền trong Cài đặt > Ứng dụng > Thông báo.</string>
+    <string name="notice_no_permission_hidden_log">Không có quyền thông báo: log đã ẩn vẫn chạy nhưng sẽ không có thông báo để mở lại.</string>
+    <string name="banner_running">Đang chạy script…</string>
+
+    <!-- Bảng log -->
+    <string name="log_hide_background">Ẩn (chạy nền)</string>
+    <string name="log_minimize">Thu nhỏ</string>
+    <string name="log_fullscreen">Toàn màn hình</string>
+    <string name="log_menu">Menu</string>
+    <string name="log_wrap">Ngắt dòng</string>
+    <string name="log_mono">Font mono</string>
+    <string name="log_share_failed">Không tạo được tệp log để chia sẻ</string>
+    <string name="log_share_title">Chia sẻ log</string>
+    <string name="log_exit_code">Thoát: %1$s</string>
+    <string name="log_exit_timeout">hết giờ</string>
+    <string name="log_waiting_output">Đang chờ đầu ra...</string>
+    <string name="log_no_output">Không có đầu ra</string>
+    <string name="log_no_output_file">(không có đầu ra)</string>
+    <string name="log_running_ellipsis">Đang chạy...</string>
+    <string name="log_gone">Log này không còn nữa</string>
+
+    <!-- Màn hình chính -->
+    <string name="warn_boot_script">Script khởi động lỗi.</string>
+    <string name="warn_main_config_count">%1$d cảnh báo cấu hình (main.toml).</string>
+    <string name="warn_page_count">%1$d cảnh báo cấu hình ở trang này.</string>
+    <string name="warn_config_title">Cảnh báo cấu hình</string>
+    <string name="warn_startup_title">Cảnh báo khi khởi động</string>
+    <string name="details_page_warnings">== Cảnh báo cấu hình: %1$s ==</string>
+    <string name="details_boot_script">== Script khởi động ==</string>
+    <string name="details_main_config">== Cảnh báo cấu hình (main.toml) ==</string>
+    <string name="details_boot_log">== Log khởi động ==</string>
+    <string name="confirm_restart_app">Khởi động lại ứng dụng?</string>
+    <string name="confirm_close_app">Đóng ứng dụng? Các lệnh đang chạy sẽ bị dừng.</string>
+    <string name="power_error_timeout">%1$s: hết thời gian chờ</string>
+    <string name="power_error_failed">Không thực hiện được \"%1$s\" (cần root)</string>
+
+    <!-- Menu chủ đề -->
+    <string name="theme_menu_description">Tùy chỉnh chủ đề</string>
+    <string name="menu_section_appearance">Giao diện</string>
+    <string name="menu_section_options">Tùy chọn</string>
+    <string name="option_dynamic_color">Màu động</string>
+    <string name="option_haptic">Rung khi chạm</string>
+    <string name="option_blur">Làm mờ nền</string>
+    <string name="theme_system">Hệ thống</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
+    <string name="theme_monet_system">Màu động (hệ thống)</string>
+    <string name="theme_monet_light">Màu động - Sáng</string>
+    <string name="theme_monet_dark">Màu động - Tối</string>
+
+    <!-- Menu nguồn -->
+    <string name="power_menu_description">Nguồn</string>
+    <string name="power_restart_app">Khởi động lại ứng dụng</string>
+    <string name="power_close_app">Đóng ứng dụng</string>
+    <string name="power_section_device">Thiết bị (cần root)</string>
+    <string name="power_advanced">Khởi động lại nâng cao</string>
+    <string name="power_off">Tắt máy</string>
+    <string name="power_off_confirm">Tắt máy? Máy sẽ tắt hẳn, cần bấm nút nguồn để bật lại.</string>
+    <string name="power_reboot">Khởi động lại máy</string>
+    <string name="power_reboot_confirm">Khởi động lại máy? Máy sẽ tắt và bật lại ngay.</string>
+    <string name="power_recovery">Khởi động lại vào Recovery</string>
+    <string name="power_recovery_confirm">Khởi động lại vào Recovery?</string>
+    <string name="power_soft_reboot">Khởi động lại mềm</string>
+    <string name="power_soft_reboot_confirm">Khởi động lại mềm? Chỉ khởi động lại hệ thống Android, máy không tắt.</string>
+    <string name="power_bootloader">Khởi động lại vào Bootloader</string>
+    <string name="power_bootloader_confirm">Khởi động lại vào Bootloader (Fastboot)?</string>
+    <string name="power_download">Khởi động lại vào Download</string>
+    <string name="power_download_confirm">Khởi động lại vào chế độ Download (Odin, máy Samsung)? Máy khác có thể không hỗ trợ.</string>
+    <string name="power_edl">Khởi động lại vào EDL</string>
+    <string name="power_edl_confirm">Khởi động lại vào EDL (chế độ cứu hộ Qualcomm)? Màn hình sẽ tối đen, cần giữ nút nguồn lâu để thoát.</string>
+
+    <!-- Hiển thị item -->
+    <string name="selection_none">Chưa chọn</string>
+    <string name="selection_count">Đã chọn %1$d</string>
+    <string name="page_error_title">Không đọc được trang này</string>
+    <string name="select_count_of">Đã chọn %1$d/%2$d</string>
+    <string name="select_search">Tìm kiếm</string>
+    <string name="select_all">Chọn tất cả</string>
+    <string name="select_all_results">Chọn tất cả kết quả tìm</string>
+    <string name="select_no_match">Không có mục nào khớp</string>
+
+    <!-- Trung tâm lỗi -->
+    <string name="crash_title_default">Lỗi</string>
+    <string name="crash_no_content">(không có nội dung)</string>
+    <string name="crash_share_error">Chia sẻ lỗi</string>
+    <string name="crash_truncated">... (đã cắt bớt)</string>
+    <string name="crash_report_thread">Luồng: %1$s</string>
+    <string name="crash_report_device">Thiết bị: %1$s %2$s, Android %3$s (SDK %4$s)</string>
+    <string name="crash_app_failed">Ứng dụng bị lỗi</string>
+    <string name="crash_config_error">Lỗi cấu hình</string>
+
+    <!-- Cảnh báo / lỗi cấu hình (parser TOML) -->
+    <string name="cfg_line">dòng %1$d</string>
+    <string name="cfg_page_renamed">%1$s: [[page]] đã đổi thành [[tab]], bỏ qua</string>
+    <string name="cfg_tab_missing_id">%1$s thiếu id, bỏ qua</string>
+    <string name="cfg_tab_missing_title">%1$s (%2$s) thiếu title, bỏ tab này</string>
+    <string name="cfg_tab_missing_icon">%1$s (%2$s) thiếu icon, bỏ tab này</string>
+    <string name="cfg_tab_missing_file">%1$s (%2$s) thiếu file, bỏ tab này</string>
+    <string name="cfg_tab_duplicate_id">%1$s trùng id \"%2$s\", bỏ tab này</string>
+    <string name="cfg_not_table">%1$s không phải bảng, bỏ qua</string>
+    <string name="cfg_nested_group">%1$s: chưa hỗ trợ group lồng group, bỏ qua [[group.group]]</string>
+    <string name="cfg_type_group_renamed">%1$s: type = \"group\" đã đổi thành [[group]], bỏ qua</string>
+    <string name="cfg_unknown_type">%1$s có type lạ \"%2$s\", bỏ qua</string>
+    <string name="cfg_item_missing_title">%1$s (%2$s) thiếu title, bỏ qua</string>
+    <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) thiếu id, bỏ qua</string>
+    <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" không hợp lệ (chỉ chữ, số, gạch dưới; không bắt đầu bằng số), bỏ qua</string>
+    <string name="cfg_duplicate_id">%1$s \"%2$s\": trùng id \"%3$s\", bỏ qua</string>
+    <string name="cfg_link_missing_target">%1$s \"%2$s\" (link) thiếu tab hoặc page, bỏ qua</string>
+    <string name="cfg_link_both">%1$s \"%2$s\": có cả tab và page, dùng tab</string>
+    <string name="cfg_invalid_style">%1$s \"%2$s\": style = \"%3$s\" không hợp lệ, dùng page</string>
+    <string name="cfg_shell_log_removed">%1$s \"%2$s\": shell = \"log\" đã bỏ, dùng live</string>
+    <string name="cfg_invalid_shell">%1$s \"%2$s\": shell = \"%3$s\" không hợp lệ, dùng live</string>
+    <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" không hợp lệ (1 hoặc 2), dùng 1</string>
+    <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" không hợp lệ (số dương), dùng 24</string>
+    <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" không hợp lệ (true hoặc false), dùng true</string>
+    <string name="cfg_invalid_lock_mode">%1$s \"%2$s\": lock_mode = \"%3$s\" không hợp lệ, dùng readonly</string>
+    <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s không hợp lệ (cần dạng \"nhãn|giá trị\"), bỏ qua</string>
+    <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) không có options hợp lệ</string>
+    <string name="cfg_separator_in_value">%1$s \"%2$s\": có giá trị trong options chứa dấu phân tách \"%3$s\", kết quả sẽ sai</string>
+    <string name="cfg_max_lt_min">%1$s \"%2$s\": max &lt; min, đã đổi chỗ</string>
+    <string name="cfg_read_failed">không đọc được file: %1$s</string>
+    <string name="cfg_no_tabs">không có [[tab]] hợp lệ nào để hiển thị</string>
+    <string name="cfg_parse_error">%1$s: lỗi parse</string>
+    <string name="cfg_file_read_failed">%1$s: không đọc được file: %2$s</string>
+    <string name="cfg_link_tab_missing">%1$s: link \"%2$s\" trỏ tới tab \"%3$s\" không tồn tại</string>
+    <string name="cfg_link_style_mismatch">%1$s: link \"%2$s\" khác style với link đầu tiên trỏ tới %3$s, dùng style của link đầu tiên</string>
+    <string name="cfg_dialog_item_unsupported">%1$s: %2$s \"%3$s\" không dùng được trong dialog (dialog chỉ để truyền biến), bỏ qua</string>
+
+    <!-- Log khởi động -->
+    <string name="boot_detecting">Đang dò quyền hệ thống...</string>
+    <string name="boot_assets_copied">assets: chép %1$s/%2$s tệp</string>
+    <string name="boot_assets_error">assets: lỗi %1$s</string>
+    <string name="boot_assets_failed">assets: không chép được: %1$s</string>
+    <string name="boot_env_unknown_key">env.sh: key lạ %1$s, giữ nguyên</string>
+    <string name="boot_env_failed">Không chuẩn bị được env.sh: %1$s</string>
+    <string name="boot_init_timed_out">hết thời gian chờ</string>
+    <string name="boot_init_exit_code">thoát với mã %1$s</string>
+    <string name="boot_script_failed">Script khởi động lỗi</string>
+    <string name="boot_init_not_run">Không chạy được init.sh: %1$s</string>
+    <string name="boot_loading_ui">Đang nạp giao diện...</string>
+    <string name="boot_config_error">Lỗi nạp cấu hình</string>
+    <string name="boot_config_error_detail">Lỗi nạp cấu hình: %1$s</string>
+    <string name="exec_sh_failed">không chạy được sh</string>
+    <string name="exec_su_timeout">su: hết thời gian chờ, hạ cấp</string>
+    <string name="exec_su_denied">su: không có quyền root</string>
+    <string name="exec_rom_adb">ROM / adb: chưa hỗ trợ, dùng shell thường</string>
+    <string name="exec_backend_plain">Backend: shell thường (ROOT_MODE = any)</string>
+
+    <!-- Khác -->
+    <string name="crash_demo_main">Demo crash: lỗi ném từ luồng chính (run = \"%1$s\")</string>
+    <string name="crash_demo_background">Demo crash: lỗi ném từ luồng nền (run = \"%1$s\")</string>
+    <string name="asset_rename_failed">không đổi tên được tệp tạm</string>
+    <string name="log_write_stopped">[Đã ngừng ghi: log vượt %1$sMB]</string>
+</resources>
