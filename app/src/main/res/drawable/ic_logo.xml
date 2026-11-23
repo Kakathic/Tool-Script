@@ -1,34 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Logo splash và màn khởi động: [TS] vuông trong ngoặc TOML, chữ S có móc hai đầu.
-     Chỉ có nét xanh Miuix, không nền: nền do window_bg quyết định (trắng ban ngày, đen ban đêm).
-     Thu 0.8 để nằm trong vòng tròn che của splash Android 12+. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <group
-        android:pivotX="54"
-        android:pivotY="54"
-        android:scaleX="0.8"
-        android:scaleY="0.8">
-        <path
-            android:pathData="M31,28H24V80H31M77,28H84V80H77"
-            android:strokeColor="#FF3482FF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
-        <path
-            android:pathData="M36,41.5H52M44,41.5V69"
-            android:strokeColor="#FF3482FF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
-        <path
-            android:pathData="M69.5,47V41.5H58.5V54H69.5V66.5H58.5V61"
-            android:strokeColor="#FF3482FF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
-    </group>
-</vector>
+<!-- Logo splash hệ thống (Android 12+): ảnh icon thiết kế, thu nhỏ (inset 24%) để nằm gọn trong vòng tròn che của splash.
+     Màn khởi động trong app dùng thẳng drawable-nodpi/ic_logo_art.png (BootScreen.kt). -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_logo_art"
+    android:inset="24%" />
