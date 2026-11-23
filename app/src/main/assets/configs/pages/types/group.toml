@@ -1,0 +1,87 @@
+# [[group]]: gom item vào một thẻ. Khai báo [[group]] rồi các item con là [[group.item]].
+# group không phải một type. Dùng được title (không bắt buộc), visible_if, lock, lock_mode; chưa hỗ trợ icon.
+# Chưa hỗ trợ group lồng group ([[group.group]] bị bỏ qua kèm cảnh báo, xem tab Trang hỏng).
+
+[[item]]
+type    = "text"
+title   = "group"
+content = "Item đứng ngoài group thì mỗi item một thẻ riêng. Item trong cùng một group nằm chung một thẻ lớn. Thứ tự [[item]] và [[group]] trên trang theo thứ tự trong file."
+
+[[item]]
+type    = "text"
+title   = "Item đứng riêng thứ nhất"
+content = "Thẻ riêng."
+
+[[item]]
+type    = "text"
+title   = "Item đứng riêng thứ hai"
+content = "Cũng thẻ riêng, cách thẻ trên 16dp."
+
+[[group]]
+title = "Group có tiêu đề"
+
+[[group.item]]
+type    = "text"
+title   = "Item một"
+content = "Tiêu đề nằm ngoài thẻ, dính sát thẻ của nó."
+
+[[group.item]]
+type    = "text"
+title   = "Item hai"
+content = "Cùng thẻ với item một."
+
+# [[group]] không khai báo title: thẻ chỉ vẽ phần item, không có tiêu đề phía trên.
+[[group]]
+
+[[group.item]]
+type  = "switch"
+id    = "t_group_notitle"
+title = "Group không title"
+desc  = "Thẻ không có tiêu đề phía trên"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_group_notitle2"
+title = "Ô tick cùng thẻ"
+
+[[group]]
+title = "Điều khiển cả group"
+
+[[group.item]]
+type  = "switch"
+id    = "t_group_show"
+title = "Hiện group bên dưới"
+desc  = "visible_if đặt ở cấp group"
+
+[[group.item]]
+type  = "switch"
+id    = "t_group_lock"
+title = "Khóa group bên dưới"
+desc  = "lock đặt ở cấp group, mặc định readonly: mờ, không bấm được"
+
+[[group]]
+title      = "Group bị điều khiển"
+visible_if = "t_group_show == 1"
+lock       = "t_group_lock == 1"
+
+[[group.item]]
+type  = "button"
+title = "Nút trong group"
+run   = 'echo "Group đang mở"'
+shell = "banner"
+
+[[group.item]]
+type  = "switch"
+id    = "t_group_inner"
+title = "Công tắc trong group"
+
+[[group]]
+title      = "Group ẩn khi không root"
+lock       = "ROOT_MODE != root"
+lock_mode  = "hide"
+
+[[group.item]]
+type  = "button"
+title = "Nút chỉ có khi root"
+run   = 'echo "Đang có root"'
+shell = "banner"

@@ -1,0 +1,26 @@
+# Trang dùng cho link có style = "dialog" nhưng CỐ Ý chứa button và link.
+# Dialog chỉ để truyền biến: button và link bị bỏ qua kèm cảnh báo; các item còn lại hiện bình thường.
+
+[[item]]
+type    = "text"
+title   = "Dialog có mục không hợp lệ"
+content = "Chỉ ô nhập bên dưới hiện; button và link bị bỏ qua."
+
+[[group]]
+
+[[group.item]]
+type    = "input"
+id      = "b_dlg_note"
+title   = "Ghi chú"
+hint    = "Nhập nội dung"
+default = "xin chào"
+
+[[group.item]]
+type  = "button"
+title = "Nút không dùng được trong dialog"
+run   = 'echo "không chạy"'
+
+[[group.item]]
+type  = "link"
+title = "Link không dùng được trong dialog"
+tab   = "types"

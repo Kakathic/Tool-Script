@@ -1,0 +1,50 @@
+# type = "checkbox": dùng đúng quy tắc của switch (on, off, get, tự lưu theo id), nhưng hiện ô tick.
+# Bấm cả hàng cũng đổi.
+
+[[item]]
+type    = "text"
+title   = "checkbox"
+content = "Giống switch về hành vi, khác ở giao diện: ô tick bên phải. Hợp với danh sách tùy chọn nhiều dòng."
+
+[[group]]
+title = "Ví dụ"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_check_basic"
+title = "Ô tick tự lưu"
+desc  = "Chỉ lưu giá trị vào file t_check_basic"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_check_cmd"
+title = "Ô tick chạy lệnh"
+desc  = "on / off chạy khi đổi"
+on    = 'echo "Ô tick: bật"'
+off   = 'echo "Ô tick: tắt"'
+shell = "banner"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_check_get"
+title = "Ô tick đọc bằng get"
+desc  = "get = echo 1: mở app luôn thấy tick"
+get   = "echo 1"
+on    = 'echo "bật"'
+off   = 'echo "tắt"'
+shell = "banner"
+
+[[group]]
+title = "Hiện theo ô tick (visible_if)"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_check_more"
+title = "Hiện thêm tùy chọn"
+
+[[group.item]]
+type       = "checkbox"
+id         = "t_check_sub"
+title      = "Ô tick phụ"
+desc       = "Chỉ hiện khi t_check_more == 1"
+visible_if = "t_check_more == 1"

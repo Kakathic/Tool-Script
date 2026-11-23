@@ -1,0 +1,45 @@
+# type = "singleselect": chọn một, có Xác nhận. Trường riêng: options, default, run, columns (1 hoặc 2).
+# Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy run một lần. Hủy hoặc Back thì bỏ thay đổi.
+# Từ 6 mục trở lên: mở toàn màn hình, có ô tìm không phân biệt hoa thường và dấu tiếng Việt.
+
+[[item]]
+type    = "text"
+title   = "singleselect"
+content = "Hàng hiện nhãn đang chọn kèm mũi tên. Bấm để mở hộp thoại chọn một mục rồi bấm Xác nhận."
+
+[[group]]
+title = "Hộp thoại nhỏ (dưới 6 mục)"
+
+[[group.item]]
+type    = "singleselect"
+id      = "t_single_1col"
+title   = "Một cột"
+desc    = "columns mặc định là 1"
+default = "wifi"
+run     = 'echo "Đã chọn: $t_single_1col"'
+shell   = "banner"
+options = ["Wi-Fi|wifi", "Dữ liệu di động|mobile", "Bluetooth|bt"]
+
+[[group.item]]
+type    = "singleselect"
+id      = "t_single_2col"
+title   = "Hai cột"
+desc    = "columns = 2"
+default = "b"
+columns = 2
+run     = 'echo "Đã chọn: $t_single_2col"'
+shell   = "banner"
+options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
+
+[[group]]
+title = "Toàn màn hình (từ 6 mục)"
+
+[[group.item]]
+type    = "singleselect"
+id      = "t_single_full"
+title   = "Tỉnh thành"
+desc    = "8 mục nên mở toàn màn hình, thử gõ da lat"
+default = "danang"
+run     = 'echo "Đã chọn: $t_single_full"'
+shell   = "banner"
+options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho"]

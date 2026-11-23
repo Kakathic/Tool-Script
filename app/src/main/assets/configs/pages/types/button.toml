@@ -1,0 +1,77 @@
+# type = "button": nút chạy lệnh. Trường riêng: run.
+# Trường chung hay dùng: shell, confirm, timeout, lock, icon.
+
+[[item]]
+type    = "text"
+title   = "button"
+content = "Bấm để chạy lệnh trong run. Kết quả hiện theo shell (mặc định live: bảng log)."
+
+[[group]]
+title = "Cơ bản"
+
+[[group.item]]
+type  = "button"
+title = "Mặc định (live)"
+desc  = "Không khai báo shell: bảng log hiện từng dòng"
+run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
+
+[[group.item]]
+type  = "button"
+title = "shell = banner"
+desc  = "Kết quả hiện ở banner đầu màn hình"
+run   = 'echo "Xin chào từ button"'
+shell = "banner"
+
+[[group.item]]
+type  = "button"
+title = "shell = snackbar"
+desc  = "Kết quả hiện ở snackbar đáy màn hình"
+run   = 'echo "Xin chào từ snackbar"'
+shell = "snackbar"
+
+[[group]]
+title = "Tùy chọn của lệnh"
+
+[[group.item]]
+type    = "button"
+title   = "confirm"
+desc    = "Hỏi xác nhận trước khi chạy"
+run     = 'echo "Đã xác nhận"'
+confirm = "Chạy lệnh mẫu này?"
+shell   = "banner"
+
+[[group.item]]
+type    = "button"
+title   = "timeout"
+desc    = "sleep 5 nhưng timeout = 2: báo hết thời gian chờ"
+run     = "sleep 5"
+timeout = 2
+shell   = "banner"
+
+[[group.item]]
+type  = "button"
+title = "Nút có icon"
+desc  = 'icon = "icons/tools.svg"'
+icon  = "icons/tools.svg"
+run   = 'echo "Nút có icon"'
+shell = "banner"
+
+[[group]]
+title = "Khóa (lock)"
+
+[[group.item]]
+type  = "button"
+title = "Khóa khi không root"
+desc  = "lock = ROOT_MODE != root, mờ và không bấm được nếu không root"
+run   = 'echo "Đang có root"'
+shell = "banner"
+lock  = "ROOT_MODE != root"
+
+[[group.item]]
+type      = "button"
+title     = "Ẩn khi không root"
+desc      = "lock + lock_mode = hide: ẩn hẳn khi không root"
+run       = 'echo "Đang có root"'
+shell     = "banner"
+lock      = "ROOT_MODE != root"
+lock_mode = "hide"

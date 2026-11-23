@@ -1,0 +1,41 @@
+# Trang CỐ Ý khai báo options sai. Mục sai trong options bị bỏ qua, các mục còn lại vẫn dùng được.
+
+[[item]]
+type    = "text"
+title   = "Lỗi options"
+content = "Mỗi mục bên dưới có options sai ở một kiểu khác nhau; xem banner cảnh báo ở đầu trang."
+
+[[group]]
+title = "Ví dụ"
+
+# option có giá trị rỗng: bỏ option đó
+[[group.item]]
+type    = "dropdown"
+id      = "b_opt_empty"
+title   = "options có mục rỗng"
+desc    = 'options #2 = "|" bị bỏ qua'
+default = "a"
+run     = 'echo "Đã chọn: $b_opt_empty"'
+shell   = "banner"
+options = ["Mục A|a", "|", "Mục C|c"]
+
+# không có option hợp lệ nào: cảnh báo không có options hợp lệ
+[[group.item]]
+type    = "radio"
+id      = "b_opt_none"
+title   = "Không có options hợp lệ"
+desc    = "options chỉ gồm mục rỗng"
+run     = 'echo "Radio: $b_opt_none"'
+shell   = "banner"
+options = ["|", "|"]
+
+# giá trị chứa separator: cảnh báo kết quả sẽ sai
+[[group.item]]
+type      = "multiselect"
+id        = "b_opt_sep"
+title     = "Giá trị chứa dấu phân tách"
+desc      = 'separator = "," nhưng giá trị "x,y" chứa dấu phẩy'
+separator = ","
+run       = 'echo "Đã chọn: $b_opt_sep"'
+shell     = "banner"
+options   = ["Mục X,Y|x,y", "Mục Z|z"]

@@ -1,0 +1,78 @@
+# type = "switch": công tắc. Trường riêng: on, off, get. Cần id.
+# Giá trị tự lưu vào file tên = id trong $STATE_DIR (1 hoặc 0), mở lại app vẫn giữ.
+# on / off chạy khi đổi; chỉ đổi trạng thái khi lệnh thành công.
+
+[[item]]
+type    = "text"
+title   = "switch"
+content = "Bật tắt một giá trị. Có on / off thì chạy lệnh khi đổi, không có thì chỉ lưu giá trị để item khác dùng qua visible_if, lock hoặc $id."
+
+[[group]]
+title = "Cơ bản"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_basic"
+title = "Có on / off"
+desc  = "Tự lưu vào file t_switch_basic"
+on    = "echo bật"
+off   = "echo tắt"
+shell = "banner"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_get"
+title = "Đọc trạng thái bằng get"
+desc  = "get = echo 1 nên luôn hiện bật khi mở app"
+get   = "echo 1"
+on    = "echo bật"
+off   = "echo tắt"
+shell = "banner"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_only"
+title = "Chỉ lưu giá trị"
+desc  = "Không có on / off, nút bên dưới đọc giá trị qua $t_switch_only"
+
+[[group.item]]
+type  = "button"
+title = "Đọc công tắc bên trên"
+desc  = 'run = echo "$t_switch_only"'
+run   = 'echo "t_switch_only=$t_switch_only"'
+shell = "banner"
+
+[[group]]
+title = "Lệnh thất bại thì không đổi"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_fail"
+title = "Lệnh bật luôn lỗi"
+desc  = "on = exit 1: banner báo lỗi và công tắc giữ nguyên"
+on    = 'echo "Chuẩn bị bật"; exit 1'
+off   = "echo tắt"
+shell = "banner"
+
+[[group]]
+title = "Điều kiện"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_unlock"
+title = "Mở khóa nút bên dưới"
+
+[[group.item]]
+type  = "button"
+title = "Nút khóa theo công tắc"
+desc  = "lock = t_switch_unlock != 1"
+run   = 'echo "Đã mở khóa"'
+shell = "banner"
+lock  = "t_switch_unlock != 1"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_icon"
+title = "Công tắc có icon"
+desc  = 'icon = "icons/demo.svg"'
+icon  = "icons/demo.svg"

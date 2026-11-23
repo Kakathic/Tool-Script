@@ -1,0 +1,187 @@
+# Tab 2 - Tính năng mới thêm gần đây. Mỗi nhóm có demo bấm thử được.
+# Mọi lệnh chỉ là echo / sleep / ls, không đổi thông số thiết bị.
+
+[[item]]
+type    = "text"
+title   = "Tính năng mới"
+content = "Các tính năng vừa thêm gần đây. Mỗi nhóm bên dưới có ví dụ bấm thử; giải thích đầy đủ nằm trong docs/toml-app.md và docs/schema.md."
+
+[[group]]
+title = "Giao diện"
+
+[[group.item]]
+type    = "text"
+title   = "Tiêu đề lớn kiểu Miuix"
+content = "Tên app hiện chữ lớn ở đầu trang, vuốt lên thì thu thành chữ nhỏ căn trái, vuốt xuống tới đầu danh sách thì mở rộng lại. Thử vuốt trang này."
+
+[[group.item]]
+type    = "text"
+title   = "Menu chủ đề"
+content = "Biểu tượng Thông tin ở thanh trên: chọn Hệ thống / Sáng / Tối, và ba ô tích Màu động, Rung khi chạm, Làm mờ nền (Android 13+). Lựa chọn được lưu lại."
+
+[[group.item]]
+type    = "text"
+title   = "Menu nguồn"
+content = "Biểu tượng Nguồn: khởi động lại ứng dụng, khởi động lại máy, Recovery và các mục nâng cao (cần root)."
+
+[[group]]
+title = "Hiển thị kết quả: snackbar và notice"
+
+[[group.item]]
+type  = "button"
+title = "snackbar"
+desc  = "Snackbar có sẵn của Miuix ở đáy màn hình, vuốt ngang để đóng"
+run   = 'echo "Xin chào từ snackbar"'
+shell = "snackbar"
+
+[[group.item]]
+type  = "button"
+title = "snackbar (lỗi)"
+desc  = "Lệnh lỗi thì snackbar hiện lâu hơn (10 giây)"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "snackbar"
+
+[[group.item]]
+type  = "button"
+title = "notice"
+desc  = "Thông báo hệ thống Android; chưa có quyền thì hiện banner lỗi không có quyền thông báo"
+run   = 'echo "Xin chào từ notice"'
+shell = "notice"
+
+[[group]]
+title = "Log chạy lâu: tiến trình, Ẩn, Hủy"
+
+[[group.item]]
+type    = "button"
+title   = "Thanh tiến trình @progress"
+desc    = "Lệnh in @progress N thì thanh hiện đúng N%"
+run     = 'for i in 0 25 50 75 100; do echo "@progress $i"; echo "Đã xong $i%"; sleep 1; done'
+shell   = "live"
+timeout = 15
+
+[[group.item]]
+type    = "button"
+title   = "stdout và stderr xen kẽ"
+desc    = "Dòng thường và dòng đỏ (>&2) đúng thứ tự"
+run     = 'echo "1 thường"; sleep 0.3; echo "2 lỗi" >&2; sleep 0.3; echo "3 thường"; sleep 0.3; echo "4 lỗi" >&2'
+shell   = "live"
+timeout = 15
+
+[[group.item]]
+type    = "button"
+title   = "Ẩn log, chạy nền"
+desc    = "Bấm nút Ẩn (mũi tên xuống) khi đang chạy: log tiếp tục trong thông báo Android"
+run     = 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "@progress $((i * 10))"; echo "Bước $i / 10"; sleep 2; done'
+shell   = "full"
+timeout = 60
+
+[[group.item]]
+type  = "button"
+title = "Hủy bằng killtree"
+desc  = "Chạy 3 tiến trình sleep, bấm Hủy trong log để dừng hết"
+run   = 'echo "shell_progres=$shell_progres"; sleep 300 & sh -c "sleep 300; true" & sleep 300'
+shell = "live"
+
+[[group.item]]
+type  = "button"
+title = "Đếm tiến trình sleep còn chạy"
+desc  = "Sau khi Hủy ở trên phải ra 0"
+run   = 'echo "Số sleep còn chạy: $(busybox ps | grep -c "[s]leep 30[0]")"'
+shell = "banner"
+
+[[group]]
+title = "Chọn toàn màn hình và dialog"
+
+[[group.item]]
+type    = "singleselect"
+id      = "n_single_full"
+title   = "singleselect toàn màn hình"
+desc    = "Từ 6 mục: có ô tìm không phân biệt dấu, thử gõ da lat"
+default = "danang"
+run     = 'echo "Đã chọn: $n_single_full"'
+shell   = "banner"
+options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho"]
+
+[[group.item]]
+type    = "multiselect"
+id      = "n_multi_full"
+title   = "multiselect toàn màn hình"
+desc    = "Có ô Chọn tất cả và đếm Đã chọn x/y"
+default = "audio\nnet"
+run     = 'echo "Đã chọn: $n_multi_full"'
+shell   = "banner"
+options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage"]
+
+[[group.item]]
+type  = "link"
+title = "Dialog kéo được"
+desc  = "Kéo thanh trên: dưới 30% thì đóng, trên 80% thì toàn màn hình"
+page  = "pages/types/link_dialog.toml"
+style = "dialog"
+run   = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'
+shell = "live"
+
+[[group]]
+title = "Icon của item"
+
+[[group.item]]
+type  = "button"
+title = "Icon mặc định"
+desc  = 'icon = "icons/about.svg"'
+icon  = "icons/about.svg"
+run   = 'echo "Icon mặc định"'
+shell = "banner"
+
+[[group.item]]
+type      = "button"
+title     = "Icon lớn"
+desc      = "icon_size = 36"
+icon      = "icons/tools.svg"
+icon_size = 36
+run       = 'echo "Icon lớn"'
+shell     = "banner"
+
+[[group.item]]
+type      = "button"
+title     = "Icon giữ màu gốc"
+desc      = "icon_tint = false"
+icon      = "icons/home.svg"
+icon_tint = false
+run       = 'echo "Icon giữ màu gốc"'
+shell     = "banner"
+
+[[group]]
+title = "Biến env.sh, lệnh dựng sẵn, lưu giá trị"
+
+[[group.item]]
+type  = "button"
+title = "Xem biến đường dẫn"
+desc  = "FILES_DIR, CACHE_DIR, EXT_DIR, BIN_DIR từ env.sh"
+run   = 'echo "FILES_DIR=$FILES_DIR"; echo "CACHE_DIR=$CACHE_DIR"; echo "EXT_DIR=$EXT_DIR"; echo "BIN_DIR=$BIN_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "slog / glog"
+desc  = "Ghi rồi đọc lại n_demo_key bằng lệnh dựng sẵn"
+run   = 'slog n_demo_key "xin chào"; echo "n_demo_key=$(glog n_demo_key)"'
+
+[[group.item]]
+type  = "button"
+title = "Thư mục lưu trạng thái"
+desc  = "ls $STATE_DIR: mỗi item có id là một file tên = id"
+run   = 'ls -l "$STATE_DIR"'
+
+[[group.item]]
+type  = "button"
+title = "Kiểm tra busybox"
+desc  = "In phiên bản và vài applet"
+run   = 'busybox | head -n 3'
+shell = "banner"
+
+[[group]]
+title = "Trang đa ngôn ngữ"
+
+[[group.item]]
+type    = "text"
+title   = "Giao diện app có English và Vietnamese"
+content = "Chuỗi của app theo ngôn ngữ hệ thống. Nội dung các file TOML vẫn là tiếng Việt, chưa đa ngôn ngữ."

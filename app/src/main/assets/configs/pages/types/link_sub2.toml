@@ -1,0 +1,14 @@
+# Trang con cấp hai, mở từ link_sub.toml.
+
+[[item]]
+type    = "text"
+title   = "Trang con cấp hai"
+content = "Back của máy đóng trang này và về trang con cấp một."
+
+[[group]]
+
+[[group.item]]
+type  = "link"
+title = "Về tab Giới thiệu"
+desc  = "Đóng mọi trang con rồi chuyển tab"
+tab   = "about"

@@ -1,0 +1,22 @@
+# Trang CỐ Ý lồng group trong group. Chưa hỗ trợ: [[group.group]] bị bỏ qua kèm cảnh báo.
+
+[[item]]
+type    = "text"
+title   = "Group lồng group"
+content = "Group ngoài vẫn hiện, phần [[group.group]] bên trong bị bỏ qua."
+
+[[group]]
+title = "Group ngoài"
+
+[[group.item]]
+type    = "text"
+title   = "Item của group ngoài"
+content = "Item này hiện bình thường."
+
+[[group.group]]
+title = "Group lồng"
+
+[[group.group.item]]
+type    = "text"
+title   = "Item của group lồng"
+content = "Item này không hiện."

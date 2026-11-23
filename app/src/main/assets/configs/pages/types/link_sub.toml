@@ -1,0 +1,34 @@
+# Trang con: mở từ link có page = "pages/types/link_sub.toml". Tiêu đề thanh trên = title của link.
+# Trang con viết như file trang thường; có thể chứa link tới trang con khác.
+
+[[item]]
+type    = "text"
+title   = "Trang con"
+content = "Bấm nút quay lại ở thanh trên hoặc Back của máy để về trang trước. Id của trang con dùng chung kho biến với các tab."
+
+[[group]]
+title = "Thử trong trang con"
+
+[[group.item]]
+type  = "switch"
+id    = "t_lsub_switch"
+title = "Công tắc trong trang con"
+desc  = "Tự lưu vào file t_lsub_switch"
+
+[[group.item]]
+type  = "button"
+title = "Nút thử"
+run   = 'echo "Xin chào từ trang con"'
+shell = "banner"
+
+[[group.item]]
+type  = "link"
+title = "Mở trang con của trang con"
+desc  = "Trang mở chồng lên nhau, Back quay lại từng lớp"
+page  = "pages/types/link_sub2.toml"
+
+[[group.item]]
+type  = "link"
+title = "Về tab Các type"
+desc  = "link tab từ trang con sẽ đóng trang con rồi chuyển tab"
+tab   = "types"

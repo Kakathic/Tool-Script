@@ -1,0 +1,103 @@
+# Tab 1 - Các type: mỗi dòng là một link mở trang con demo riêng của một type.
+# Tiêu đề thanh trên của trang con lấy từ title của link.
+
+[[item]]
+type    = "text"
+title   = "Các loại item (type)"
+content = "Bấm một dòng bên dưới để mở trang demo của type đó: giải thích trường riêng và có ví dụ chạy được. Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị."
+
+[[group]]
+title = "Hiển thị"
+
+[[group.item]]
+type  = "link"
+title = "text"
+desc  = "Đoạn chữ thuần, không chạy lệnh"
+page  = "pages/types/text.toml"
+
+[[group.item]]
+type  = "link"
+title = "progress"
+desc  = "Thanh tiến trình chỉ để xem, đọc số từ get"
+page  = "pages/types/progress.toml"
+
+[[group]]
+title = "Hành động"
+
+[[group.item]]
+type  = "link"
+title = "button"
+desc  = "Nút chạy lệnh: shell, confirm, timeout, lock"
+page  = "pages/types/button.toml"
+
+[[group]]
+title = "Bật / tắt"
+
+[[group.item]]
+type  = "link"
+title = "switch"
+desc  = "Công tắc: on, off, get, tự lưu theo id"
+page  = "pages/types/switch.toml"
+
+[[group.item]]
+type  = "link"
+title = "checkbox"
+desc  = "Ô tick: giống switch nhưng hiện ô tick"
+page  = "pages/types/checkbox.toml"
+
+[[group]]
+title = "Nhập liệu"
+
+[[group.item]]
+type  = "link"
+title = "input"
+desc  = "Ô nhập chữ hoặc số"
+page  = "pages/types/input.toml"
+
+[[group.item]]
+type  = "link"
+title = "slider"
+desc  = "Thanh trượt: min, max, step"
+page  = "pages/types/slider.toml"
+
+[[group]]
+title = "Lựa chọn"
+
+[[group.item]]
+type  = "link"
+title = "radio"
+desc  = "Hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn"
+page  = "pages/types/radio.toml"
+
+[[group.item]]
+type  = "link"
+title = "dropdown"
+desc  = "Chọn một bằng menu thả xuống"
+page  = "pages/types/dropdown.toml"
+
+[[group.item]]
+type  = "link"
+title = "singleselect"
+desc  = "Chọn một có Xác nhận; từ 6 mục thì toàn màn hình"
+page  = "pages/types/singleselect.toml"
+
+[[group.item]]
+type  = "link"
+title = "multiselect"
+desc  = "Chọn nhiều có Xác nhận; từ 6 mục thì toàn màn hình"
+page  = "pages/types/multiselect.toml"
+
+[[group]]
+title = "Điều hướng và bố cục"
+
+[[group.item]]
+type  = "link"
+title = "link"
+desc  = "Chuyển tab, mở trang con, mở dialog"
+page  = "pages/types/link.toml"
+
+[[group.item]]
+type  = "link"
+title = "group"
+desc  = "Gom item vào một thẻ, có hoặc không có tiêu đề"
+page  = "pages/types/group.toml"

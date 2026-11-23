@@ -1,0 +1,51 @@
+# Trang CỐ Ý khai báo link sai.
+
+[[item]]
+type    = "text"
+title   = "Lỗi link"
+content = "Link thiếu đích bị bỏ qua; link trỏ tab không tồn tại vẫn hiện nhưng có cảnh báo; có cả tab và page thì dùng tab."
+
+[[group]]
+title = "Ví dụ"
+
+# thiếu cả tab lẫn page: bỏ qua
+[[group.item]]
+type  = "link"
+title = "Link thiếu đích"
+
+# tab không tồn tại: cảnh báo
+[[group.item]]
+type  = "link"
+title = "Link tới tab không có"
+desc  = 'tab = "khong_co_tab"'
+tab   = "khong_co_tab"
+
+# có cả tab và page: dùng tab
+[[group.item]]
+type  = "link"
+title = "Link có cả tab và page"
+desc  = "Dùng tab, bỏ page"
+tab   = "types"
+page  = "pages/types/link_sub.toml"
+
+# style không hợp lệ: dùng page
+[[group.item]]
+type  = "link"
+title = "style sai"
+desc  = 'style = "popup", dùng page'
+page  = "pages/types/link_sub.toml"
+style = "popup"
+
+# cùng một trang con nhưng khác style: dùng style của link đầu tiên
+[[group.item]]
+type  = "link"
+title = "Cùng trang, mở dạng dialog"
+desc  = "Link đầu tiên tới pages/broken/dialog_bad.toml"
+page  = "pages/broken/dialog_bad.toml"
+style = "dialog"
+
+[[group.item]]
+type  = "link"
+title = "Cùng trang, mở dạng page"
+desc  = "Khác style với link trên: dùng style của link đầu tiên, có cảnh báo"
+page  = "pages/broken/dialog_bad.toml"

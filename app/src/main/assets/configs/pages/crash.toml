@@ -1,0 +1,115 @@
+# Tab 4 - Lỗi code: mô phỏng lỗi lệnh shell (app vẫn chạy) và crash app (app thoát thật).
+# Mọi lệnh cố ý lỗi nhưng không đổi thông số thiết bị.
+
+[[item]]
+type    = "text"
+title   = "Mô phỏng lỗi code"
+content = "Hai loại: lỗi trong lệnh shell của item (app vẫn chạy, hiện mã lỗi và đầu ra) và crash app (app thoát thật, mở Trung tâm lỗi với stack trace)."
+
+[[group]]
+title = "Crash app (thoát thật)"
+
+# run = "@crash": ném lỗi trên luồng chính. App thoát và mở Trung tâm lỗi ở tiến trình :crash.
+[[group.item]]
+type    = "button"
+title   = "Crash trên luồng chính"
+desc    = 'run = "@crash"'
+run     = "@crash"
+confirm = "App sẽ bị crash để xem màn hình lỗi. Tiếp tục?"
+
+# run = "@crash-thread": ném lỗi trong luồng nền, cùng kết quả.
+[[group.item]]
+type    = "button"
+title   = "Crash trên luồng nền"
+desc    = 'run = "@crash-thread"'
+run     = "@crash-thread"
+confirm = "App sẽ bị crash để xem màn hình lỗi. Tiếp tục?"
+
+[[group]]
+title = "Lỗi lệnh shell (bảng log live)"
+
+[[group.item]]
+type  = "button"
+title = "Thoát với mã 1"
+desc  = "exit 1: log báo lỗi, nút cuối hiện mã thoát"
+run   = 'echo "Chuẩn bị"; echo "Có lỗi xảy ra" >&2; exit 1'
+shell = "live"
+
+[[group.item]]
+type  = "button"
+title = "Lệnh không tồn tại"
+desc  = "Shell báo not found, mã thoát 127"
+run   = 'echo "Gọi lệnh lạ"; khong_co_lenh_nay'
+shell = "live"
+
+[[group.item]]
+type  = "button"
+title = "Sai cú pháp shell"
+desc  = "Thiếu fi: shell báo lỗi cú pháp, lệnh không chạy"
+run   = 'if true; then echo "thiếu fi"'
+shell = "live"
+
+[[group.item]]
+type  = "button"
+title = "Không có quyền ghi"
+desc  = "Ghi vào /system khi không root: permission denied hoặc read-only"
+run   = 'echo "thử ghi" > /system/khong_ghi_duoc.txt'
+shell = "live"
+
+[[group.item]]
+type  = "button"
+title = "Lệnh bị kill (SIGKILL)"
+desc  = "kill -9 chính shell: mã thoát 137"
+run   = 'echo "Sắp bị kill"; kill -9 $$'
+shell = "live"
+
+[[group.item]]
+type    = "button"
+title   = "Hết thời gian chờ"
+desc    = "sleep 10 nhưng timeout = 2: log chốt phần đã in, báo Hết thời gian chờ"
+run     = 'echo "Bắt đầu"; sleep 10; echo "Không bao giờ tới đây"'
+timeout = 2
+shell   = "live"
+
+[[group]]
+title = "Lỗi lệnh shell (các cách hiển thị khác)"
+
+[[group.item]]
+type  = "button"
+title = "banner (lỗi)"
+desc  = "Banner nền đỏ nhạt, dòng đầu là mã lỗi"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "banner"
+
+[[group.item]]
+type  = "button"
+title = "snackbar (lỗi)"
+desc  = "Snackbar hiện lâu hơn khi lỗi"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "snackbar"
+
+[[group.item]]
+type  = "button"
+title = "notice (lỗi)"
+desc  = "Banner lỗi, và thông báo hệ thống nếu đã có quyền"
+run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
+shell = "notice"
+
+[[group.item]]
+type  = "button"
+title = "hidden (lỗi)"
+desc  = "Chạy ẩn, chỉ hiện toast báo lỗi"
+run   = "ls /thu_muc_khong_ton_tai"
+shell = "hidden"
+
+[[group]]
+title = "Lỗi trong công tắc"
+
+[[group.item]]
+type  = "switch"
+id    = "c_switch_fail"
+title = "Công tắc có lệnh bật lỗi"
+desc  = "on thoát mã 1 nên công tắc không đổi; off chạy được"
+on    = 'echo "Đang bật"; exit 1'
+off   = 'echo "Đã tắt"'
+shell = "banner"

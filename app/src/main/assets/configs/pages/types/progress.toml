@@ -1,0 +1,50 @@
+# type = "progress": thanh tiến trình chỉ để xem, không có lệnh chạy. Trường riêng: min, max, default, get. Cần id.
+# get in ra một số trong min..max (mặc định 0..100), chỉ đọc khi item xuất hiện; ngoài khoảng thì cắt về mép.
+# Không có get thì dùng default (mặc định min).
+
+[[item]]
+type    = "text"
+title   = "progress"
+content = "Hiển thị một giá trị đo được, ví dụ pin hoặc dung lượng. Mở lại trang để đọc lại get."
+
+[[group]]
+title = "Ví dụ"
+
+[[group.item]]
+type  = "progress"
+id    = "t_progress_get"
+title = "Đọc bằng get"
+desc  = "get = echo 65"
+get   = "echo 65"
+
+[[group.item]]
+type  = "progress"
+id    = "t_progress_range"
+title = "Theo khoảng"
+desc  = "min = 0, max = 10, get = echo 3"
+min   = 0
+max   = 10
+get   = "echo 3"
+
+[[group.item]]
+type    = "progress"
+id      = "t_progress_default"
+title   = "Không có get"
+desc    = "default = 30"
+default = 30
+
+[[group.item]]
+type  = "progress"
+id    = "t_progress_clamp"
+title = "Giá trị vượt khoảng"
+desc  = "get = echo 250, bị cắt về 100"
+get   = "echo 250"
+
+[[group.item]]
+type  = "progress"
+id    = "t_progress_live"
+title = "Giá trị đổi theo thời gian"
+desc  = "get đọc giây hiện tại, thoát trang rồi vào lại để thấy đổi"
+min   = 0
+max   = 99
+get   = 'echo $(( $(date +%s) % 100 ))'

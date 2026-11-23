@@ -4,39 +4,41 @@ lang    = "vi"
 # env: đoạn shell chạy đầu tiên trước mọi lệnh của app (ví dụ đặt PATH). Bỏ dấu # để bật.
 # env  = "export PATH=$PATH:/data/adb/bin"
 
-# 5 tab, mỗi tab một loại demo. Thanh tab hiện cửa sổ trượt 4 ô, vuốt tới tab thứ 4 thì tab 5 hiện ra.
+# Bộ demo gồm 5 tab. Thanh tab hiện cửa sổ trượt 4 ô: vuốt tới tab thứ 4 thì tab 5 hiện ra.
+# Mọi lệnh trong demo chỉ là echo / sleep / ls, không đổi thông số thiết bị
+# (riêng tab Lỗi code và tab Trang hỏng cố ý gây lỗi).
 
-# Tab 1: công tắc, ô tick, điều kiện hiển thị, khóa
+# Tab 1: mỗi type một trang demo riêng
 [[tab]]
-id    = "switches"
-title = "Công tắc"
-icon  = "icons/home.svg"
-file  = "pages/switches.toml"
-
-# Tab 2: nhập liệu và các kiểu lựa chọn
-[[tab]]
-id    = "inputs"
-title = "Nhập liệu"
-icon  = "icons/tools.svg"
-file  = "pages/inputs.toml"
-
-# Tab 3: các kiểu hiển thị kết quả lệnh
-[[tab]]
-id    = "output"
-title = "Kết quả"
-icon  = "icons/output.svg"
-file  = "pages/output.toml"
-
-# Tab 4: trang con, dialog, icon của item, biến env.sh, busybox, hủy lệnh (killtree)
-[[tab]]
-id    = "pages"
-title = "Trang con"
+id    = "types"
+title = "Các type"
 icon  = "icons/demo.svg"
-file  = "pages/pages.toml"
+file  = "pages/types.toml"
 
-# Tab 5: chỉ chứa nút chuyển tab
+# Tab 2: tính năng mới thêm gần đây
 [[tab]]
-id    = "nav"
-title = "Chuyển tab"
-icon  = "icons/nav.svg"
-file  = "pages/nav.toml"
+id    = "news"
+title = "Tính năng mới"
+icon  = "icons/star.svg"
+file  = "pages/news.toml"
+
+# Tab 3: tác giả (chủ dự án) và người viết code (Claude)
+[[tab]]
+id    = "about"
+title = "Giới thiệu"
+icon  = "icons/about.svg"
+file  = "pages/about.toml"
+
+# Tab 4: mô phỏng lỗi code (lỗi lệnh shell) và crash app
+[[tab]]
+id    = "crash"
+title = "Lỗi code"
+icon  = "icons/bug.svg"
+file  = "pages/crash.toml"
+
+# Tab 5: mô phỏng trang hỏng (sai cú pháp TOML, sai trường, thiếu file...)
+[[tab]]
+id    = "broken"
+title = "Trang hỏng"
+icon  = "icons/error.svg"
+file  = "pages/broken.toml"

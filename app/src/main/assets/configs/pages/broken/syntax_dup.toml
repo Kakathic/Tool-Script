@@ -1,0 +1,8 @@
+# Trang này CỐ Ý khai báo trùng khóa title trong cùng một bảng: TOML không cho phép nên trang không đọc được.
+# Muốn trang đọc được: xóa một trong hai dòng title.
+
+[[item]]
+type    = "text"
+title   = "Dòng thứ nhất"
+title   = "Dòng thứ hai"
+content = "Nếu thấy dòng này nghĩa là file đã hết lỗi."

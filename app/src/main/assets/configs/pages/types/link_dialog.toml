@@ -1,0 +1,41 @@
+# Trang dùng cho link có style = "dialog". Sheet trượt từ dưới lên, chiều cao tự tính theo nội dung
+# (tối thiểu 30% màn hình; cao quá 80% thì toàn màn hình). Kéo thanh trên để đổi chiều cao.
+# Item trong dialog chỉ để truyền biến: đổi giá trị không chạy lệnh (run / on / off / confirm bị bỏ qua).
+# button và link không dùng được trong dialog.
+# Bấm Xác nhận mới chạy run của link đã mở dialog; Hủy, X hoặc Back thì khôi phục biến về lúc mở.
+
+[[item]]
+type    = "text"
+title   = "Dialog"
+content = "Chọn giá trị rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để bỏ."
+
+[[group]]
+title = "Biến truyền vào lệnh"
+
+[[group.item]]
+type    = "input"
+id      = "t_ldlg_note"
+title   = "Ghi chú"
+hint    = "Nhập nội dung"
+default = "xin chào"
+
+[[group.item]]
+type    = "radio"
+id      = "t_ldlg_mode"
+title   = "Chế độ"
+default = "balanced"
+options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
+
+[[group.item]]
+type    = "slider"
+id      = "t_ldlg_level"
+title   = "Mức"
+min     = 0
+max     = 100
+step    = 10
+default = 50
+
+[[group.item]]
+type  = "switch"
+id    = "t_ldlg_flag"
+title = "Bật cờ"

@@ -1,0 +1,65 @@
+# Tab 5 - Trang hỏng: mỗi link mở một trang con cố ý hỏng để xem app xử lý ra sao.
+# Trang này tự nó hợp lệ. Cảnh báo cấu hình chỉ hiện trong chính trang có lỗi, các trang khác không bị ảnh hưởng.
+# Muốn bỏ demo: xóa tab broken trong main.toml, file này và thư mục pages/broken.
+
+[[item]]
+type    = "text"
+title   = "Mô phỏng trang hỏng"
+content = "Lỗi nặng (sai cú pháp TOML, mất file) thì trang chỉ hiện thẻ lỗi. Lỗi nhẹ (thiếu trường, giá trị sai) thì mục sai bị bỏ qua hoặc dùng mặc định, kèm banner cảnh báo ở đầu trang đó."
+
+[[group]]
+title = "Lỗi nặng: trang không đọc được"
+
+[[group.item]]
+type  = "link"
+title = "Sai cú pháp TOML"
+desc  = 'Thiếu nháy đóng: thẻ "Không đọc được trang này" kèm file và dòng lỗi'
+page  = "pages/broken/syntax.toml"
+
+[[group.item]]
+type  = "link"
+title = "Khai báo trùng khóa"
+desc  = "Hai dòng title trong cùng một bảng: TOML không cho phép"
+page  = "pages/broken/syntax_dup.toml"
+
+[[group.item]]
+type  = "link"
+title = "File trang không tồn tại"
+desc  = "page trỏ tới file không có trong assets"
+page  = "pages/broken/khong_ton_tai.toml"
+
+[[group]]
+title = "Lỗi nhẹ: mục bị bỏ qua, có cảnh báo"
+
+[[group.item]]
+type  = "link"
+title = "Thiếu hoặc sai trường"
+desc  = "Thiếu title, type lạ, id sai hoặc trùng, giá trị sai dùng mặc định"
+page  = "pages/broken/fields.toml"
+
+[[group.item]]
+type  = "link"
+title = "Lỗi options"
+desc  = "options sai dạng, rỗng, hoặc chứa dấu phân tách"
+page  = "pages/broken/options.toml"
+
+[[group.item]]
+type  = "link"
+title = "Lỗi link"
+desc  = "Thiếu đích, tab không tồn tại, style sai"
+page  = "pages/broken/links.toml"
+
+[[group.item]]
+type  = "link"
+title = "Group lồng group"
+desc  = "Chưa hỗ trợ: bỏ qua [[group.group]]"
+page  = "pages/broken/nested.toml"
+
+[[group.item]]
+type  = "link"
+title = "Dialog có button và link"
+desc  = "Dialog chỉ để truyền biến: button và link bị bỏ qua"
+page  = "pages/broken/dialog_bad.toml"
+style = "dialog"
+run   = 'echo "Xác nhận dialog lỗi: $b_dlg_note"'
+shell = "banner"
