@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
@@ -68,6 +69,7 @@ import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -344,7 +346,7 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
 internal class MenuToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
 
 /**
- * Lưới ô bật / tắt 2 cột (thay cho công tắc): ô bo góc, tắt thì nền xám nhạt, bật thì nền màu chủ đạo nhạt, chữ màu chủ đạo và dấu tích.
+ * Lưới ô bật / tắt 2 cột (thay cho công tắc): ô bo góc, tắt thì nền xám nhạt, bật thì nền màu chủ đạo nhạt, chữ màu chủ đạo; bên phải là ô tích tròn.
  * Bấm ô để đổi trạng thái, menu giữ nguyên. Hai ô cùng hàng luôn cao bằng nhau; hàng lẻ chừa ô trống bên phải.
  */
 @Composable
@@ -387,17 +389,11 @@ private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(6.dp))
-        // Ô dấu tích luôn chiếm chỗ để chữ không xê dịch khi bật / tắt.
-        Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
-            if (on) {
-                AsyncImage(
-                    model = Util.iconModel(AppIcons.BarCheck),
-                    contentDescription = stringResource(R.string.state_selected),
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
-                )
-            }
-        }
+        // Ô tích tròn của Miuix (cùng kiểu chọn nhiều mục), luôn hiện: tắt là vòng rỗng, bật là tích. Bấm ô hay cả ô đều đổi trạng thái.
+        Checkbox(
+            state = if (on) ToggleableState.On else ToggleableState.Off,
+            onClick = { toggle.onChange(!on) },
+        )
     }
 }
 
