@@ -245,6 +245,9 @@ internal fun MenuPopup(
 /** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
 private const val MenuSelectedAlpha = 0.24f
 
+/** Độ đậm nền ô đang chọn / đang bật trong menu chủ đề (nhạt hơn [MenuSelectedAlpha]). */
+private const val ThemeSelectedAlpha = 0.14f
+
 /** Khoảng cách dọc mỗi bên của một mục menu (hai mục liền nhau cách nhau gấp đôi giá trị này). */
 private val MenuItemGap = 2.dp
 
@@ -305,7 +308,7 @@ private fun MenuSectionLabel(text: String) {
 
 /**
  * Hàng chọn một xếp ngang kiểu "thanh trượt phân đoạn": các ô chia đều chiều rộng nằm trong một khay bo tròn,
- * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo và đậm hơn (cùng tông với [MenuItem]).
+ * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo, không đổi độ đậm chữ.
  */
 @Composable
 internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
@@ -325,7 +328,7 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = MenuSelectedAlpha) else Color.Transparent)
+                    .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha) else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(horizontal = 8.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center,
@@ -334,7 +337,6 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
                     text = label,
                     color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                     fontSize = 14.sp,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
                 )
             }
@@ -375,7 +377,7 @@ private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (on) MiuixTheme.colorScheme.primary.copy(alpha = MenuSelectedAlpha) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .background(if (on) MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
             .clickable { toggle.onChange(!on) }
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -384,7 +386,6 @@ private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
             text = toggle.label,
             color = if (on) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
             fontSize = 14.sp,
-            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 2,
             modifier = Modifier.weight(1f),
         )
@@ -411,7 +412,7 @@ private fun MenuDivider() {
 /**
  * Nút chủ đề: menu tùy chỉnh giao diện.
  * Nhóm "Giao diện": chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
- * Nhóm "Tùy chọn" là lưới ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
+ * Lưới (không có nhãn nhóm) ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
  */
 @Composable
 fun ThemeMenu(
@@ -443,7 +444,6 @@ fun ThemeMenu(
             },
         )
         MenuDivider()
-        MenuSectionLabel(stringResource(R.string.menu_section_options))
         MenuToggleGrid(
             buildList {
                 add(MenuToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
