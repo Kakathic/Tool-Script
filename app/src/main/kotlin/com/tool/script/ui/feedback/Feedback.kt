@@ -801,6 +801,13 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             if (entry.running) {
                 LogIconButton(R.drawable.ic_hide, stringResource(R.string.log_hide_background), onHide)
                 LogToolbarDivider()
+            } else {
+                // Lệnh xong: nút Ẩn biến mất, thay bằng nút sao chép toàn bộ log.
+                LogIconButton(R.drawable.ic_copy, stringResource(R.string.log_copy)) {
+                    copyToClipboard(context, entry.title, entry.output)
+                    Toast.makeText(context, context.getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+                }
+                LogToolbarDivider()
             }
             if (entry.full) {
                 LogIconButton(R.drawable.ic_fullscreen_exit, stringResource(R.string.log_minimize)) { entry.full = false }

@@ -36,6 +36,8 @@
     <string name="log_minimize">Thu nhỏ</string>
     <string name="log_fullscreen">Toàn màn hình</string>
     <string name="log_menu">Menu</string>
+    <string name="log_copy">Sao chép log</string>
+    <string name="log_copied">Đã sao chép log</string>
     <string name="log_wrap">Ngắt dòng</string>
     <string name="log_mono">Font mono</string>
     <string name="log_share_failed">Không tạo được tệp log để chia sẻ</string>

@@ -38,6 +38,8 @@
     <string name="log_minimize">Minimize</string>
     <string name="log_fullscreen">Full screen</string>
     <string name="log_menu">Menu</string>
+    <string name="log_copy">Copy log</string>
+    <string name="log_copied">Log copied</string>
     <string name="log_wrap">Wrap lines</string>
     <string name="log_mono">Monospace font</string>
     <string name="log_share_failed">Couldn\'t create the log file to share</string>
