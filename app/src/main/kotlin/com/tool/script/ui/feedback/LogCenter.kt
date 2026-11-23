@@ -1,15 +1,14 @@
 package com.tool.script.ui.feedback
 
-import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.tool.script.MainActivity
 import com.tool.script.R
 import kotlin.math.roundToInt
@@ -110,8 +109,7 @@ object LogCenter {
     }
 
     private fun hasPermission(context: Context): Boolean =
-        Build.VERSION.SDK_INT < 33 ||
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     private fun post(entry: LogEntry) {
         val context = appContext ?: return

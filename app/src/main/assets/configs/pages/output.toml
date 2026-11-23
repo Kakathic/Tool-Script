@@ -93,7 +93,8 @@ desc  = "Lệnh lỗi nên banner nền đỏ nhạt"
 run   = 'echo "Chuẩn bị"; ls /thu_muc_khong_ton_tai'
 shell = "banner"
 
-# notice: chạy như banner, xong gửi thông báo hệ thống của Android (xin quyền thông báo lần đầu)
+# notice: chạy như banner, xong gửi thông báo hệ thống của Android (xin quyền thông báo lần đầu).
+# Không có quyền thông báo (từ chối hoặc đã tắt trong Cài đặt) thì hiện banner lỗi báo không có quyền
 [[group.item]]
 type  = "button"
 title = "notice"

@@ -9,7 +9,6 @@ import android.content.ClipData
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +18,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.FileProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -126,6 +128,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
@@ -473,9 +476,7 @@ class FeedbackHost(private val context: Context) {
      */
     fun hideLog(entry: LogEntry) {
         if (log === entry) log = null
-        if (Build.VERSION.SDK_INT >= 33 &&
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed()) {
             requestNoticePermission?.invoke()
         }
         LogCenter.hide(entry)
@@ -523,13 +524,28 @@ class FeedbackHost(private val context: Context) {
             .takeIf { it.isNotEmpty() }
             ?.take(OUTPUT_MAX_CHARS)
 
+    /**
+     * Thông báo của app có được phép hiện không. Dùng [NotificationManagerCompat.areNotificationsEnabled] thay cho
+     * `checkSelfPermission(POST_NOTIFICATIONS)`: app target SDK 28 nên với quyền này Android 13+ không trả đúng trạng thái,
+     * còn hàm này đúng cho mọi bản (kể cả khi người dùng tắt thông báo của app trong Cài đặt).
+     */
+    internal fun notificationsAllowed(): Boolean = NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+    /** Tạo kênh thông báo (Android 8+). Với app target < 33 trên Android 13+, lần tạo kênh đầu tiên là lúc hệ thống hiện hộp xin quyền thông báo. */
+    internal fun ensureChannel() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "Kết quả lệnh", NotificationManager.IMPORTANCE_DEFAULT),
+            )
+        }
+    }
+
     fun notice(title: String, text: String, warning: Boolean = false) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!notificationsAllowed()) {
             val ask = requestNoticePermission
-            if (ask == null) {
-                showBanner(text, warning)
+            // Android 12 trở xuống không có hộp xin quyền: thông báo đang bị tắt thì báo lỗi luôn.
+            if (Build.VERSION.SDK_INT < 33 || ask == null) {
+                showBanner(noPermissionMessage(title), warning = true)
             } else {
                 pendingNotice = Triple(title, text, warning)
                 ask()
@@ -539,24 +555,28 @@ class FeedbackHost(private val context: Context) {
         post(title, text)
     }
 
+    private fun noPermissionMessage(title: String): String =
+        "Không có quyền thông báo: không gửi được thông báo \"$title\". Hãy cấp quyền trong Cài đặt > Ứng dụng > Thông báo."
+
     internal fun onNoticePermissionResult(granted: Boolean) {
-        // Từ chối quyền khi vừa ẩn log: không có thông báo thì không mở lại log đã ẩn được, báo rõ cho người dùng.
-        if (!granted && pendingNotice == null && LogCenter.hasHidden()) {
-            showBanner("Chưa cấp quyền thông báo: log đã ẩn vẫn chạy nhưng sẽ không có thông báo để mở lại.", warning = true)
-        }
-        val pending = pendingNotice ?: return
+        val pending = pendingNotice
         pendingNotice = null
-        if (granted) post(pending.first, pending.second) else showBanner(pending.second, pending.third)
+        if (granted) {
+            if (pending != null) post(pending.first, pending.second)
+            return
+        }
+        // Từ chối quyền: báo lỗi dạng banner. Nếu vừa ẩn log thì nói rõ hệ quả (không có thông báo để mở lại log).
+        if (pending != null) {
+            showBanner(noPermissionMessage(pending.first), warning = true)
+        } else if (LogCenter.hasHidden()) {
+            showBanner("Không có quyền thông báo: log đã ẩn vẫn chạy nhưng sẽ không có thông báo để mở lại.", warning = true)
+        }
     }
 
     private fun post(title: String, text: String) {
         val nm = context.getSystemService(NotificationManager::class.java)
         // Kênh thông báo chỉ có từ Android 8 (API 26); máy thấp hơn dùng NotificationCompat không cần kênh.
-        if (Build.VERSION.SDK_INT >= 26) {
-            nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Kết quả lệnh", NotificationManager.IMPORTANCE_DEFAULT),
-            )
-        }
+        ensureChannel()
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -577,11 +597,45 @@ class FeedbackHost(private val context: Context) {
 fun rememberFeedbackHost(): FeedbackHost {
     val context = LocalContext.current
     val host = remember { FeedbackHost(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         host.onNoticePermissionResult(granted)
     }
-    host.requestNoticePermission = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+    host.requestNoticePermission = {
+        if (context.applicationInfo.targetSdkVersion >= 33) {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            // App target < 33: requestPermissions không hiện hộp thoại (bị từ chối ngay), phải xin qua việc tạo kênh thông báo.
+            scope.launch { host.onNoticePermissionResult(requestLegacyNotificationPermission(host, lifecycle)) }
+        }
+    }
     return host
+}
+
+/**
+ * Xin quyền thông báo cho app target SDK < 33 chạy trên Android 13+: tạo kênh thông báo để hệ thống hiện hộp xin quyền,
+ * rồi chờ kết quả (không có callback nên theo dõi vòng đời Activity: hộp hiện ra thì Activity tạm dừng, đóng hộp thì tiếp tục).
+ * Hộp không hiện (người dùng đã từ chối trước đó) thì coi như bị từ chối.
+ */
+private suspend fun requestLegacyNotificationPermission(host: FeedbackHost, lifecycle: Lifecycle): Boolean {
+    host.ensureChannel()
+    val start = SystemClock.elapsedRealtime()
+    var dialogShown = false
+    while (SystemClock.elapsedRealtime() - start < 120_000L) {
+        delay(150)
+        if (host.notificationsAllowed()) return true
+        val resumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        if (!resumed) {
+            dialogShown = true
+        } else if (dialogShown) {
+            delay(250)
+            return host.notificationsAllowed()
+        } else if (SystemClock.elapsedRealtime() - start > 2500L) {
+            return false
+        }
+    }
+    return host.notificationsAllowed()
 }
 
 /** Lề ngoài của log và khoảng cách giữa các khối (cùng giá trị với màn hình lỗi). */
