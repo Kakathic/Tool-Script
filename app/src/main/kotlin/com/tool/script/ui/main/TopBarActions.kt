@@ -245,8 +245,8 @@ internal fun MenuPopup(
 /** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
 private const val MenuSelectedAlpha = 0.24f
 
-/** Độ đậm nền ô đang chọn / đang bật trong menu chủ đề (nhạt hơn [MenuSelectedAlpha]). */
-private const val ThemeSelectedAlpha = 0.14f
+/** Độ đậm nền ô đang chọn / đang bật trong menu chủ đề (0.16, bằng ô chọn nhiều mục). */
+private const val ThemeSelectedAlpha = 0.16f
 
 /** Khoảng cách dọc mỗi bên của một mục menu (hai mục liền nhau cách nhau gấp đôi giá trị này). */
 private val MenuItemGap = 2.dp
@@ -337,6 +337,7 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
                     text = label,
                     color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
                     maxLines = 1,
                 )
             }
@@ -386,6 +387,7 @@ private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
             text = toggle.label,
             color = if (on) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
             fontSize = 14.sp,
+            fontWeight = FontWeight.Normal,
             maxLines = 2,
             modifier = Modifier.weight(1f),
         )
