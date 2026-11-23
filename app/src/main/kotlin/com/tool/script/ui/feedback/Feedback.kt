@@ -799,11 +799,11 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
         ) {
             // Ẩn: chỉ khi lệnh còn chạy (xong rồi thì đã có nút Thoát). Lệnh chạy nền, log gửi lên thông báo Android.
             if (entry.running) {
-                LogIconButton(R.drawable.ic_hide, stringResource(R.string.log_hide_background), onHide)
+                LogIconButton(R.drawable.ic_hide, stringResource(R.string.log_hide_background), onClick = onHide)
                 LogToolbarDivider()
             } else {
                 // Lệnh xong: nút Ẩn biến mất, thay bằng nút sao chép toàn bộ log.
-                LogIconButton(R.drawable.ic_copy, stringResource(R.string.log_copy)) {
+                LogIconButton(R.drawable.ic_copy, stringResource(R.string.log_copy), iconSize = 16.dp) {
                     copyToClipboard(context, entry.title, entry.output)
                     Toast.makeText(context, context.getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
                 }
@@ -953,7 +953,7 @@ private fun LogToolbarDivider() {
 
 /** Nút icon tròn 32dp nằm trong thanh công cụ của hàng tiêu đề (nền chung do thanh vẽ); [icon] là vector drawable. */
 @Composable
-private fun LogIconButton(icon: Int, description: String, onClick: () -> Unit) {
+private fun LogIconButton(icon: Int, description: String, iconSize: Dp = 20.dp, onClick: () -> Unit) {
     val content = MiuixTheme.colorScheme.onSurface
     Box(
         modifier = Modifier
@@ -966,7 +966,7 @@ private fun LogIconButton(icon: Int, description: String, onClick: () -> Unit) {
             imageVector = ImageVector.vectorResource(icon),
             contentDescription = description,
             tint = content,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(iconSize),
         )
     }
 }
