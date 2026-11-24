@@ -2,10 +2,17 @@ package com.tool.script.ui.main
 
 import androidx.annotation.StringRes
 import com.tool.script.R
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
+import com.tool.script.util.AppVersion
+import com.tool.script.util.UpdateChecker
+import com.tool.script.util.UpdateState
+import com.tool.script.util.openUrl
 import android.content.Context
 import android.view.WindowManager
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.animation.AnimatedVisibility
@@ -40,6 +47,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +58,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -63,6 +72,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
@@ -432,11 +442,162 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
     }
 }
 
+/** Vạch kẻ mảnh trong thẻ (giới thiệu, liên kết); [startInset] chừa lề trái cho vạch thẳng với chữ. */
+@Composable
+private fun SettingsCardDivider(startInset: Dp = 0.dp) {
+    Box(
+        Modifier
+            .padding(start = startInset)
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
+    )
+}
+
+/**
+ * Thẻ giới thiệu đầu hộp thoại Cài đặt: logo, tên app, phiên bản, dòng giới thiệu, tác giả và nút kiểm tra phiên bản mới.
+ * Nút đổi nhãn theo kết quả ([UpdateState]): có bản mới thì bấm để mở trang tải.
+ */
+@Composable
+private fun SettingsAboutCard() {
+    val context = LocalContext.current
+    val version = remember { AppVersion.of(context) }
+    val scope = rememberCoroutineScope()
+    var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(R.drawable.ic_logo),
+                contentDescription = null,
+                modifier = Modifier.size(46.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.app_name), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
+                Text(
+                    text = stringResource(R.string.about_version, version.display),
+                    fontSize = 13.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.about_intro),
+            fontSize = 13.sp,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(top = 10.dp),
+        )
+        Spacer(Modifier.height(12.dp))
+        SettingsCardDivider()
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.about_author),
+                fontSize = 15.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.weight(1f),
+            )
+            Text(text = AppAbout.Author, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
+        }
+        val labelRes = when (update) {
+            UpdateState.Idle -> R.string.update_check
+            UpdateState.Checking -> R.string.update_checking
+            UpdateState.UpToDate -> R.string.update_latest
+            UpdateState.Failed -> R.string.update_failed
+            is UpdateState.Available -> R.string.update_available
+        }
+        val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha))
+                .clickable {
+                    when (val state = update) {
+                        UpdateState.Checking -> Unit
+                        is UpdateState.Available -> openUrl(context, state.url)
+                        else -> {
+                            update = UpdateState.Checking
+                            scope.launch { update = UpdateChecker.check(version) }
+                        }
+                    }
+                }
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = Util.iconModel(AppIcons.BarRestart),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = label, fontSize = 15.sp, color = MiuixTheme.colorScheme.primary, maxLines = 1)
+        }
+    }
+}
+
+/** Một dòng liên kết: icon bên trái, nhãn, icon mở ra ngoài bên phải. Bấm để mở [url]. */
+@Composable
+private fun SettingsLinkRow(icon: String, label: String, url: String) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { openUrl(context, url) }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AsyncImage(
+            model = Util.iconModel(icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(text = label, fontSize = 16.sp, color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        AsyncImage(
+            model = Util.iconModel(AppIcons.BarExternal),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+        )
+    }
+}
+
+/** Thẻ liên kết: GitHub và liên kết khác (ẩn dòng sau nếu [AppAbout.OtherUrl] để trống). */
+@Composable
+private fun SettingsLinksCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
+    ) {
+        SettingsLinkRow(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
+        if (AppAbout.OtherUrl.isNotBlank()) {
+            SettingsCardDivider(startInset = 48.dp)
+            SettingsLinkRow(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
+        }
+    }
+}
+
 /**
  * Hộp thoại Cài đặt hiện giữa màn hình. Đổi xong áp dụng ngay, hộp thoại giữ nguyên để thấy kết quả phía sau;
- * chạm ra ngoài hoặc Back để đóng (không có nút Đóng). Hai nhóm:
+ * chạm ra ngoài hoặc Back để đóng (không có nút Đóng); nội dung dài thì cuộn. Bốn phần, từ trên xuống:
+ * - Thẻ giới thiệu ([SettingsAboutCard]): logo, tên app, phiên bản, giới thiệu, tác giả, kiểm tra phiên bản mới.
  * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
  * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
+ * - Liên kết ([SettingsLinksCard]): GitHub và liên kết khác.
  * Ngôn ngữ không còn ở đây: đổi bằng item `app_language` trong TOML.
  */
 @Composable
@@ -462,6 +623,7 @@ fun SettingsDialog(
             modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            SettingsAboutCard()
             SettingsSection(stringResource(R.string.menu_section_appearance)) {
                 SettingsSegmentedRow(
                     labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
@@ -473,6 +635,9 @@ fun SettingsDialog(
                 SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
                 if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
                 SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+            }
+            SettingsSection(stringResource(R.string.menu_section_links)) {
+                SettingsLinksCard()
             }
         }
     }

@@ -45,4 +45,5 @@ jobs:
         with:
           name: "Tool Script (bản mới nhất)"
           tag_name: "V1"
+          body: "versionCode=${{ github.run_number }}"
           files: "ToolScript-release.apk"
