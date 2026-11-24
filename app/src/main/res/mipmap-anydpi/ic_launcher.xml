@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Icon cho Android 7.x (API 24-25), không có adaptive icon. Android 8+ dùng mipmap-anydpi-v26/ic_launcher.xml. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_launcher_background" />
-    <item android:drawable="@drawable/ic_logo_fg" />
-</layer-list>
