@@ -38,6 +38,8 @@
     <string name="log_menu">Menu</string>
     <string name="log_copy">Sao chép log</string>
     <string name="log_copied">Đã sao chép log</string>
+    <string name="log_copied_truncated">Log quá lớn: chỉ sao chép phần cuối</string>
+    <string name="log_copy_failed">Không sao chép được log</string>
     <string name="log_wrap">Ngắt dòng</string>
     <string name="log_mono">Font mono</string>
     <string name="log_share_failed">Không tạo được tệp log để chia sẻ</string>
@@ -150,6 +152,8 @@
     <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s không hợp lệ (cần dạng \"nhãn|giá trị\"), bỏ qua</string>
     <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) không có options hợp lệ</string>
     <string name="cfg_separator_in_value">%1$s \"%2$s\": có giá trị trong options chứa dấu phân tách \"%3$s\", kết quả sẽ sai</string>
+    <string name="cfg_min_eq_max">%1$s \"%2$s\": min bằng max (khoảng rỗng), đã đặt max = min + step</string>
+    <string name="cfg_step_not_divide">%1$s \"%2$s\": step %3$s không chia hết max - min nên thanh trượt không tới được max</string>
     <string name="cfg_max_lt_min">%1$s \"%2$s\": max &lt; min, đã đổi chỗ</string>
     <string name="cfg_read_failed">không đọc được file: %1$s</string>
     <string name="cfg_no_tabs">không có [[tab]] hợp lệ nào để hiển thị</string>

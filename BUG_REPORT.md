@@ -1,33 +1,32 @@
 # Báo cáo bug
-Quét gần nhất: 2026-11-24 06:30 (quét lại sau khi sửa các rủi ro trong Kotlin)
-Tổng: 0 lỗi, 3 rủi ro, 3 không xác định, 12 đã sửa
+Quét gần nhất: 2026-11-24 12:10 (sau khi sửa LogCenter và chốt các rủi ro được chấp nhận)
+Tổng: 0 lỗi, 0 rủi ro, 0 không xác định, 21 đã sửa, 6 rủi ro đã chấp nhận
 
 Phạm vi: đọc toàn bộ 31 tệp Kotlin (7.595 dòng), script `assets/scripts`, `assets/bin`, `AndroidManifest.xml`, các tệp Gradle, `build.yml`, `proguard-rules.pro`, tài nguyên chuỗi, và kiểm tra các tệp TOML mẫu bằng script. Bỏ qua icon svg, ảnh và tệp `*.bak`.
-Giới hạn: đây là đọc tĩnh. Chưa build và chưa chạy trên máy thật, nên mục nào phụ thuộc hành vi Android thật đều ghi rõ.
+Giới hạn: đây là đọc tĩnh. Người dùng xác nhận bản release (R8) và phiên bản thư viện đã build, chạy ổn; các sửa mới nhất chưa chạy trên máy thật, mục nào phụ thuộc hành vi Android thật đều ghi rõ.
 Đã kiểm tra và không thấy vấn đề: chuỗi `R.string` có đủ trong cả `values` và `values-vi` (160 khoá dùng đều có), định dạng `%s/%d` hai ngôn ngữ khớp nhau, mọi icon, trang và tab được TOML mẫu tham chiếu đều tồn tại, không có id trùng giữa các trang mẫu, `shell = "snackbar"` là chế độ hợp lệ.
 
 ## Cây thư mục
 ```
 Tool-Script/
 ├── .github/workflows/
-│   └── build.yml                      (rủi ro 1)
+│   └── build.yml                      (đã sửa 1)
 ├── app/
-│   ├── build.gradle.kts               (rủi ro 1, không xác định 1)
 │   └── src/main/
 │       ├── assets/
-│       │   ├── bin/
-│       │   │   └── slog               (đã sửa 2)
-│       │   └── scripts/
-│       │       └── init.sh            (rủi ro 1)
+│       │   └── bin/
+│       │       └── slog               (đã sửa 2)
 │       └── kotlin/com/tool/script/
+│           ├── boot/Boot.kt           (đã sửa 1)
 │           ├── config/Config.kt       (đã sửa 3)
 │           ├── crash/CrashActivity.kt (đã sửa 1)
-│           ├── executor/Executor.kt   (đã sửa 1)
+│           ├── executor/Executor.kt   (đã sửa 2)
 │           └── ui/
+│               ├── feedback/Feedback.kt (đã sửa 1)
+│               ├── feedback/LogCenter.kt (đã sửa 2)
 │               ├── feedback/LogFiles.kt (đã sửa 3)
-│               ├── main/Main.kt         (đã sửa 2)
-│               └── render/Render.kt     (không xác định 1, đã sửa 1)
-└── gradle/libs.versions.toml          (không xác định 1)
+│               ├── main/Main.kt         (đã sửa 3)
+│               └── render/Render.kt     (đã sửa 2)
 ```
 (chỉ hiện thư mục và tệp có vấn đề)
 
@@ -57,32 +56,45 @@ Tool-Script/
 ### app/src/main/kotlin/com/tool/script/ui/render/Render.kt
 Đã sửa lỗi (cam kết không bị lại):
 + [BinaryItem và ProgressItem, `LaunchedEffect(id)`] `get` chạy lại mỗi lần item vào lại cây giao diện (cuộn, đổi tab) và có thể đè giá trị người dùng vừa đặt. Đã sửa: mỗi id chỉ đọc một lần qua `VariableStore.claimFetch` (đọc lỗi hoặc bị huỷ thì `releaseFetch` để lần sau đọc lại), và công tắc không ghi đè nếu giá trị đã đổi trong lúc chờ. Kiểm tra tái phát: cả hai `LaunchedEffect` phải có `claimFetch(id)`; mọi chỗ gọi `exec` với `item.get` phải nằm sau điều kiện đó.
-Không xác định:
-+ [SliderItem, dòng 838-871] Ba trường hợp cấu hình lệch chưa kiểm chứng được nếu không chạy: (1) `min == max` mà bộ đọc vẫn cho qua, Slider có thể chia cho 0 khi tính vị trí, chưa rõ Miuix xử lý ra sao. (2) `step` không chia hết `max - min` (ví dụ 0..10 bước 3) thì thanh trượt không bao giờ tới `max` và số vạch chia (`steps`) lệch với các mốc bước. (3) `step` số thực như 0.1 tính bằng `Float` có thể ra giá trị lẻ như `0.70000005` truyền vào shell. Cần thử trên máy để kết luận. Các TOML mẫu không dính.
++ [SliderItem, Config.parseItem] `min == max` và `step` không chia hết `max - min` chưa có cảnh báo (Miuix Slider có thể chia cho 0; thanh không tới `max`). Đã sửa ở Config.kt: `min == max` thì cảnh báo `cfg_min_eq_max` và đặt `max = min + step`; `step` không chia hết thì cảnh báo `cfg_step_not_divide` (dung sai 1e-3). Kiểm tra tái phát: khối `if (type == ItemType.Slider)` sau `val step` trong `parseItem` còn đủ hai cảnh báo. Giá trị `step` số thực (0.1) làm số lẻ kiểu `0.70000005` vẫn chưa kiểm chứng, cần thử trên máy.
 
 ### app/src/main/kotlin/com/tool/script/ui/main/Main.kt
 Đã sửa lỗi (cam kết không bị lại):
 + [DialogContentMeasurer, dòng 786-805] Bản vẽ ẩn dùng để đo chiều cao dialog chạy `get` lần thứ hai mỗi lần mở dialog. Đã sửa gián tiếp ở Render.kt: item không chạy `get` khi `env.varsOnly` (môi trường của bản đo). Kiểm tra tái phát: hai `LaunchedEffect` của `get` trong Render.kt phải có điều kiện `env.varsOnly`.
 + [AnimatedContent `subPage`, transitionSpec] Từ tab mở trang rồi mở trang con, đóng trang con thì đúng nhưng đóng tiếp trang đầu thì hiệu ứng trở lại sai (báo từ người dùng, suy ra từ code, chưa chạy máy thật). Nguyên nhân gốc: `targetContentZIndex` cố định +1/-1, mà AnimatedContent giữ zIndex đặt lúc trang là đích; ở lần đóng thứ hai trang đang thoát (zIndex -1 từ lần đóng trước) bằng zIndex với trang đích (-1) nên bị vẽ sai lớp. Đã sửa: zIndex = độ sâu trong stack (tab = 0). Kiểm tra tái phát: không có `targetContentZIndex = 1f` hoặc `-1f` cố định trong Main.kt; mọi nhánh đặt `= depth`. Thử: tab → trang → trang con → Back → Back.
++ [closeTop, DialogSheet.settle, scrim của DialogLayer] Back hoặc chạm nền đến muộn lúc sheet đang trượt đóng làm dialog đóng một lần rồi `onBack` cuối hiệu ứng đóng thêm trang bên dưới. Đã sửa: `closeIfTop(file, confirmed)` chỉ đóng khi `file` vẫn là trang trên cùng; trang và dialog đều truyền tên file của mình. Kiểm tra tái phát: `SubPageScreen` và `DialogLayer` trong Main.kt phải gọi `closeIfTop`, không gọi `closeTop` trực tiếp (chỉ `BackHandler` được gọi `closeTop`). Thử: vuốt xuống đóng dialog rồi bấm Back ngay.
 
 ### app/src/main/kotlin/com/tool/script/executor/Executor.kt
 Đã sửa lỗi (cam kết không bị lại):
 + [PreludeExecutor.exec] Mọi dòng output bắt đầu bằng `@pid <số>` đều bị nuốt khỏi log, trong khi output cuối chỉ bỏ dòng đầu. Đã sửa: chỉ nhận dòng pid khi chưa có pid (`if (pid.get() == null) parsePid(line)`), các dòng `@pid` sau đó được giữ. Kiểm tra tái phát: `parsePid` chỉ được gọi khi `pid.get() == null`.
-
-### app/src/main/assets/scripts/init.sh
-Rủi ro:
-+ [install_busybox, dòng 28-31] busybox được chép ra `$BIN_DIR` rồi chạy trực tiếp (`"$dst" true`). Cách này chỉ chạy được nhờ `targetSdk = 28` (app/build.gradle.kts:14); từ Android 10, app target 29 trở lên bị SELinux chặn thực thi tệp trong thư mục dữ liệu. `BinInstaller` (liên kết tới thư viện native) đã có nhưng không nơi nào gọi. Điều kiện: nâng `targetSdk` lên 29 trở lên (trước đó có ý định nâng lên 37) mà chưa chuyển sang `BinInstaller`, khi đó busybox báo "không chạy được", script khởi động lỗi và mọi lần mở app hiện cảnh báo trên Android 10+ không root.
++ [LocalExecutor.exec] Tiến trình nền (`cmd &`) giữ pipe làm log và banner kẹt ở "Đang chạy". Đã sửa: sau khi lệnh chính thoát chỉ chờ đọc nốt `DRAIN_MS` (1 giây) rồi trả kết quả; việc đọc chạy ngầm trong `readerScope` tới khi pipe đóng, không đóng đầu đọc nên tiến trình nền không bị SIGPIPE. Kiểm tra tái phát: `LocalExecutor.exec` không được `await`/`join` việc đọc mà không có `withTimeoutOrNull(DRAIN_MS)`. Thử trên máy không root: item có lệnh `sleep 300 &` rồi `echo xong` phải kết thúc sau khoảng 1 giây. Giới hạn: đầu ra tiến trình nền in sau đó chỉ vào log, không vào kết quả cuối.
 
 ### .github/workflows/build.yml
-Rủi ro:
-+ [dòng 9] `permissions: write-all` cấp toàn quyền ghi cho `GITHUB_TOKEN` ở mọi job. Bản sao `build.yml.bak` còn ghi `contents: write`, đủ cho bước tạo release. Điều kiện: bất kỳ bước hoặc action bên thứ ba nào bị chiếm quyền thì có thể ghi vào repo, issue, package. Hướng sửa: trả về `contents: write`.
+Đã sửa lỗi (cam kết không bị lại):
++ [dòng 9] `permissions: write-all` cấp toàn quyền ghi cho `GITHUB_TOKEN`. Đã sửa: chỉ `contents: write`, đủ cho bước `softprops/action-gh-release` tạo release. Kiểm tra tái phát: không có `write-all` trong `.github/workflows/*.yml`. Cần chạy CI một lần để xác nhận bước release vẫn đạt.
 
-### app/build.gradle.kts
-Rủi ro:
-+ [dòng 19-24] Keystore `app/beta.jks` được đưa vào repo (`.gitignore` có ngoại lệ `!app/beta.jks`) cùng mật khẩu `android` ghi thẳng trong tệp. Ai đọc được repo đều ký được APK có cùng chữ ký, nên bản giả mạo có thể ghi đè bản cài thật khi cập nhật. Điều kiện: repo công khai hoặc chia sẻ rộng. Chấp nhận được cho bản thử nghiệm; cần tách khoá thật ra khỏi repo trước khi phát hành.
-Không xác định:
-+ [dòng 34] Bản release bật `isMinifyEnabled = true` (R8). Chưa có bằng chứng bản release đã được chạy thử. Cần cài và mở bản release để xem quy tắc giữ lớp trong `proguard-rules.pro` có đủ cho tomlkt, libsu và Miuix không.
+### app/src/main/kotlin/com/tool/script/boot/Boot.kt
+Đã sửa lỗi (cam kết không bị lại):
++ [restoreValue, collectDefaults; Render.kt ProgressItem; Config.kt `float()`] Giá trị `NaN` từ tệp trạng thái, `default`, `min`/`max` hoặc `get` lọt qua `coerceIn` vào slider và progress. Đã sửa: bỏ giá trị không hữu hạn bằng `isFinite()` ở bốn chỗ trên. Kiểm tra tái phát: grep `toFloatOrNull()` trong Boot.kt, Render.kt, Config.kt, mọi chỗ đọc số cho slider/progress phải kèm `isFinite()`. Cần thử: ghi `NaN` vào `$STATE_DIR/<id_slider>` rồi mở app.
 
-### gradle/libs.versions.toml
-Không xác định:
-+ [dòng 1-2] Tệp tự ghi "CHƯA build thử" và liệt kê các phiên bản (AGP 9.5.1, Kotlin 2.4.20, Compose 1.12.0, Miuix 0.9.4, Gradle 9.7.0 ở build.yml:32...). Mình không xác minh được các bản này có tồn tại và biên dịch cùng nhau. Cần kết quả một lần build (CI hoặc Android Studio) để kết luận.
+### app/src/main/kotlin/com/tool/script/ui/feedback/Feedback.kt
+Đã sửa lỗi (cam kết không bị lại):
++ [LogHeader, nút sao chép] Sao chép log lớn ném `TransactionTooLargeException` làm app crash. Đã sửa: `copyToClipboard` bắt lỗi, thử lại với 200.000 ký tự cuối và trả `CopyResult` để hiện toast phù hợp. Kiểm tra tái phát: `copyToClipboard` trong Util.kt phải có try/catch quanh `setPrimaryClip`.
+
+### app/src/main/kotlin/com/tool/script/ui/feedback/LogCenter.kt
+Đã sửa lỗi (cam kết không bị lại):
++ [FeedbackHost.showHiddenLog] Chạm lại thông báo của log đang mở hiện toast "log không còn" dù log đang hiển thị. Đã sửa: `showHiddenLog` trả true và bỏ qua nếu `log?.id == id`. Kiểm tra tái phát: dòng `if (log?.id == id) return true` có ở đầu `showHiddenLog`.
++ [thoát app khi log chạy nền, docs/schema.md] Tài liệu nói thông báo chốt "Đã hủy" nhưng không có code nào làm vậy (tiến trình đã chết). Đã sửa tài liệu: thông báo tự gỡ sau tối đa 2 phút. Kiểm tra tái phát: docs/schema.md không còn câu "thông báo chốt \"Đã hủy\"" ở mục Ẩn log.
+
+## Rủi ro đã chấp nhận (người dùng quyết định không sửa)
++ [init.sh install_busybox] busybox chỉ chạy được khi `targetSdk = 28`: app cố định target 28 nên không áp dụng.
++ [Feedback.kt FeedbackHost.notice] Hai thông báo liên tiếp khi hộp xin quyền thông báo còn mở (Android 13+) làm mất thông báo đầu: hiếm gặp.
++ [Feedback.kt LogEntry, LogFiles.init] Tệp log tích lũy trong một phiên rất dài: mỗi lần mở app đã dọn hết `log_*.txt`.
++ [Executor.kt ExecutorManager.detect] Hộp xin quyền su mở quá 5 giây thì dùng backend thường cả phiên: đánh đổi để app không treo ở màn hình khởi động, có ghi chú ở log khởi động.
++ [app/build.gradle.kts, app/beta.jks] Khóa beta (mật khẩu `android`) nằm trong repo nên ai cũng ký được APK cùng chữ ký: giữ có chủ ý vì là khóa test giống khóa debug của Android, mọi build cùng chữ ký nên cập nhật đè được; README đã ghi rõ. Thay bằng khóa thật trước khi phát hành.
++ [thoát app khi lệnh root đang chạy] Người dùng chấp nhận: tiến trình chạy nền bằng root cứ để chạy tiếp, app không dừng chúng.
+
+## Chưa bao phủ
++ Quét tĩnh không bắt được: thời gian và độ mượt của hiệu ứng, blur trên từng máy, hành vi su/root thật. Người dùng xác nhận đã build và chạy bản release (R8) và phiên bản thư viện đều ổn.
++ Đã duyệt kỹ theo kịch bản lặp: Feedback.kt, TopBarActions.kt (không thấy lỗi), Boot.kt, Executor.kt, LogCenter.kt, cùng điều hướng/dialog ở Main.kt. Chưa duyệt kỹ: Render.kt (các item còn lại), SelectScreen.kt, Config.kt, AssetInstaller/EnvFile/BinInstaller.
++ Đã kiểm tra bằng máy: mọi tệp XML parse được, không còn dấu nháy đơn hay định dạng sai trong strings.xml, số tham số `%n$s` khớp giữa tiếng Anh và tiếng Việt, TOML mẫu parse được (trừ `demo_error_syntax.toml` cố ý lỗi).

@@ -14,6 +14,8 @@ Thứ tự ưu tiên khi app chọn backend:
 Backend hiện tại có sẵn dưới dạng biến `ROOT_MODE`, dùng trong `lock` và
 `visible_if` (xem mục 8, 9).
 
+**Tiến trình nền:** lệnh `cmd &` không chuyển hướng đầu ra thì tiến trình nền vẫn giữ đường ống đọc kết quả. App chỉ chờ đọc nốt khoảng 1 giây sau khi lệnh chính thoát rồi coi là xong; đầu ra đến muộn vẫn hiện trong log nhưng không nằm trong kết quả cuối. Nên viết `cmd > /dev/null 2>&1 &` (hoặc ghi vào tệp) để tiến trình nền không in vào log. Nút Hủy giết cả cây tiến trình, kể cả tiến trình nền.
+
 ## 2. Cấu trúc file
 
 ```
@@ -103,7 +105,7 @@ Chạy trực tiếp được vì app target SDK 28 (xem README); file ELF phả
 | `glog`, `slog` | Đọc / ghi giá trị trong `$STATE_DIR` (xem env.sh ở trên) |
 | `killtree` | Giết toàn bộ tiến trình con cháu (và cả tiến trình gốc): `killtree [thông báo] [tệp / thư mục cần xóa]`. Gốc là `$shell_progres`: số = PID, chữ = mẫu cho `pgrep -f`. Nút Hủy của app dùng lệnh này (xem mục 10) |
 
-- Trang `pages.toml` có nhóm nút "Busybox dựng sẵn (bin)" để kiểm tra.
+- Trang `pages/news.toml` có nhóm nút "Biến env.sh, lệnh dựng sẵn, lưu giá trị" để kiểm tra.
 - Chưa thử trên máy thật: cần kiểm tra chạy được ở chế độ không root.
 - Key lạ (không có trong bảng) giữ nguyên và ghi một dòng vào log khởi động.
 - Giữ nháy kép quanh `@KEY@` để đường dẫn có khoảng trắng vẫn đúng.
@@ -172,6 +174,8 @@ lock_mode = "readonly"
 | `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
 | `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục có Xác nhận, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
+
+`slider`: `max < min` thì hai giá trị được đổi chỗ; `min = max` thì `max` được đặt lại thành `min + step`; `step` không chia hết `max - min` thì thanh trượt không tới được `max`. Cả ba trường hợp đều hiện cảnh báo cấu hình ở đầu trang.
 
 `group` không phải một `type`: nhóm khai báo bằng `[[group]]` riêng, item con
 nằm trong `[[group.item]]`.
@@ -388,7 +392,7 @@ Mỗi lượt chạy `banner` / `notice` có **một banner riêng**; nhiều ba
 
 Bảng log `live` có nút **Toàn màn hình** để mở rộng giữa chừng, `full` có nút **Thu nhỏ** để quay lại; hai bảng dùng chung bố cục và hành vi nút. Hủy lệnh (nút Hủy của log `live` / `full`, nút Hủy hoặc vuốt banner) chạy `killtree`: giết cả shell chạy lệnh lẫn mọi tiến trình con cháu của nó, với backend thường và cả backend root (su, `killtree` chạy bằng shell root riêng). Cách hoạt động: mọi lệnh được đặt sẵn `shell_progres` = PID của shell chạy lệnh và in dòng `@pid N` đầu tiên (app giữ lại, không hiện trong log, không nằm trong kết quả); khi hủy app chạy `shell_progres=N killtree`. Script cũng tự gọi `killtree` được để dừng cả lệnh đang chạy. Hết giờ (`timeout`) cũng chạy `killtree` như khi hủy, rồi báo hết giờ với phần đã in ra. Dòng của **stderr** (`>&2`) hiện màu đỏ, stdout màu thường; stdout và stderr hiện đúng thứ tự đến ngay khi lệnh in ra (không còn dồn stderr xuống cuối), nút Chia sẻ gửi đúng văn bản đang hiện. Dòng `@progress N` không hiện trong log. Khi lệnh còn đang chạy, bảng log `live` không đóng khi chạm ra ngoài (và Back tạm thời cũng không đóng), chỉ đóng bằng nút Hủy rồi Thoát; lệnh xong thì chạm ra ngoài hoặc Back đóng như cũ.
 
-**Ẩn log (chạy nền):** log `live` / `full` đang chạy có nút **Ẩn** (mũi tên xuống) ở hàng tiêu đề, bên trái nút Toàn màn hình. Bấm Ẩn thì màn hình log đóng nhưng lệnh **vẫn chạy**, để chạy tính năng khác (có thể ẩn nhiều tính năng cùng lúc). Từ lúc ẩn, mọi dòng log gửi lên **thông báo Android**: tiêu đề là tên tính năng, nội dung là phần log mới nhất (mở rộng thông báo để xem nhiều dòng hơn), kèm trạng thái (Đang chạy / Xong / Lỗi (mã N) / Hết thời gian chờ / Đã hủy) và thanh tiến trình (đúng % nếu lệnh in `@progress N`). Chạm vào thông báo thì mở lại đúng màn hình log đó (toàn màn hình hay bảng thường tùy lúc ẩn). Thông báo của lệnh đang chạy không vuốt bỏ được; khi xong thì thông báo chốt kết quả và vuốt bỏ được. Giữ tối đa 12 log đã ẩn (bỏ cái đã xong cũ nhất). Android 13+: bấm Ẩn lần đầu sẽ xin quyền thông báo; từ chối thì lệnh vẫn chạy nhưng không có thông báo để mở lại. Lưu ý: lệnh chạy nền khi app còn sống (ra màn hình chính, mở app khác đều được); thoát hẳn ứng dụng thì lệnh bị hủy và thông báo chốt "Đã hủy".
+**Ẩn log (chạy nền):** log `live` / `full` đang chạy có nút **Ẩn** (mũi tên xuống) ở hàng tiêu đề, bên trái nút Toàn màn hình. Bấm Ẩn thì màn hình log đóng nhưng lệnh **vẫn chạy**, để chạy tính năng khác (có thể ẩn nhiều tính năng cùng lúc). Từ lúc ẩn, mọi dòng log gửi lên **thông báo Android**: tiêu đề là tên tính năng, nội dung là phần log mới nhất (mở rộng thông báo để xem nhiều dòng hơn), kèm trạng thái (Đang chạy / Xong / Lỗi (mã N) / Hết thời gian chờ / Đã hủy) và thanh tiến trình (đúng % nếu lệnh in `@progress N`). Chạm vào thông báo thì mở lại đúng màn hình log đó (toàn màn hình hay bảng thường tùy lúc ẩn). Thông báo của lệnh đang chạy không vuốt bỏ được; khi xong thì thông báo chốt kết quả và vuốt bỏ được. Giữ tối đa 12 log đã ẩn (bỏ cái đã xong cũ nhất). Android 13+: bấm Ẩn lần đầu sẽ xin quyền thông báo; từ chối thì lệnh vẫn chạy nhưng không có thông báo để mở lại. Lưu ý: lệnh chạy nền khi app còn sống (ra màn hình chính, mở app khác đều được); thoát hẳn ứng dụng thì tiến trình app dừng, thông báo của lệnh đang chạy không được chốt mà tự gỡ sau tối đa 2 phút (lệnh chạy nền bằng root để chạy tiếp, app không dừng chúng).
 
 Thanh tiến trình (`live` và `full`): khi đang chạy, thanh nằm dưới nhãn trạng thái. Lệnh in dòng `@progress N` (0-100) thì thanh hiện đúng N% (số % hiện bên phải nhãn) và dòng đó không xuất hiện trong log; chưa in thì thanh chạy vô định. Lệnh xong không lỗi thì thanh đầy; lỗi hoặc hết giờ thì giữ mức cuối (không có `@progress` thì ẩn thanh).
 
@@ -406,11 +410,11 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - **Demo crash**: để thử màn hình lỗi, đặt `run` của một `button` là một trong hai lệnh dựng sẵn dưới đây (nên kèm `confirm` vì app thoát thật):
   - `@crash`: ném lỗi trên luồng chính.
   - `@crash-thread`: ném lỗi trong luồng nền.
-  Cả hai hiện Trung tâm lỗi "Ứng dụng bị lỗi" với stack trace rồi kill tiến trình. Mẫu có sẵn ở nhóm "Crash app" cuối `pages/output.toml`.
-- **Demo lỗi cấu hình**: nhóm "Lỗi cấu hình (demo)" trong `pages/output.toml` có hai link tới trang con cố ý sai:
-  - `pages/demo_error_syntax.toml`: sai cú pháp TOML, trang hiện thẻ "Không đọc được trang này" kèm file và dòng lỗi.
-  - `pages/demo_error_warn.toml`: đúng cú pháp nhưng khai báo sai trường; mục thiếu trường bắt buộc bị bỏ qua, giá trị sai dùng mặc định, mỗi lỗi là một dòng trong "Cảnh báo cấu hình".
-  Cảnh báo chỉ hiện trong chính trang có lỗi, nên các trang khác không bị ảnh hưởng; xóa nhóm và hai file để bỏ demo.
+  Cả hai hiện Trung tâm lỗi "Ứng dụng bị lỗi" với stack trace rồi kill tiến trình. Mẫu có sẵn ở nhóm "Crash app" của `pages/crash.toml` (tab Lỗi code).
+- **Demo lỗi cấu hình**: tab Trang hỏng (`pages/broken.toml`) có các link tới trang con cố ý sai trong `pages/broken/`, tiêu biểu:
+  - `pages/broken/syntax.toml`: sai cú pháp TOML, trang hiện thẻ "Không đọc được trang này" kèm file và dòng lỗi.
+  - `pages/broken/fields.toml`: đúng cú pháp nhưng khai báo sai trường; mục thiếu trường bắt buộc bị bỏ qua, giá trị sai dùng mặc định, mỗi lỗi là một dòng trong "Cảnh báo cấu hình".
+  Cảnh báo chỉ hiện trong chính trang có lỗi, nên các trang khác không bị ảnh hưởng; xóa tab `broken`, `pages/broken.toml` và thư mục `pages/broken` để bỏ demo.
 
 ## 12. Để lại sau
 

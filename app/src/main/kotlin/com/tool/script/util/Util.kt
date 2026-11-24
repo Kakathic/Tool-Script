@@ -91,7 +91,23 @@ object Util {
 fun formatNumber(value: Float): String =
     if (value % 1f == 0f) value.toLong().toString() else value.toString()
 
-fun copyToClipboard(context: Context, label: String, text: String) {
-    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-    cm.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
+enum class CopyResult { Full, Truncated, Failed }
+
+/** Văn bản quá lớn (vượt giới hạn binder ~1 MB) thì thử lại với [CLIPBOARD_FALLBACK_CHARS] ký tự cuối thay vì để app crash. */
+private const val CLIPBOARD_FALLBACK_CHARS = 200_000
+
+fun copyToClipboard(context: Context, label: String, text: String): CopyResult {
+    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager ?: return CopyResult.Failed
+    try {
+        cm.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
+        return CopyResult.Full
+    } catch (_: Exception) {
+        if (text.length <= CLIPBOARD_FALLBACK_CHARS) return CopyResult.Failed
+    }
+    return try {
+        cm.setPrimaryClip(android.content.ClipData.newPlainText(label, text.takeLast(CLIPBOARD_FALLBACK_CHARS)))
+        CopyResult.Truncated
+    } catch (_: Exception) {
+        CopyResult.Failed
+    }
 }

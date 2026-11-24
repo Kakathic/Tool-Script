@@ -134,7 +134,7 @@ object TomlParser {
 
     private fun TomlTable.str(key: String): String? = (this[key] as? TomlLiteral)?.content
 
-    private fun TomlTable.float(key: String): Float? = str(key)?.toFloatOrNull()
+    private fun TomlTable.float(key: String): Float? = str(key)?.toFloatOrNull()?.takeIf { it.isFinite() }
 
     /** "Hiệu năng|performance" -> SelectOption; chỉ tách ở dấu | đầu tiên. Giá trị rỗng thì không hợp lệ. */
     internal fun parseOption(raw: String): SelectOption? {
@@ -388,6 +388,17 @@ object TomlParser {
             min = max.also { max = min }
         }
         val step = (t.float("step") ?: 1f).takeIf { it > 0f } ?: 1f
+        if (type == ItemType.Slider) {
+            if (max == min) {
+                warnings += AppText.get(R.string.cfg_min_eq_max, label, title)
+                max = min + step
+            } else {
+                val steps = (max - min) / step
+                if (kotlin.math.abs(steps - kotlin.math.round(steps)) > 1e-3f) {
+                    warnings += AppText.get(R.string.cfg_step_not_divide, label, title, step.toString())
+                }
+            }
+        }
 
         val children = if (isGroup) {
             parseChildren(t, warnings, ids, "$label \"$title\"")

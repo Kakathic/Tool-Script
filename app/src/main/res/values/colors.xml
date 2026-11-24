@@ -1,5 +1,8 @@
 <resources>
     <color name="window_bg">#FFFFFFFF</color>
-    <!-- Nền icon launcher: màu bề mặt sáng, bản tối nằm trong values-night -->
-    <color name="ic_launcher_bg">#FFF1F4F9</color>
+    <!-- Nền icon launcher: trắng, bản tối nằm trong values-night -->
+    <color name="ic_launcher_bg">#FFFFFFFF</color>
+    <!-- Màu icon cửa sổ terminal: thân cửa sổ và dấu nhắc >_ (bản sáng) -->
+    <color name="ic_term_window">#FF1B2A4A</color>
+    <color name="ic_term_prompt">#FF3482FF</color>
 </resources>

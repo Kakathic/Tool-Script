@@ -40,7 +40,7 @@ fun SplashScreen(state: BootState) {
             verticalArrangement = Arrangement.Center,
         ) {
             Image(
-                painter = painterResource(R.drawable.ic_logo_art),
+                painter = painterResource(R.drawable.ic_logo),
                 contentDescription = null,
                 modifier = Modifier.size(96.dp),
             )

@@ -426,7 +426,7 @@ private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup
         try {
             val result = ExecutorManager.current.exec(ShellText.silenceStderr(ShellText.withEnv(get, env.store.snapshot())), item.timeoutSec ?: GET_TIMEOUT_SEC)
             val number = result.output.trim().toFloatOrNull()
-            if (result.ok && number != null) {
+            if (result.ok && number != null && number.isFinite()) {
                 done = true
                 env.store[id] = formatNumber(number.coerceIn(item.min, item.max))
             }

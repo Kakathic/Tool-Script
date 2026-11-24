@@ -40,6 +40,8 @@
     <string name="log_menu">Menu</string>
     <string name="log_copy">Copy log</string>
     <string name="log_copied">Log copied</string>
+    <string name="log_copied_truncated">Log too large: copied the last part only</string>
+    <string name="log_copy_failed">Couldn\'t copy the log</string>
     <string name="log_wrap">Wrap lines</string>
     <string name="log_mono">Monospace font</string>
     <string name="log_share_failed">Couldn\'t create the log file to share</string>
@@ -152,6 +154,8 @@
     <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s is invalid (expected \"label|value\"), ignored</string>
     <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) has no valid options</string>
     <string name="cfg_separator_in_value">%1$s \"%2$s\": an options value contains the separator \"%3$s\", the result will be wrong</string>
+    <string name="cfg_min_eq_max">%1$s \"%2$s\": min equals max (empty range), max set to min + step</string>
+    <string name="cfg_step_not_divide">%1$s \"%2$s\": step %3$s does not divide max - min, the slider can\'t reach max</string>
     <string name="cfg_max_lt_min">%1$s \"%2$s\": max &lt; min, swapped</string>
     <string name="cfg_read_failed">can\'t read file: %1$s</string>
     <string name="cfg_no_tabs">no valid [[tab]] to show</string>

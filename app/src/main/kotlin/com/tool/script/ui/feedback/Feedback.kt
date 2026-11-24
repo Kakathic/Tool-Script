@@ -116,6 +116,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import com.tool.script.ui.main.MenuPopup
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.AnsiTerminal
+import com.tool.script.util.CopyResult
 import com.tool.script.util.copyToClipboard
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
@@ -488,6 +489,8 @@ class FeedbackHost(private val context: Context) {
 
     /** Mở lại log đã ẩn có mã [id] (từ thông báo). false nếu không còn (đã bị bỏ, hoặc ứng dụng đã khởi động lại). */
     fun showHiddenLog(id: Int): Boolean {
+        // Log đang hiển thị (chạm lại thông báo của chính nó) thì không có gì phải mở, cũng không báo "không còn".
+        if (log?.id == id) return true
         val entry = LogCenter.take(id) ?: return false
         // Đang xem một log khác còn chạy thì ẩn nó đi, khỏi mất dấu.
         log?.takeIf { it !== entry && it.running }?.let { LogCenter.hide(it) }
@@ -804,8 +807,13 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             } else {
                 // Lệnh xong: nút Ẩn biến mất, thay bằng nút sao chép toàn bộ log.
                 LogIconButton(R.drawable.ic_copy, stringResource(R.string.log_copy), iconSize = 16.dp) {
-                    copyToClipboard(context, entry.title, entry.output)
-                    Toast.makeText(context, context.getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+                    val copied = copyToClipboard(context, entry.title, entry.output)
+                    val message = when (copied) {
+                        CopyResult.Full -> R.string.log_copied
+                        CopyResult.Truncated -> R.string.log_copied_truncated
+                        CopyResult.Failed -> R.string.log_copy_failed
+                    }
+                    Toast.makeText(context, context.getString(message), Toast.LENGTH_SHORT).show()
                 }
                 LogToolbarDivider()
             }

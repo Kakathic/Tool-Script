@@ -198,7 +198,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                     if (id != null) out[id] = item.default ?: item.options.firstOrNull()?.value.orEmpty()
                 ItemType.MultiSelect -> if (id != null) out[id] = item.normalizeMulti(item.default.orEmpty())
                 ItemType.Slider, ItemType.Progress ->
-                    if (id != null) out[id] = formatNumber(item.default?.toFloatOrNull() ?: item.min)
+                    if (id != null) out[id] = formatNumber(item.default?.toFloatOrNull()?.takeIf { it.isFinite() } ?: item.min)
                 ItemType.Group -> collectDefaults(item.children, out)
                 else -> Unit
             }
@@ -231,7 +231,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         ItemType.Radio, ItemType.Dropdown, ItemType.SingleSelect -> saved.takeIf { v -> item.options.any { it.value == v } }
         ItemType.MultiSelect -> item.normalizeMulti(saved)
         ItemType.Slider, ItemType.Progress ->
-            saved.trim().toFloatOrNull()?.let { formatNumber(it.coerceIn(item.min, item.max)) }
+            saved.trim().toFloatOrNull()?.takeIf { it.isFinite() }?.let { formatNumber(it.coerceIn(item.min, item.max)) }
         else -> null
     }
 

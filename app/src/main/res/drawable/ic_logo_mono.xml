@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lớp monochrome (Android 13+): chỉ dùng kênh alpha, nên vẽ khung cửa sổ bằng nét viền để dấu nhắc >_ vẫn đọc được. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.82"
+        android:scaleY="0.82">
+        <path
+            android:pathData="M33,28H75A11,11 0 0 1 86,39V69A11,11 0 0 1 75,80H33A11,11 0 0 1 22,69V39A11,11 0 0 1 33,28Z"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="4.5"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M40,46L52,54L40,62"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M58,64H72"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

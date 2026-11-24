@@ -6,19 +6,23 @@ import android.os.Build
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -127,7 +131,17 @@ private fun Process.waitForCompat(timeoutSec: Long): Boolean {
     return true
 }
 
-/** Shell thường (`sh -c`), quyền của chính app. */
+/** Thời gian chờ đọc nốt đầu ra sau khi lệnh chính đã thoát (hoặc bị dừng); quá thì trả kết quả, phần đọc vẫn chạy ngầm. */
+private const val DRAIN_MS = 1000L
+
+/** Nơi chạy việc đọc đầu ra của [LocalExecutor], tách khỏi lệnh gọi để tiến trình nền giữ pipe không làm `exec` kẹt. */
+private val readerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+/**
+ * Shell thường (`sh -c`), quyền của chính app.
+ * Tiến trình nền (`cmd &`) không chuyển hướng đầu ra thì còn giữ pipe sau khi lệnh chính thoát: `exec` chỉ chờ đọc nốt [DRAIN_MS] rồi trả kết quả,
+ * phần đọc vẫn chạy ngầm tới khi pipe đóng (không đóng đầu đọc, để tiến trình nền không bị SIGPIPE); đầu ra đến muộn vẫn tới [onOutput] nhưng không vào [ExecResult.output].
+ */
 class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
     override suspend fun exec(command: String, timeoutSec: Int?, onOutput: ((String) -> Unit)?): ExecResult =
         withContext(Dispatchers.IO) {
@@ -139,41 +153,47 @@ class LocalExecutor(override val rootMode: String = "any") : ShellExecutor {
             }
             runCatching { process.outputStream.close() }
             val out = StringBuilder()
+            val collecting = AtomicBoolean(true)
             try {
-                coroutineScope {
-                    val joiner = LineJoiner(out)
-                    val readJob = async {
+                val joiner = LineJoiner(out)
+                val reader = readerScope.launch {
+                    try {
                         readSegments(process.inputStream) {
-                            joiner.add(it)
+                            synchronized(out) { if (collecting.get()) joiner.add(it) }
                             onOutput?.invoke(it)
                         }
+                    } finally {
+                        runCatching { process.inputStream.close() }
                     }
-                    var timedOut = false
-                    val finished = try {
-                        runInterruptible {
-                            if (timeoutSec == null) {
-                                process.waitFor()
-                                true
-                            } else {
-                                process.waitForCompat(timeoutSec.toLong())
-                            }
-                        }
-                    } catch (e: CancellationException) {
-                        // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để luồng đọc đầu ra kết thúc ngay.
-                        process.kill()
-                        throw e
-                    }
-                    if (!finished) {
-                        timedOut = true
-                        process.kill()
-                    }
-                    readJob.await()
-                    ExecResult(
-                        code = if (timedOut) -1 else process.exitValue(),
-                        output = out.toString().trimEnd(),
-                        timedOut = timedOut,
-                    )
                 }
+                var timedOut = false
+                val finished = try {
+                    runInterruptible {
+                        if (timeoutSec == null) {
+                            process.waitFor()
+                            true
+                        } else {
+                            process.waitForCompat(timeoutSec.toLong())
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    // Bị hủy (nút Hủy của log): dừng hẳn tiến trình để luồng đọc đầu ra kết thúc ngay.
+                    process.kill()
+                    throw e
+                }
+                if (!finished) {
+                    timedOut = true
+                    process.kill()
+                }
+                withTimeoutOrNull(DRAIN_MS) { reader.join() }
+                ExecResult(
+                    code = if (timedOut) -1 else process.exitValue(),
+                    output = synchronized(out) {
+                        collecting.set(false)
+                        out.toString().trimEnd()
+                    },
+                    timedOut = timedOut,
+                )
             } finally {
                 if (process.alive()) process.kill()
             }

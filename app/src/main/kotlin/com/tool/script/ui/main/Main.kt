@@ -243,6 +243,9 @@ fun MainScreen(
         stack = stack.dropLast(1)
     }
 
+    // Chỉ đóng khi [file] vẫn là trang trên cùng: Back hoặc chạm nền đến muộn lúc sheet đang trượt đóng, hay nút của trang đang thoát, không được đóng nhầm trang bên dưới.
+    val closeIfTop: (String, Boolean) -> Unit = { file, confirmed -> if (stack.lastOrNull() == file) closeTop(confirmed) }
+
     BackHandler(enabled = stack.isNotEmpty()) { closeTop(false) }
 
     // Cửa sổ tab trượt.
@@ -325,7 +328,7 @@ fun MainScreen(
                         ) { file ->
                             val subPage = file?.let { config.subPages[it] }
                             if (subPage != null) {
-                                SubPageScreen(subPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, blur = blurEnabled)
+                                SubPageScreen(subPage, env, feedback, onBack = { closeIfTop(file.orEmpty(), false) }, onConfirm = { closeIfTop(file.orEmpty(), true) }, blur = blurEnabled)
                             } else {
                                 val backdrop = rememberBarBackdrop(blurEnabled)
                                 // Rời màn hình chính (mở trang con) thì danh sách cuộn mất vị trí, nên trả tiêu đề về trạng thái mở rộng.
@@ -459,7 +462,8 @@ fun MainScreen(
                         AnimatedVisibility(visible = dialogFile != null, enter = EnterTransition.None, exit = ExitTransition.None) {
                             val sheetPage = lastDialog.file?.let { config.subPages[it] }
                             if (sheetPage != null) {
-                                DialogLayer(sheetPage, env, feedback, onBack = { closeTop(false) }, onConfirm = { closeTop(true) }, backdrop = pageBackdrop)
+                                val sheetFile = lastDialog.file.orEmpty()
+                                DialogLayer(sheetPage, env, feedback, onBack = { closeIfTop(sheetFile, false) }, onConfirm = { closeIfTop(sheetFile, true) }, backdrop = pageBackdrop)
                             }
                         }
                         // Các banner thông báo xếp chồng ở đầu màn hình, đè lên cả thanh trên, trượt xuống / lên.
