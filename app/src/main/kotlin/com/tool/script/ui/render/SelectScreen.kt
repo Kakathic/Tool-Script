@@ -307,6 +307,7 @@ internal fun SelectFullScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN),
                     label = stringResource(R.string.select_search),
                     singleLine = true,
+                    insideMargin = TEXT_FIELD_MARGIN,
                 )
                 Spacer(Modifier.height(SCREEN_MARGIN))
 

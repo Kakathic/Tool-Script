@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
 import coil3.compose.AsyncImage
@@ -97,6 +98,9 @@ private const val GET_TIMEOUT_SEC = 30
 // Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
 // Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.
 private val RUN_BUTTON_HEIGHT = 40.dp
+
+/** Đệm trong ô nhập: Miuix mặc định DpSize(16.dp, 16.dp), hạ đệm dọc còn 15dp để ô thấp hơn 2dp. */
+internal val TEXT_FIELD_MARGIN = DpSize(16.dp, 15.dp)
 private val RUN_BUTTON_GAP = 8.dp
 private val RUN_BUTTON_GAP_START = 12.dp
 
@@ -475,6 +479,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 label = item.hint.orEmpty(),
                 enabled = enabled,
                 singleLine = true,
+                insideMargin = TEXT_FIELD_MARGIN,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = if (item.numberInput) KeyboardType.Number else KeyboardType.Text,
                 ),
