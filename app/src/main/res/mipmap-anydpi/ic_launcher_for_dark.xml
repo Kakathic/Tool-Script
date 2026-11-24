@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon Android 7.x (API 24-25, không có adaptive icon) dùng khi app ở chế độ tối: icon sáng. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_for_dark_bg" />
+    <item android:drawable="@drawable/ic_launcher_fg_for_dark" />
+</layer-list>
