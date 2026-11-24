@@ -69,6 +69,7 @@
 
     <!-- Hộp thoại cài đặt (giao diện, tùy chọn, ngôn ngữ) -->
     <string name="settings_title">Cài đặt</string>
+    <string name="menu_title">Menu</string>
     <string name="menu_section_appearance">Giao diện</string>
     <string name="menu_section_options">Tùy chọn</string>
     <string name="language_system">Hệ thống</string>

@@ -59,7 +59,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -178,11 +177,10 @@ fun MainScreen(
         onLogOpened()
     }
     val pagerState = rememberPagerState { pages.size }
-    // Trạng thái thu gọn của tiêu đề lớn, dùng chung cho mọi tab (xem LargeTitleTopBar).
-    val titleScroll = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     // Ngăn xếp trang con (khóa = đường dẫn file); rỗng thì đang ở màn hình chính.
     var stack by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
@@ -346,18 +344,12 @@ fun MainScreen(
                                 SubPageScreen(subPage, env, feedback, onBack = { closeIfTop(file.orEmpty(), false) }, onConfirm = { closeIfTop(file.orEmpty(), true) }, blur = blurEnabled)
                             } else {
                                 val backdrop = rememberBarBackdrop(blurEnabled)
-                                // Rời màn hình chính (mở trang con) thì danh sách cuộn mất vị trí, nên trả tiêu đề về trạng thái mở rộng.
-                                DisposableEffect(Unit) {
-                                    onDispose {
-                                        titleScroll.state.heightOffset = 0f
-                                        titleScroll.state.contentOffset = 0f
-                                    }
-                                }
                                 Scaffold(
                                     topBar = {
-                                        LargeTitleTopBar(
+                                        // Màn hình chính: tên app cố định (không phóng to / thu nhỏ), icon 3 gạch bên trái mở cửa sổ menu.
+                                        AppTopBar(
                                             title = config.app.name,
-                                            scrollBehavior = titleScroll,
+                                            leading = { TopBarIcon(icon = AppIcons.BarMenu, description = stringResource(R.string.menu_title), onClick = { showMenu = true }, pressAlpha = true) },
                                             backdrop = backdrop,
                                             actions = {
                                                 // Nút nguồn (nằm trong, cạnh nút cài đặt): khởi động lại / đóng app, tắt và khởi động lại máy (kiểu Magisk), thả xuống ngay dưới icon.
@@ -432,7 +424,6 @@ fun MainScreen(
                                     Column(
                                         Modifier
                                             .fillMaxSize()
-                                            .nestedScroll(titleScroll.nestedScrollConnection)
                                             .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
                                     ) {
                                         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
@@ -459,6 +450,7 @@ fun MainScreen(
                                             )
                                         }
                                         FeedbackDialogs(feedback, env)
+                                        MenuDialog(show = showMenu, onDismiss = { showMenu = false })
                                         SettingsDialog(
                                             show = showSettings,
                                             onDismiss = { showSettings = false },
@@ -505,7 +497,7 @@ private val TopBarTitleSize = 22.sp
 
 /**
  * Thanh trên: tiêu đề sát trái (16dp, khớp lề thẻ), cỡ chữ cố định, không phóng to / thu nhỏ khi cuộn.
- * Có [onBack] thì thêm nút ở đầu thanh: mũi tên quay lại (trang con) hoặc dấu X khi [closeStyle] (dialog).
+ * Có [onBack] thì thêm nút ở đầu thanh: mũi tên quay lại (trang con) hoặc dấu X khi [closeStyle] (dialog); [leading] là nút tùy ý ở đầu thanh (icon menu của màn hình chính).
  * [backdrop] khác null: nền thanh trong suốt và làm mờ phần nội dung cuộn phía dưới (xem BarBlur.kt).
  */
 @Composable
@@ -513,9 +505,11 @@ private fun AppTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
     closeStyle: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
     backdrop: LayerBackdrop? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
+    val hasLeading = onBack != null || leading != null
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -523,7 +517,7 @@ private fun AppTopBar(
             .background(if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface)
             .statusBarsPadding()
             .height(56.dp)
-            .padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
+            .padding(start = if (hasLeading) 4.dp else 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
@@ -533,11 +527,12 @@ private fun AppTopBar(
                 onClick = onBack,
             )
         }
+        leading?.invoke()
         Text(
             text = title,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = if (onBack != null) 4.dp else 0.dp),
+                .padding(start = if (hasLeading) 4.dp else 0.dp),
             fontSize = TopBarTitleSize,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurface,
@@ -556,8 +551,8 @@ private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
 /**
- * Thanh trên của màn hình chính: lúc mở rộng hiện tên app chữ lớn bên dưới hàng icon; vuốt lên thì chữ lớn
- * mờ dần rồi thu lại, tên chữ nhỏ hiện ở vị trí cũ (căn trái, cao 56dp, icon bên phải). Vuốt xuống tới đầu danh sách thì mở rộng lại.
+ * Thanh trên của trang con: lúc mở rộng hiện tiêu đề chữ lớn bên dưới hàng icon (nút quay lại [onBack] bên trái); vuốt lên thì chữ lớn
+ * mờ dần rồi thu lại, tiêu đề chữ nhỏ hiện ở vị trí cũ (căn trái, cao 56dp, icon bên phải). Vuốt xuống tới đầu danh sách thì mở rộng lại.
  * Trạng thái nằm trong [scrollBehavior]; gắn `Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)` vào vùng nội dung cuộn.
  * [backdrop] khác null: nền thanh trong suốt và làm mờ phần nội dung cuộn phía dưới (xem BarBlur.kt).
  */
@@ -565,6 +560,7 @@ private val LargeTitleBottomPadding = 4.dp
 private fun LargeTitleTopBar(
     title: String,
     scrollBehavior: ScrollBehavior,
+    onBack: (() -> Unit)? = null,
     backdrop: LayerBackdrop? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
@@ -589,13 +585,17 @@ private fun LargeTitleTopBar(
         content = {
             // Hàng thanh thu gọn: giữ đúng vị trí cũ (lề trái 16dp, icon bên phải).
             Row(
-                modifier = Modifier.layoutId("bar").padding(start = 16.dp, end = 8.dp),
+                modifier = Modifier.layoutId("bar").padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (onBack != null) {
+                    TopBarIcon(icon = AppIcons.BarBack, description = stringResource(R.string.action_back), onClick = onBack)
+                }
                 Text(
                     text = title,
                     modifier = Modifier
                         .weight(1f)
+                        .padding(start = if (onBack != null) 4.dp else 0.dp)
                         .graphicsLayer {
                             alpha = smallAlpha
                             translationY = smallShift
@@ -711,6 +711,8 @@ private fun SubPageScreen(
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
     // Dialog không làm mờ: chiều cao sheet được đo theo bố cục cũ (xem DialogContentMeasurer).
     val backdrop = rememberBarBackdrop(blur && !page.dialog)
+    // Trang con thường: tiêu đề lớn thu nhỏ khi cuộn (mỗi trang một trạng thái riêng).
+    val titleScroll = MiuixScrollBehavior()
     Scaffold(
         topBar = {
             Box(topBarModifier) {
@@ -718,7 +720,7 @@ private fun SubPageScreen(
                     // X = Hủy luôn có; tích = Xác nhận chỉ khi chưa full (full thì hai nút Hủy / Xác nhận cũng nằm ở thanh dưới).
                     SheetTopBar(page.title, onCancel = onBack, onConfirm = if (sheetFull || !sheetHeld) null else onConfirm, surfaceAlpha = surfaceAlpha)
                 } else {
-                    AppTopBar(title = page.title, onBack = onBack, closeStyle = false, backdrop = backdrop)
+                    LargeTitleTopBar(title = page.title, scrollBehavior = titleScroll, onBack = onBack, backdrop = backdrop)
                 }
             }
         },
@@ -729,6 +731,7 @@ private fun SubPageScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .then(if (page.dialog) Modifier else Modifier.nestedScroll(titleScroll.nestedScrollConnection))
                 .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = inner.calculateTopPadding()))
                 .then(contentModifier),
         ) {

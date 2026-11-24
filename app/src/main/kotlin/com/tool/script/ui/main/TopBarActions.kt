@@ -478,6 +478,19 @@ fun SettingsDialog(
     }
 }
 
+/** Cửa sổ menu mở từ icon 3 gạch cạnh tên app (màn hình chính). Tạm thời chưa có nội dung; chạm ra ngoài hoặc Back để đóng. */
+@Composable
+fun MenuDialog(show: Boolean, onDismiss: () -> Unit) {
+    BlurDialog(
+        show = show,
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.menu_title),
+        centered = true,
+    ) {
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
 private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
 
 /**
