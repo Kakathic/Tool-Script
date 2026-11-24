@@ -86,7 +86,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng:
 // Cài đặt (sát lề phải) -> hộp thoại giữa màn hình: giao diện, tùy chọn, ngôn ngữ;
-// Nguồn -> menu thả xuống ngay dưới icon với các tùy chọn khởi động lại.
+// Nguồn -> hộp thoại giữa màn hình: nhóm ứng dụng (khởi động lại, đóng) và nhóm thiết bị (tắt / khởi động lại máy).
 
 /** Độ trong của icon khi đang nhấn (chế độ [TopBarIcon] pressAlpha). */
 private const val PressedIconAlpha = 0.4f
@@ -195,25 +195,6 @@ private fun DimMenuBackground() {
     }
 }
 
-/** Icon kèm menu thả xuống. Chạm ra ngoài hoặc bấm Back thì đóng. */
-@Composable
-private fun TopBarMenu(
-    icon: String,
-    description: String,
-    expanded: Boolean,
-    onOpen: () -> Unit,
-    onDismiss: () -> Unit,
-    minWidth: Dp = 0.dp,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Box {
-        TopBarIcon(icon = icon, description = description, onClick = onOpen, pressAlpha = true)
-        if (expanded) {
-            MenuPopup(onDismiss = onDismiss, minWidth = minWidth, content = content)
-        }
-    }
-}
-
 /**
  * Popup menu thả xuống dùng chung (menu thanh trên và item `dropdown`): nằm ngay dưới vị trí đặt nó
  * (lật lên trên nếu thiếu chỗ), làm tối nền (và làm mờ trang phía sau khi bật blur), bo góc, cuộn được khi danh sách dài.
@@ -306,18 +287,6 @@ internal fun MenuItem(label: String, selected: Boolean? = null, onClick: () -> U
     }
 }
 
-/** Nhãn nhỏ đầu mỗi nhóm trong menu (ví dụ "Giao diện", "Tùy chọn"). */
-@Composable
-private fun MenuSectionLabel(text: String) {
-    Text(
-        text = text,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 6.dp),
-    )
-}
-
 /**
  * Hàng chọn một xếp ngang kiểu "thanh trượt phân đoạn": các ô chia đều chiều rộng nằm trong một khay bo tròn,
  * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo, không đổi độ đậm chữ.
@@ -397,17 +366,6 @@ private fun SettingsToggleRow(toggle: SettingToggle) {
             onClick = { toggle.onChange(!on) },
         )
     }
-}
-
-@Composable
-private fun MenuDivider() {
-    Box(
-        Modifier
-            .padding(top = 10.dp, bottom = 6.dp, start = 20.dp, end = 20.dp)
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
-    )
 }
 
 /** Nút Cài đặt ở thanh trên (icon bánh răng, đặt sát lề phải): bấm để mở [SettingsDialog]. */
@@ -677,48 +635,36 @@ private fun rebootCommand(reason: String): String {
     return "/system/bin/svc power reboot$arg || /system/bin/reboot$arg"
 }
 
-/** Ba kiểu hay dùng (Tắt máy, Khởi động lại máy, Recovery), luôn hiện sẵn trong menu Nguồn; các kiểu còn lại gom vào nhóm [POWER_ADVANCED_LABEL] (bấm để mở / thu). */
-private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot, PowerAction.Recovery)
+/** Hai kiểu hay dùng (Tắt máy, Khởi động lại máy) nằm ở nhóm thiết bị; các kiểu còn lại (Recovery, Khởi động lại mềm, Bootloader, Download, EDL) nằm ở nhóm "Nâng cao", cũng hiện sẵn, không mở / thu. */
+private val BASIC_POWER_ACTIONS = listOf(PowerAction.PowerOff, PowerAction.Reboot)
 
-/**
- * Dòng bấm để mở / thu một nhóm mục trong menu (cùng kiểu dáng [MenuItem]), bên phải là icon lên-xuống giống item `dropdown`.
- */
+/** Một dòng hành động của máy trong thẻ: icon bên trái, nhãn bên phải. */
 @Composable
-private fun MenuExpandItem(label: String, expanded: Boolean, onClick: () -> Unit) {
+private fun PowerRow(icon: String, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = MenuItemGap)
-            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            color = MiuixTheme.colorScheme.onSurface,
-            fontSize = 16.sp,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(16.dp))
         AsyncImage(
-            model = Util.iconModel(AppIcons.BarUpDown),
-            contentDescription = stringResource(if (expanded) R.string.action_collapse else R.string.action_expand),
+            model = Util.iconModel(icon),
+            contentDescription = null,
             modifier = Modifier.size(20.dp),
-            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
         )
+        Spacer(Modifier.width(12.dp))
+        Text(text = label, fontSize = 16.sp, color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
     }
 }
 
-/** Dòng khóa (mờ, không bấm được) có icon khóa bên trái, dùng khi tính năng cần root mà máy chưa có. */
+/** Dòng khóa (mờ, không bấm được) có icon khóa, dùng khi tính năng cần root mà máy chưa có. */
 @Composable
-private fun MenuLockedItem(label: String) {
+private fun PowerLockedRow(label: String) {
     val color = MiuixTheme.colorScheme.onSurfaceVariantSummary
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = MenuItemGap)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(
@@ -732,11 +678,39 @@ private fun MenuLockedItem(label: String) {
     }
 }
 
+/** Thẻ nền nhạt bo tròn chứa các dòng của hộp thoại Nguồn. */
+@Composable
+private fun PowerCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
+        content = content,
+    )
+}
+
+/** Thẻ các kiểu tắt / khởi động lại máy: mỗi kiểu một dòng, vạch kẻ giữa các dòng. */
+@Composable
+private fun PowerActionsCard(actions: List<PowerAction>, onDeviceAction: (PowerAction) -> Unit) {
+    PowerCard {
+        actions.forEachIndexed { index, action ->
+            if (index > 0) SettingsCardDivider(startInset = 48.dp)
+            PowerRow(action.icon(), stringResource(action.labelRes)) { onDeviceAction(action) }
+        }
+    }
+}
+
+/** Icon của từng kiểu tắt / khởi động lại máy (Tắt máy dùng icon nguồn, còn lại dùng icon khởi động lại). */
+private fun PowerAction.icon(): String = if (this == PowerAction.PowerOff) AppIcons.BarPower else AppIcons.BarRestart
+
 /**
- * Nút nguồn: nhóm app (khởi động lại, đóng) rồi vạch kẻ, rồi nhóm máy (cần root).
- * Nhóm máy chỉ hiện sẵn Tắt máy, Khởi động lại máy và Recovery cho menu ngắn gọn; Khởi động lại mềm, Bootloader, Download, EDL
- * gom vào dòng "Khởi động lại nâng cao" (mở / thu, mỗi lần mở menu bắt đầu ở trạng thái thu).
- * Chưa có root ([hasRoot] = false): nhóm máy được thay bằng một dòng khóa "Cần root để hiển thị".
+ * Nút nguồn: bấm mở hộp thoại giữa màn hình (cùng kiểu hộp thoại Cài đặt), chạm ra ngoài hoặc Back để đóng.
+ * Danh sách dài, hiện sẵn tất cả (không mở / thu), nội dung dài thì cuộn. Ba nhóm, mỗi nhóm một thẻ có vạch kẻ:
+ * - Ứng dụng: Khởi động lại ứng dụng, Đóng ứng dụng.
+ * - Thiết bị (cần root): Tắt máy, Khởi động lại máy.
+ * - Nâng cao: Recovery, Khởi động lại mềm, Bootloader, Download, EDL.
+ * Chưa có root ([hasRoot] = false): nhóm thiết bị chỉ còn một dòng khóa "Cần root để hiển thị", không hiện nhóm Nâng cao.
  * Việc xác nhận và thực thi do nơi gọi xử lý.
  */
 @Composable
@@ -749,44 +723,45 @@ fun PowerMenu(
     onDeviceAction: (PowerAction) -> Unit,
     hasRoot: Boolean = true,
 ) {
-    TopBarMenu(
-        icon = AppIcons.BarPower,
-        description = stringResource(R.string.power_menu_description),
-        expanded = expanded,
-        onOpen = onOpen,
-        onDismiss = onDismiss,
-    ) {
-        var advanced by remember { mutableStateOf(false) }
-        MenuItem(label = stringResource(R.string.power_restart_app), onClick = onRestartApp)
-        MenuItem(label = stringResource(R.string.power_close_app), onClick = onCloseApp)
-        MenuDivider()
-        if (!hasRoot) {
-            // Chưa có root: không hiện nhóm thiết bị, chỉ một dòng khóa mờ, không bấm được.
-            MenuLockedItem(label = stringResource(R.string.power_need_root))
-            return@TopBarMenu
-        }
-        MenuSectionLabel(stringResource(R.string.power_section_device))
-        BASIC_POWER_ACTIONS.forEach { action ->
-            MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
-        }
-        MenuExpandItem(label = stringResource(R.string.power_advanced), expanded = advanced, onClick = { advanced = !advanced })
-        // Khi nhóm nâng cao đang thu: đưa bản ẩn cao 0dp của nó vào phép đo để menu tự co theo mục dài nhất mà không đổi rộng khi mở / thu.
-        if (!advanced) {
-            Column(Modifier.height(0.dp).clipToBounds().clearAndSetSemantics { }) {
-                PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
-                    MenuItem(label = stringResource(action.labelRes)) { }
-                }
-            }
-        }
-        AnimatedVisibility(
-            visible = advanced,
-            enter = expandVertically(tween(180)),
-            exit = shrinkVertically(tween(150)),
+    val advancedActions = remember { PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS } }
+    // Màn hình thấp (xoay ngang): giới hạn chiều cao và cho cuộn.
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.7f).dp
+    Box {
+        TopBarIcon(
+            icon = AppIcons.BarPower,
+            description = stringResource(R.string.power_menu_description),
+            onClick = onOpen,
+            pressAlpha = true,
+        )
+        BlurDialog(
+            show = expanded,
+            onDismissRequest = onDismiss,
+            title = stringResource(R.string.power_menu_description),
+            centered = true,
         ) {
-            // Các mục nhóm nâng cao thẳng hàng với các mục khác, không thụt vào.
-            Column {
-                PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS }.forEach { action ->
-                    MenuItem(label = stringResource(action.labelRes)) { onDeviceAction(action) }
+            Column(
+                modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                SettingsSection(stringResource(R.string.power_section_app)) {
+                    PowerCard {
+                        PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
+                        SettingsCardDivider(startInset = 48.dp)
+                        PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
+                    }
+                }
+                SettingsSection(stringResource(R.string.power_section_device)) {
+                    if (hasRoot) {
+                        PowerActionsCard(BASIC_POWER_ACTIONS, onDeviceAction)
+                    } else {
+                        // Chưa có root: không hiện các kiểu của máy, chỉ một dòng khóa mờ, không bấm được.
+                        PowerCard { PowerLockedRow(stringResource(R.string.power_need_root)) }
+                    }
+                }
+                if (hasRoot) {
+                    SettingsSection(stringResource(R.string.power_section_advanced)) {
+                        PowerActionsCard(advancedActions, onDeviceAction)
+                    }
                 }
             }
         }

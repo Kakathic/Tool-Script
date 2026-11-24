@@ -105,7 +105,9 @@
     <string name="power_need_root">Root required to show</string>
     <string name="power_restart_app">Restart app</string>
     <string name="power_close_app">Close app</string>
+    <string name="power_section_app">App</string>
     <string name="power_section_device">Device (root required)</string>
+    <string name="power_section_advanced">Advanced</string>
     <string name="power_advanced">Advanced reboot</string>
     <string name="power_off">Power off</string>
     <string name="power_off_confirm">Power off? The device will shut down completely and needs the power button to turn on again.</string>

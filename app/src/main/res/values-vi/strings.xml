@@ -100,7 +100,9 @@
     <string name="power_need_root">Cần root để hiển thị</string>
     <string name="power_restart_app">Khởi động lại ứng dụng</string>
     <string name="power_close_app">Đóng ứng dụng</string>
+    <string name="power_section_app">Ứng dụng</string>
     <string name="power_section_device">Thiết bị (cần root)</string>
+    <string name="power_section_advanced">Nâng cao</string>
     <string name="power_advanced">Khởi động lại nâng cao</string>
     <string name="power_off">Tắt máy</string>
     <string name="power_off_confirm">Tắt máy? Máy sẽ tắt hẳn, cần bấm nút nguồn để bật lại.</string>
