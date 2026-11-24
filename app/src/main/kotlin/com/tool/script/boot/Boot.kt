@@ -14,7 +14,9 @@ import com.tool.script.config.normalizeMulti
 import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.StateFiles
 import com.tool.script.state.VariableStore
+import com.tool.script.util.APP_LANGUAGE_ID
 import com.tool.script.util.AssetInstaller
+import com.tool.script.util.LanguagePrefs
 import com.tool.script.util.EnvFile
 import com.tool.script.util.ShellText
 import com.tool.script.util.Util
@@ -176,7 +178,9 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
                 if (restored != null) values[id] = restored else files.delete(id)
             }
         }
-        val store = VariableStore(values + builtin, files, specs.keys)
+        // app_language không lưu file: giá trị luôn là ngôn ngữ app đang dùng.
+        val appLanguage = mapOf(APP_LANGUAGE_ID to LanguagePrefs.load(app).key)
+        val store = VariableStore(values + builtin + appLanguage, files, specs.keys)
 
         val bootLog = synchronized(allLogs) { allLogs.toList() }
         _state.update {
@@ -211,7 +215,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val id = item.id
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Radio, ItemType.Dropdown,
-                ItemType.MultiSelect, ItemType.SingleSelect, ItemType.Slider, ItemType.Progress -> if (id != null && StateFiles.isValidId(id)) {
+                ItemType.MultiSelect, ItemType.SingleSelect, ItemType.Slider, ItemType.Progress -> if (id != null && id != APP_LANGUAGE_ID && StateFiles.isValidId(id)) {
                     if (out.put(id, item) != null) duplicates += id
                 }
                 ItemType.Group -> collectPersisted(item.children, out, duplicates)

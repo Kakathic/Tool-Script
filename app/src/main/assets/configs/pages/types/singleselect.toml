@@ -43,3 +43,10 @@ default = "danang"
 run     = 'echo "Đã chọn: $t_single_full"'
 shell   = "banner"
 options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho"]
+
+[[item]]
+type    = "singleselect"
+id      = "app_language"
+title   = "Ngôn ngữ"
+desc    = "id app_language gắn thẳng vào ngôn ngữ app (giá trị: system, en, vi)"
+options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]

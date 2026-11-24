@@ -21,7 +21,18 @@ enum class AppLanguage(val tag: String, @StringRes val labelRes: Int) {
     /** null = theo hệ thống. */
     val locale: Locale?
         get() = if (tag.isEmpty()) null else Locale.forLanguageTag(tag)
+
+    /** Giá trị của item `app_language` trong TOML: `system`, `en`, `vi`. */
+    val key: String
+        get() = if (tag.isEmpty()) "system" else tag
+
+    companion object {
+        fun fromKey(key: String): AppLanguage? = entries.firstOrNull { it.key == key }
+    }
 }
+
+/** id dành riêng cho item radio / dropdown / singleselect gắn thẳng vào ngôn ngữ app (không chạy lệnh, không lưu file). */
+const val APP_LANGUAGE_ID = "app_language"
 
 /**
  * Lưu và áp dụng ngôn ngữ riêng của app.

@@ -4,6 +4,7 @@ import android.content.Context
 import com.tool.script.R
 import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
+import com.tool.script.util.APP_LANGUAGE_ID
 import com.tool.script.util.AppLanguage
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -147,7 +148,7 @@ import kotlin.math.max
 
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
- * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi người dùng chọn ngôn ngữ khác trong hộp thoại Cài đặt.
+ * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi item `app_language` trong TOML đổi giá trị.
  * @param onShowDetails mở Trung tâm lỗi với (tiêu đề, nội dung).
  * @param openLogId mã log đã ẩn cần mở lại (khi chạm vào thông báo); mở xong gọi [onLogOpened].
  */
@@ -190,6 +191,16 @@ fun MainScreen(
     var dialogSnapshot by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     // Vị trí cuộn của từng trang (khóa = file): đứng ở MainScreen nên mở trang con rồi quay lại, hoặc đổi tab, vẫn giữ chỗ đang đọc.
     val scrollStates = rememberSaveable(saver = PageScrollStates.Saver) { PageScrollStates() }
+
+    // Item `app_language` trong TOML dùng chung trạng thái với ngôn ngữ app: đổi bên nào, bên kia cập nhật theo.
+    LaunchedEffect(language) {
+        if (result.store[APP_LANGUAGE_ID] != language.key) result.store[APP_LANGUAGE_ID] = language.key
+    }
+    val pickedLanguage = result.store[APP_LANGUAGE_ID]
+    LaunchedEffect(pickedLanguage) {
+        val picked = AppLanguage.fromKey(pickedLanguage)
+        if (picked != null && picked != language) onLanguageChange(picked)
+    }
 
     val env = remember(result) {
         RenderEnv(
@@ -457,8 +468,6 @@ fun MainScreen(
                                             onHapticChange = onHapticChange,
                                             blur = blurEnabled,
                                             onBlurChange = onBlurChange,
-                                            language = language,
-                                            onLanguageChange = onLanguageChange,
                                         )
                                     }
                                 }

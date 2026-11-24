@@ -45,3 +45,13 @@ type       = "text"
 title      = "Mục phụ"
 content    = 'Chỉ hiện khi chọn "Hiện" (t_radio_toggle == show)'
 visible_if = "t_radio_toggle == show"
+
+[[group]]
+title = "Ngôn ngữ ứng dụng (id dành riêng app_language)"
+
+[[group.item]]
+type    = "radio"
+id      = "app_language"
+title   = "Ngôn ngữ"
+desc    = "id app_language gắn thẳng vào ngôn ngữ app: đổi là áp dụng ngay, không chạy lệnh, không lưu file. Giá trị option: system, en, vi."
+options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]

@@ -71,7 +71,6 @@
     <string name="settings_title">Cài đặt</string>
     <string name="menu_section_appearance">Giao diện</string>
     <string name="menu_section_options">Tùy chọn</string>
-    <string name="menu_section_language">Ngôn ngữ</string>
     <string name="language_system">Hệ thống</string>
     <string name="option_dynamic_color">Màu động</string>
     <string name="option_haptic">Rung khi chạm</string>
@@ -170,6 +169,7 @@
     <string name="cfg_lang_sh_failed">%1$s: shell thoát với mã %2$d, bỏ qua nguồn này</string>
     <string name="cfg_lang_sh_timeout">%1$s: shell quá %2$d giây, bỏ qua nguồn này</string>
     <string name="cfg_lang_bad_line">%1$s, dòng %2$d: không đúng dạng khóa=giá trị, bỏ qua</string>
+    <string name="cfg_app_language_option">%1$s \"%2$s\": giá trị option \"%3$s\" của app_language không hợp lệ (system, en hoặc vi), bỏ qua</string>
 
     <!-- Log khởi động -->
     <string name="boot_detecting">Đang dò quyền hệ thống...</string>

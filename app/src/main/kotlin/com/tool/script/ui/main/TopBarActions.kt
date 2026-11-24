@@ -69,12 +69,9 @@ import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
-import com.tool.script.util.AppLanguage
 import com.tool.script.util.Util
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng:
@@ -353,29 +350,18 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
 internal class SettingToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
 
 /**
- * Thẻ bo tròn gom các dòng bật / tắt: mỗi dòng chữ bên trái, ô tích tròn của Miuix bên phải, ngăn cách bằng vạch mỏng thụt lề.
- * Bấm cả dòng để đổi trạng thái, hộp thoại giữ nguyên.
+ * Một dòng bật / tắt trong thẻ riêng: chữ bên trái, ô tích tròn của Miuix bên phải.
+ * Bấm cả thẻ để đổi trạng thái, hộp thoại giữ nguyên.
  */
 @Composable
-internal fun SettingsToggleCard(toggles: List<SettingToggle>) {
+internal fun SettingsToggleCard(toggle: SettingToggle) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
     ) {
-        toggles.forEachIndexed { index, toggle ->
-            if (index > 0) {
-                Box(
-                    Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.12f)),
-                )
-            }
-            SettingsToggleRow(toggle)
-        }
+        SettingsToggleRow(toggle)
     }
 }
 
@@ -447,11 +433,11 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
 }
 
 /**
- * Hộp thoại Cài đặt hiện giữa màn hình (thay cho menu thả xuống cũ của nút chủ đề). Ba nhóm, đổi xong áp dụng ngay và hộp thoại giữ nguyên
- * để thấy kết quả phía sau; bấm Đóng, chạm ra ngoài hoặc Back để đóng:
- * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối, dưới là thẻ hai dòng tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ).
- * - Ngôn ngữ: khay phân đoạn Hệ thống / English / Tiếng Việt.
- * - Tùy chọn: thẻ dòng tích Rung khi chạm.
+ * Hộp thoại Cài đặt hiện giữa màn hình. Đổi xong áp dụng ngay, hộp thoại giữ nguyên để thấy kết quả phía sau;
+ * chạm ra ngoài hoặc Back để đóng (không có nút Đóng). Hai nhóm:
+ * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
+ * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
+ * Ngôn ngữ không còn ở đây: đổi bằng item `app_language` trong TOML.
  */
 @Composable
 fun SettingsDialog(
@@ -463,54 +449,31 @@ fun SettingsDialog(
     onHapticChange: (Boolean) -> Unit,
     blur: Boolean,
     onBlurChange: (Boolean) -> Unit,
-    language: AppLanguage,
-    onLanguageChange: (AppLanguage) -> Unit,
 ) {
-    // Màn hình thấp (xoay ngang): giới hạn chiều cao phần nhóm cài đặt và cho cuộn, nút Đóng luôn nằm dưới.
-    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
+    // Màn hình thấp (xoay ngang): giới hạn chiều cao và cho cuộn.
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.7f).dp
     BlurDialog(
         show = show,
         onDismissRequest = onDismiss,
         title = stringResource(R.string.settings_title),
         centered = true,
     ) {
-        Column {
-            Column(
-                modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                // Giao diện: khay chọn chế độ + thẻ các tùy chọn hiển thị.
-                SettingsSection(stringResource(R.string.menu_section_appearance)) {
-                    SettingsSegmentedRow(
-                        labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                        selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                        onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-                    )
-                    SettingsToggleCard(
-                        buildList {
-                            add(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-                            if (isBlurSupported()) add(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-                        },
-                    )
-                }
-                SettingsSection(stringResource(R.string.menu_section_language)) {
-                    SettingsSegmentedRow(
-                        labels = AppLanguage.entries.map { stringResource(it.labelRes) },
-                        selectedIndex = AppLanguage.entries.indexOf(language),
-                        onSelect = { index -> onLanguageChange(AppLanguage.entries[index]) },
-                    )
-                }
-                SettingsSection(stringResource(R.string.menu_section_options)) {
-                    SettingsToggleCard(listOf(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange)))
-                }
+        Column(
+            modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            SettingsSection(stringResource(R.string.menu_section_appearance)) {
+                SettingsSegmentedRow(
+                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                )
             }
-            Spacer(Modifier.height(24.dp))
-            TextButton(
-                text = stringResource(R.string.action_close),
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
+            SettingsSection(stringResource(R.string.menu_section_options)) {
+                SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+                if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+            }
         }
     }
 }

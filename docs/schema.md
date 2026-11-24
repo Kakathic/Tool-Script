@@ -376,6 +376,23 @@ title = "Pin"
 get   = "cat /sys/class/power_supply/battery/capacity"
 ```
 
+### Id dành riêng `app_language` (chọn ngôn ngữ app)
+
+Item `radio`, `dropdown` hoặc `singleselect` có `id = "app_language"` được gắn thẳng vào ngôn ngữ app (không còn mục chọn ngôn ngữ trong dialog Cài đặt):
+
+```toml
+[[item]]
+type    = "radio"            # hoặc dropdown / singleselect
+id      = "app_language"
+title   = "Ngôn ngữ"
+options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]
+```
+
+- Giá trị option chỉ nhận `system`, `en`, `vi`; giá trị khác bị bỏ kèm cảnh báo. Có thể chỉ liệt kê một vài ngôn ngữ.
+- Chọn xong ngôn ngữ đổi ngay, không nạp lại TOML; `run`, `shell`, `confirm` bị bỏ qua (không chạy lệnh).
+- Không lưu vào `files/state`; giá trị luôn là ngôn ngữ app đang dùng. Nhiều item cùng id (ở các trang khác nhau) dùng chung một trạng thái.
+- Type khác dùng id này bị báo là id dành riêng và bỏ qua.
+
 ## 8. Biến và điều kiện
 
 - Giá trị của item có `id` dùng trong lệnh dưới dạng `$id`.

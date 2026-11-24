@@ -36,3 +36,10 @@ default = "b"
 run     = 'echo "Đã chọn: $t_dropdown_alone"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c"]
+
+[[item]]
+type    = "dropdown"
+id      = "app_language"
+title   = "Ngôn ngữ"
+desc    = "id app_language gắn thẳng vào ngôn ngữ app (giá trị: system, en, vi)"
+options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]

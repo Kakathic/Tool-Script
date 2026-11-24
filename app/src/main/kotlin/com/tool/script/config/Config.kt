@@ -1,5 +1,7 @@
 package com.tool.script.config
 
+import com.tool.script.util.APP_LANGUAGE_ID
+import com.tool.script.util.AppLanguage
 import com.tool.script.util.AppText
 import com.tool.script.R
 import android.content.Context
@@ -328,7 +330,8 @@ object TomlParser {
                 warnings += AppText.get(R.string.cfg_invalid_id, label, title, id)
                 return null
             }
-            if (id in RESERVED_IDS) {
+            val selectType = type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.SingleSelect
+            if (id in RESERVED_IDS || (id == APP_LANGUAGE_ID && !selectType)) {
                 warnings += AppText.get(R.string.cfg_reserved_id, label, title, id)
                 return null
             }
@@ -416,6 +419,13 @@ object TomlParser {
                 options += option
             }
         }
+        if (id == APP_LANGUAGE_ID) {
+            options.removeAll { option ->
+                (AppLanguage.fromKey(option.value) == null).also { bad ->
+                    if (bad) warnings += AppText.get(R.string.cfg_app_language_option, label, title, option.value)
+                }
+            }
+        }
         if ((type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect ||
             type == ItemType.SingleSelect) &&
             options.isEmpty()
@@ -466,7 +476,7 @@ object TomlParser {
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
             timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },
             content = t.str("content"),
-            run = t.str("run"),
+            run = if (id == APP_LANGUAGE_ID) null else t.str("run"),
             on = t.str("on"),
             off = t.str("off"),
             get = t.str("get"),
