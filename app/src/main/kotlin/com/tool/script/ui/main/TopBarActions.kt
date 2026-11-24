@@ -349,54 +349,53 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
     }
 }
 
-/** Một ô bật / tắt trong [SettingsToggleGrid]. */
+/** Một dòng bật / tắt trong [SettingsToggleCard]. */
 internal class SettingToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
 
 /**
- * Lưới ô bật / tắt 2 cột (thay cho công tắc): ô bo góc, tắt thì nền xám nhạt, bật thì nền màu chủ đạo nhạt, chữ màu chủ đạo; bên phải là ô tích tròn.
- * Bấm ô để đổi trạng thái, hộp thoại giữ nguyên. Hai ô cùng hàng luôn cao bằng nhau; hàng lẻ chừa ô trống bên phải.
+ * Thẻ bo tròn gom các dòng bật / tắt: mỗi dòng chữ bên trái, ô tích tròn của Miuix bên phải, ngăn cách bằng vạch mỏng thụt lề.
+ * Bấm cả dòng để đổi trạng thái, hộp thoại giữ nguyên.
  */
 @Composable
-internal fun SettingsToggleGrid(toggles: List<SettingToggle>) {
+internal fun SettingsToggleCard(toggles: List<SettingToggle>) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
     ) {
-        toggles.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowItems.forEach { toggle ->
-                    SettingsToggleTile(toggle, Modifier.weight(1f).fillMaxHeight())
-                }
-                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+        toggles.forEachIndexed { index, toggle ->
+            if (index > 0) {
+                Box(
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.12f)),
+                )
             }
+            SettingsToggleRow(toggle)
         }
     }
 }
 
 @Composable
-private fun SettingsToggleTile(toggle: SettingToggle, modifier: Modifier) {
+private fun SettingsToggleRow(toggle: SettingToggle) {
     val on = toggle.checked
     Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (on) MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable { toggle.onChange(!on) }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = toggle.label,
-            color = if (on) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Normal,
-            maxLines = 2,
+            color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(6.dp))
-        // Ô tích tròn của Miuix (cùng kiểu chọn nhiều mục), luôn hiện: tắt là vòng rỗng, bật là tích. Bấm ô hay cả ô đều đổi trạng thái.
+        Spacer(Modifier.width(12.dp))
         Checkbox(
             state = if (on) ToggleableState.On else ToggleableState.Off,
             onClick = { toggle.onChange(!on) },
@@ -434,16 +433,25 @@ private fun SettingsSectionLabel(text: String) {
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         fontSize = 13.sp,
         fontWeight = FontWeight.Medium,
-        modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+        modifier = Modifier.padding(start = 4.dp),
     )
+}
+
+/** Một nhóm trong hộp thoại cài đặt: nhãn nhỏ phía trên, các điều khiển bên dưới cách nhau 8dp. */
+@Composable
+private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SettingsSectionLabel(title)
+        content()
+    }
 }
 
 /**
  * Hộp thoại Cài đặt hiện giữa màn hình (thay cho menu thả xuống cũ của nút chủ đề). Ba nhóm, đổi xong áp dụng ngay và hộp thoại giữ nguyên
  * để thấy kết quả phía sau; bấm Đóng, chạm ra ngoài hoặc Back để đóng:
- * - Giao diện: chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối.
- * - Tùy chọn: lưới ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm Giao diện), Rung khi chạm, Làm mờ nền (chỉ hiện khi máy hỗ trợ).
- * - Ngôn ngữ: chọn một: Hệ thống / English / Tiếng Việt.
+ * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối, dưới là thẻ hai dòng tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ).
+ * - Ngôn ngữ: khay phân đoạn Hệ thống / English / Tiếng Việt.
+ * - Tùy chọn: thẻ dòng tích Rung khi chạm.
  */
 @Composable
 fun SettingsDialog(
@@ -469,30 +477,34 @@ fun SettingsDialog(
         Column {
             Column(
                 modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                SettingsSectionLabel(stringResource(R.string.menu_section_appearance))
-                SettingsSegmentedRow(
-                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-                )
-                SettingsSectionLabel(stringResource(R.string.menu_section_options))
-                SettingsToggleGrid(
-                    buildList {
-                        add(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-                        add(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
-                        if (isBlurSupported()) add(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-                    },
-                )
-                SettingsSectionLabel(stringResource(R.string.menu_section_language))
-                SettingsSegmentedRow(
-                    labels = AppLanguage.entries.map { stringResource(it.labelRes) },
-                    selectedIndex = AppLanguage.entries.indexOf(language),
-                    onSelect = { index -> onLanguageChange(AppLanguage.entries[index]) },
-                )
+                // Giao diện: khay chọn chế độ + thẻ các tùy chọn hiển thị.
+                SettingsSection(stringResource(R.string.menu_section_appearance)) {
+                    SettingsSegmentedRow(
+                        labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                        selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                        onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                    )
+                    SettingsToggleCard(
+                        buildList {
+                            add(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+                            if (isBlurSupported()) add(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                        },
+                    )
+                }
+                SettingsSection(stringResource(R.string.menu_section_language)) {
+                    SettingsSegmentedRow(
+                        labels = AppLanguage.entries.map { stringResource(it.labelRes) },
+                        selectedIndex = AppLanguage.entries.indexOf(language),
+                        onSelect = { index -> onLanguageChange(AppLanguage.entries[index]) },
+                    )
+                }
+                SettingsSection(stringResource(R.string.menu_section_options)) {
+                    SettingsToggleCard(listOf(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange)))
+                }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
             TextButton(
                 text = stringResource(R.string.action_close),
                 onClick = onDismiss,
