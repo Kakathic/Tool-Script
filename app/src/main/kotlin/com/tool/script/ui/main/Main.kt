@@ -547,6 +547,8 @@ private fun AppTopBar(
 private val BarCollapsedHeight = 56.dp
 /** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
 private val LargeTitleTopPadding = 20.dp
+/** Như trên nhưng khi có nút quay lại: chữ lớn bắt đầu ngay dưới hàng nút (hàng nút cao 48dp, thanh thu gọn 56dp). */
+private val LargeTitleTopPaddingWithBack = 52.dp
 private val LargeTitleHorizontalPadding = 26.dp
 private val LargeTitleBottomPadding = 4.dp
 
@@ -565,9 +567,11 @@ private fun LargeTitleTopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val state = scrollBehavior.state
+    // Có nút quay lại bên trái thì chữ lớn nằm hẳn dưới hàng nút (không đè lên mũi tên); không có thì như cũ (đè lên hàng icon bên phải).
+    val largeTopPadding = if (onBack != null) LargeTitleTopPaddingWithBack else LargeTitleTopPadding
     val density = LocalDensity.current
     // Quãng thanh co lại khi thu gọn = đệm trên chữ lớn + chiều cao chữ + đệm dưới - chiều cao thanh thu gọn.
-    val extraPx = with(density) { (LargeTitleTopPadding + LargeTitleBottomPadding - BarCollapsedHeight).roundToPx() }
+    val extraPx = with(density) { (largeTopPadding + LargeTitleBottomPadding - BarCollapsedHeight).roundToPx() }
     // Chữ nhỏ chỉ hiện khi đã thu gần hết (giống Miuix: 1/3 quãng thu gọn).
     val smallVisible by remember(state) { derivedStateOf { state.collapsedFraction * 3f >= 1f } }
     val smallAlpha by animateFloatAsState(
@@ -612,7 +616,7 @@ private fun LargeTitleTopBar(
             Box(
                 modifier = Modifier
                     .layoutId("large")
-                    .padding(top = LargeTitleTopPadding)
+                    .padding(top = largeTopPadding)
                     .padding(horizontal = LargeTitleHorizontalPadding)
                     .graphicsLayer { alpha = 1f - (state.collapsedFraction * 3f).coerceIn(0f, 1f) },
             ) {
