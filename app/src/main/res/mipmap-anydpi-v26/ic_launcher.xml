@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive icon (Android 8+). Lớp monochrome (icon theo chủ đề Android 13+) dùng bản nét viền riêng ic_logo_mono để dấu nhắc không dính thành khối. -->
+<!-- Icon mặc định (Android 8+), cùng bộ với icon chế độ sáng. Icon thực tế do activity-alias IconForLight / IconForDark quyết định. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_logo_fg" />
+    <background android:drawable="@color/ic_for_light_bg" />
+    <foreground android:drawable="@drawable/ic_launcher_fg_for_light" />
     <monochrome android:drawable="@drawable/ic_logo_mono" />
 </adaptive-icon>
