@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +24,7 @@ import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** Splash: logo trên cùng, thanh tiến trình, 5 dòng log; căn giữa, lề 2 bên 16dp. */
+/** Splash: logo trên cùng, thanh tiến trình ngắn 160dp căn giữa, 5 dòng log; căn giữa, lề 2 bên 16dp. */
 @Composable
 fun SplashScreen(state: BootState) {
     Box(
@@ -46,7 +47,7 @@ fun SplashScreen(state: BootState) {
             )
             Spacer(Modifier.height(24.dp))
             LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.width(160.dp),
                 progress = state.progress,
             )
             Spacer(Modifier.height(16.dp))

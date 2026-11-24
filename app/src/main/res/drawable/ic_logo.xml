@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Logo splash và màn khởi động: cửa sổ terminal với dấu nhắc >_, không nền: nền do window_bg quyết định (trắng ban ngày, đen ban đêm).
-     Màu lấy từ ic_term_window và ic_term_prompt (có bản tối). Thu 0.82 để nằm trong vòng tròn che của splash Android 12+. -->
+<!-- Logo màn splash trong app: đúng icon ứng dụng (nền bo góc + cửa sổ terminal), vẽ đủ khung 108, dùng chung màu ic_launcher_*. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group
-        android:pivotX="54"
-        android:pivotY="54"
-        android:scaleX="0.82"
-        android:scaleY="0.82">
-        <path
-            android:fillColor="@color/ic_term_window"
-            android:pathData="M33,28H75A11,11 0 0 1 86,39V69A11,11 0 0 1 75,80H33A11,11 0 0 1 22,69V39A11,11 0 0 1 33,28Z" />
-        <path
-            android:pathData="M40,46L52,54L40,62"
-            android:strokeColor="@color/ic_term_prompt"
-            android:strokeWidth="5.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M58,64H72"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="5.5"
-            android:strokeLineCap="round" />
-    </group>
+    <path
+        android:fillColor="@color/ic_launcher_bg"
+        android:pathData="M25,0H83A25,25 0 0 1 108,25V83A25,25 0 0 1 83,108H25A25,25 0 0 1 0,83V25A25,25 0 0 1 25,0Z" />
+    <path
+        android:fillColor="@color/ic_launcher_window"
+        android:pathData="M33,28H75A11,11 0 0 1 86,39V69A11,11 0 0 1 75,80H33A11,11 0 0 1 22,69V39A11,11 0 0 1 33,28Z" />
+    <path
+        android:pathData="M40,46L52,54L40,62"
+        android:strokeColor="@color/ic_launcher_prompt"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M58,64H72"
+        android:strokeColor="@color/ic_launcher_cursor"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round" />
 </vector>

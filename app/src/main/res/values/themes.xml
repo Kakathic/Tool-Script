@@ -12,7 +12,7 @@
     <!-- Splash hệ thống (rất ngắn), sau đó chuyển sang Theme.ToolScript -->
     <style name="Theme.ToolScript.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/window_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.ToolScript</item>
     </style>
 </resources>
