@@ -53,6 +53,23 @@ object LanguagePrefs {
         }
     }
 
+    /** Mã ngôn ngữ mặc định của app khi ngôn ngữ thiết bị không được hỗ trợ: thư mục `values/` là English. */
+    private const val DEFAULT_TAG = "en"
+
+    /** Locale của thiết bị (hệ thống); ngôn ngữ riêng của app không ảnh hưởng. */
+    fun deviceLocale(): Locale = Resources.getSystem().configuration.locales.get(0)
+
+    /**
+     * Mã ngôn ngữ mà app đang thật sự dùng (`vi`, `en`): lựa chọn riêng nếu có, còn "Hệ thống" thì lấy ngôn ngữ thiết bị
+     * nếu app hỗ trợ, không thì [DEFAULT_TAG]. Truyền [language] khi vừa đổi lựa chọn để khỏi phụ thuộc thời điểm hệ thống cập nhật.
+     */
+    fun effectiveTag(context: Context, language: AppLanguage? = null): String {
+        val chosen = language ?: load(context)
+        if (chosen != AppLanguage.System) return chosen.tag
+        val device = deviceLocale().language
+        return AppLanguage.entries.firstOrNull { it.tag.isNotEmpty() && it.tag == device }?.tag ?: DEFAULT_TAG
+    }
+
     /**
      * Context dùng ngôn ngữ [language] cho tài nguyên (chuỗi). Android 13+ hoặc theo hệ thống: trả lại [base] không đổi.
      * Bọc bằng ContextWrapper nên vẫn lần ngược được ra Activity (Util.exitApp, v.v.).

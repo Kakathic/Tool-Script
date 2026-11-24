@@ -3,11 +3,13 @@ package com.tool.script.config
 import com.tool.script.util.AppText
 import com.tool.script.R
 import android.content.Context
+import com.tool.script.executor.ExecutorManager
 import com.tool.script.util.ShellText
 import dev.eav.tomlkt.Toml
 import dev.eav.tomlkt.TomlArray
 import dev.eav.tomlkt.TomlLiteral
 import dev.eav.tomlkt.TomlTable
+import java.io.IOException
 
 // Model + parser TOML theo docs/schema.md.
 
@@ -77,7 +79,7 @@ data class Item(
 )
 
 /** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
-data class AppInfo(val name: String, val lang: String, val env: String? = null)
+data class AppInfo(val name: String, val env: String? = null)
 
 data class PageRef(val id: String, val title: String, val icon: String, val file: String)
 
@@ -132,7 +134,46 @@ object TomlParser {
         throw ConfigParseException(file, LINE_REGEX.find(msg)?.groupValues?.get(1)?.toIntOrNull(), msg)
     }
 
-    private fun TomlTable.str(key: String): String? = (this[key] as? TomlLiteral)?.content
+    /** Bảng chuỗi `@khóa` đang áp dụng; [ConfigRepository.load] đặt trước khi parse và trả về rỗng sau khi parse xong. */
+    @Volatile
+    internal var strings: LangTable = LangTable.EMPTY
+
+    /**
+     * Khóa TOML mà giá trị không bao giờ bị thay `@khóa`: định danh, kiểu, đường dẫn, biểu thức, số, chế độ...
+     * Mọi khóa còn lại (title, desc, hint, confirm, content, nhãn trong options, lệnh run/on/off/get, name, env...) đều được thay.
+     */
+    private val RAW_KEYS = setOf(
+        "id", "type", "icon", "icon_size", "icon_tint", "shell", "columns", "lock_mode", "input_type", "style",
+        "tab", "page", "file", "visible_if", "lock", "timeout", "min", "max", "step", "default", "separator",
+        "lang", "lang-sh", "load-string", "load-string-sh",
+    )
+
+    private val APP_KEYS = setOf("name", "env", "lang", "lang-sh", "load-string", "load-string-sh")
+    private val MAIN_KEYS = setOf("app", "tab", "page")
+    private val TAB_KEYS = setOf("id", "title", "icon", "file")
+    private val PAGE_KEYS = setOf("item", "group")
+    private val ITEM_KEYS = setOf(
+        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible_if", "lock", "lock_mode", "confirm", "timeout",
+        "content", "run", "on", "off", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
+        "columns", "tab", "page", "style", "shell",
+    )
+
+    /** Khóa không có trong code (thường là gõ sai) đều báo cáo. Bảng vẫn được đọc, chỉ riêng khóa lạ bị bỏ qua. */
+    private fun warnUnknownKeys(table: TomlTable, known: Set<String>, label: String, warnings: MutableList<String>) {
+        table.keys.filter { it !in known }.forEach { warnings += AppText.get(R.string.cfg_unknown_key, label, it) }
+    }
+
+    private fun TomlTable.str(key: String): String? =
+        (this[key] as? TomlLiteral)?.content?.let { if (key in RAW_KEYS) it else strings.resolve(it) }
+
+    /** Option `"Nhãn|giá trị"`: chỉ thay phần nhãn, giá trị giữ nguyên (nó được lưu và truyền cho lệnh). Không có `|` thì nhãn = giá trị. */
+    private fun resolveOption(raw: String): String {
+        val idx = raw.indexOf('|')
+        val label = if (idx >= 0) raw.substring(0, idx) else raw
+        // Bản dịch chứa `|` sẽ làm lệch cách tách nhãn / giá trị, nên giữ nguyên nhãn gốc trong trường hợp đó.
+        val shown = strings.resolve(label).takeIf { '|' !in it } ?: label
+        return if (idx >= 0) shown + raw.substring(idx) else "$shown|$raw"
+    }
 
     private fun TomlTable.float(key: String): Float? = str(key)?.toFloatOrNull()?.takeIf { it.isFinite() }
 
@@ -148,9 +189,10 @@ object TomlParser {
     fun parseMain(file: String, text: String, warnings: MutableList<String>): Pair<AppInfo, List<PageRef>> {
         val root = parseTable(file, text)
         val app = root["app"] as? TomlTable
+        warnUnknownKeys(root, MAIN_KEYS, file, warnings)
+        if (app != null) warnUnknownKeys(app, APP_KEYS, "$file: [app]", warnings)
         val info = AppInfo(
             name = app?.str("name") ?: "Tool Script",
-            lang = app?.str("lang") ?: "vi",
             env = app?.str("env")?.takeIf { it.isNotBlank() },
         )
         val pages = mutableListOf<PageRef>()
@@ -160,6 +202,7 @@ object TomlParser {
         array?.forEachIndexed { index, element ->
             val t = element as? TomlTable
             val label = "$file: [[tab]] #${index + 1}"
+            if (t != null) warnUnknownKeys(t, TAB_KEYS, label, warnings)
             val id = t?.str("id")
             val title = t?.str("title")
             val icon = t?.str("icon")
@@ -179,7 +222,7 @@ object TomlParser {
     /** Tên biến môi trường của app (env.sh, biến dựng sẵn) và shell: item đặt id trùng sẽ đè môi trường của mọi lệnh. */
     private val RESERVED_IDS = setOf(
         "PACKAGE", "APP_DIR", "FILES_DIR", "CACHE_DIR", "SCRIPTS_DIR", "STATE_DIR", "HOME", "BIN_DIR", "LIB_DIR",
-        "ABI", "ARCH", "EXT_ROOT", "EXT_DIR", "SDK", "ROOT_MODE",
+        "ABI", "ARCH", "EXT_ROOT", "EXT_DIR", "SDK", "ROOT_MODE", "LANGUAGE", "LANGAPP", "COUNTRY",
         "PATH", "LD_LIBRARY_PATH", "IFS", "PWD", "shell_progres",
     )
 
@@ -188,6 +231,7 @@ object TomlParser {
 
     fun parsePage(file: String, text: String, warnings: MutableList<String>): List<Item> {
         val root = parseTable(file, text)
+        warnUnknownKeys(root, PAGE_KEYS, file, warnings)
         val ids = HashSet<String>()
         val items = (root["item"] as? TomlArray)?.toList().orEmpty()
         val groups = (root["group"] as? TomlArray)?.toList().orEmpty()
@@ -252,6 +296,7 @@ object TomlParser {
         label: String,
         isGroup: Boolean,
     ): Item? {
+        warnUnknownKeys(t, if (isGroup) ITEM_KEYS + setOf("item", "group") else ITEM_KEYS, label, warnings)
         val typeKey = t.str("type")
         if (!isGroup && typeKey == ItemType.Group.key) {
             warnings += AppText.get(R.string.cfg_type_group_renamed, label)
@@ -363,7 +408,7 @@ object TomlParser {
         // options = ["Nhãn|giá trị", ...]; không có dấu | thì nhãn = giá trị.
         val options = mutableListOf<SelectOption>()
         (t["options"] as? TomlArray)?.forEachIndexed { i, o ->
-            val raw = (o as? TomlLiteral)?.content
+            val raw = (o as? TomlLiteral)?.content?.let(::resolveOption)
             val option = raw?.let(::parseOption)
             if (option == null) {
                 warnings += AppText.get(R.string.cfg_invalid_option, label, title, (i + 1).toString())
@@ -460,16 +505,81 @@ object ConfigRepository {
     private fun readAsset(context: Context, path: String): String =
         context.assets.open("$ROOT/$path").bufferedReader(Charsets.UTF_8).use { it.readText() }
 
-    /** Ném [ConfigParseException] nếu `main.toml` lỗi cú pháp; file trang lỗi chỉ làm trang đó hiện lỗi. */
-    fun load(context: Context): LoadedConfig {
+    /** Thời gian tối đa cho một lệnh shell nạp chuỗi ngôn ngữ (`lang-sh`, `load-string-sh`). */
+    private const val LANG_SHELL_TIMEOUT_SEC = 5
+
+    /**
+     * Ném [ConfigParseException] nếu `main.toml` lỗi cú pháp; file trang lỗi chỉ làm trang đó hiện lỗi.
+     * Nạp bảng chuỗi `@khóa` (`[app]`: lang < lang-sh < load-string < load-string-sh, nguồn sau đè nguồn trước) trước khi parse
+     * main.toml và các trang, để mọi chuỗi hiển thị trong TOML đã được thay khi dựng Item. Suspend vì có thể chạy shell.
+     */
+    suspend fun load(context: Context): LoadedConfig {
         val appWarnings = mutableListOf<String>()
-        // Cảnh báo gom theo file để mỗi trang chỉ hiện cảnh báo của chính nó.
-        val byFile = LinkedHashMap<String, MutableList<String>>()
         val mainText = try {
             readAsset(context, "main.toml")
         } catch (e: java.io.IOException) {
             throw ConfigParseException("main.toml", null, AppText.get(R.string.cfg_read_failed, e.message.orEmpty()))
         }
+        val rawApp = TomlParser.parseTable("main.toml", mainText)["app"] as? TomlTable
+        // Lệnh shell nạp chuỗi dùng cùng môi trường với mọi lệnh khác (env.sh rồi [app] env).
+        (rawApp?.get("env") as? TomlLiteral)?.content?.takeIf { it.isNotBlank() }?.let { ExecutorManager.prelude = it }
+        TomlParser.strings = loadStrings(context, rawApp, appWarnings)
+        try {
+            return parseAll(context, mainText, appWarnings)
+        } finally {
+            TomlParser.strings = LangTable.EMPTY
+        }
+    }
+
+    private fun TomlTable.raw(key: String): String? = (this[key] as? TomlLiteral)?.content?.takeIf { it.isNotBlank() }
+
+    private suspend fun loadStrings(context: Context, app: TomlTable?, warnings: MutableList<String>): LangTable {
+        if (app == null) return LangTable.EMPTY
+        val merged = LinkedHashMap<String, String>()
+        // 1. lang: tệp văn bản dạng bash (khóa=giá trị)
+        app.raw("lang")?.let { path ->
+            readLangAsset(context, "lang", path, warnings)?.let { merged += LangTable.parse(it, path, warnings) }
+        }
+        // 2. lang-sh: tệp shell, những gì nó in ra là bảng chuỗi (đè lên lang)
+        app.raw("lang-sh")?.let { path ->
+            readLangAsset(context, "lang-sh", path, warnings)?.let { script -> runLangShell("lang-sh", path, script, warnings)?.let { merged += it } }
+        }
+        // 3. load-string: văn bản nhập thẳng, dùng để bổ sung vài khóa nhỏ (đè lên lang và lang-sh)
+        app.raw("load-string")?.let { merged += LangTable.parse(it, "load-string", warnings) }
+        // 4. load-string-sh: lệnh shell nhập thẳng (ví dụ echo), đè lên load-string
+        app.raw("load-string-sh")?.let { cmd -> runLangShell("load-string-sh", "load-string-sh", cmd, warnings)?.let { merged += it } }
+        return LangTable(merged)
+    }
+
+    private fun readLangAsset(context: Context, source: String, path: String, warnings: MutableList<String>): String? = try {
+        readAsset(context, path)
+    } catch (e: IOException) {
+        warnings += AppText.get(R.string.cfg_lang_file_failed, source, path, e.message.orEmpty())
+        null
+    }
+
+    /** Chạy [command], parse đầu ra thành bảng chuỗi. Lỗi, hết giờ hoặc thoát khác 0 thì cảnh báo và bỏ nguồn này. */
+    private suspend fun runLangShell(source: String, name: String, command: String, warnings: MutableList<String>): Map<String, String>? {
+        val result = try {
+            ExecutorManager.current.exec(ShellText.silenceStderr(command), LANG_SHELL_TIMEOUT_SEC)
+        } catch (e: Exception) {
+            warnings += AppText.get(R.string.cfg_lang_sh_error, source, (e.message ?: e).toString())
+            return null
+        }
+        if (!result.ok) {
+            warnings += if (result.timedOut) {
+                AppText.get(R.string.cfg_lang_sh_timeout, source, LANG_SHELL_TIMEOUT_SEC)
+            } else {
+                AppText.get(R.string.cfg_lang_sh_failed, source, result.code)
+            }
+            return null
+        }
+        return LangTable.parse(result.output, name, warnings)
+    }
+
+    private fun parseAll(context: Context, mainText: String, appWarnings: MutableList<String>): LoadedConfig {
+        // Cảnh báo gom theo file để mỗi trang chỉ hiện cảnh báo của chính nó.
+        val byFile = LinkedHashMap<String, MutableList<String>>()
         val (app, refs) = TomlParser.parseMain("main.toml", mainText, appWarnings)
         if (refs.isEmpty()) {
             throw ConfigParseException("main.toml", null, AppText.get(R.string.cfg_no_tabs))

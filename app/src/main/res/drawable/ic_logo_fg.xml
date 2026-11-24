@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lớp trước của icon launcher: cửa sổ terminal với dấu nhắc >_ (nền do ic_launcher_bg quyết định).
-     Màu cửa sổ và dấu nhắc lấy từ ic_term_window và ic_term_prompt nên có bản sáng và bản tối (values và values-night).
-     Lớp monochrome Android 13+ là ic_logo_mono. Thu 0.82 để nằm gọn trong vùng nhìn thấy của adaptive icon. -->
+<!-- Lớp trước của icon launcher: cửa sổ terminal với dấu nhắc >_. Màu lấy từ ic_launcher_* và đảo theo chủ đề (sáng dùng icon tối, tối dùng icon sáng). Thu 0.82 để nằm gọn trong vùng nhìn thấy. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -13,17 +11,17 @@
         android:scaleX="0.82"
         android:scaleY="0.82">
         <path
-            android:fillColor="@color/ic_term_window"
+            android:fillColor="@color/ic_launcher_window"
             android:pathData="M33,28H75A11,11 0 0 1 86,39V69A11,11 0 0 1 75,80H33A11,11 0 0 1 22,69V39A11,11 0 0 1 33,28Z" />
         <path
             android:pathData="M40,46L52,54L40,62"
-            android:strokeColor="@color/ic_term_prompt"
+            android:strokeColor="@color/ic_launcher_prompt"
             android:strokeWidth="5.5"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
         <path
             android:pathData="M58,64H72"
-            android:strokeColor="#FFFFFFFF"
+            android:strokeColor="@color/ic_launcher_cursor"
             android:strokeWidth="5.5"
             android:strokeLineCap="round" />
     </group>

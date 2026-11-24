@@ -14,6 +14,11 @@ export ARCH="@ARCH@"
 export EXT_ROOT="@EXT_ROOT@"
 export EXT_DIR="@EXT_DIR@"
 
+# Ngôn ngữ: LANGUAGE = ngôn ngữ thiết bị (vi, en...), LANGAPP = ngôn ngữ app đang dùng (đổi theo Cài đặt của app), COUNTRY = quốc gia của thiết bị (VN, US...; có thể rỗng).
+export LANGUAGE="@LANGUAGE@"
+export LANGAPP="@LANGAPP@"
+export COUNTRY="@COUNTRY@"
+
 # $BIN_DIR = $HOME/bin: glog, slog, killtree chép từ assets/bin lúc mở app, và busybox do init.sh cài từ assets/lib/<abi>/libbusybox.so.
 # Tự đặt lệnh khác (vd ELF tải về) vào đó cũng gọi được. Applet của busybox chưa tạo symlink: dùng `busybox ls`...
 export PATH="$BIN_DIR:$PATH"

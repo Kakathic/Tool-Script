@@ -129,7 +129,7 @@ Giai đoạn 4: backend mở rộng
 Giai đoạn 5: cấu hình và schema
 
 - [ ] Nạp cấu hình từ thư mục ngoài và reload nóng (hiện chỉ đọc từ `assets/configs`).
-- [ ] Đa ngôn ngữ theo khóa (`title_vi`, `title_en`...). `lang` trong `main.toml` đã được đọc nhưng chưa dùng.
+- [x] Đa ngôn ngữ theo `@khóa` trong TOML (`lang`, `lang-sh`, `load-string`, `load-string-sh` trong `[app]`, xem docs/schema.md). `env.sh` có sẵn `LANGUAGE`, `LANGAPP`, `COUNTRY`. Còn lại: đường dẫn ngoài, nạp lại chuỗi TOML khi đổi ngôn ngữ trong Cài đặt.
 - [ ] Điều kiện: dấu ngoặc và so sánh lớn / nhỏ.
 - [ ] `[[group]]`: hiển thị `desc`, hỗ trợ group lồng group (`[[group.group]]` hiện bị bỏ qua kèm cảnh báo).
 

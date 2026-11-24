@@ -19,8 +19,11 @@ object EnvFile {
 
     private val KEY = Regex("@([A-Z][A-Z0-9_]*)@")
 
-    /** Các key có sẵn và đường dẫn tương ứng. */
-    fun keys(context: Context): Map<String, String> {
+    /**
+     * Các key có sẵn và giá trị tương ứng. [language] là ngôn ngữ app vừa chọn (null = đọc từ [LanguagePrefs]).
+     * `LANGUAGE`, `COUNTRY`: ngôn ngữ và quốc gia của thiết bị; `LANGAPP`: ngôn ngữ app đang dùng.
+     */
+    fun keys(context: Context, language: AppLanguage? = null): Map<String, String> {
         val ext = Environment.getExternalStorageDirectory().absolutePath
         val home = Util.homeDir(context)
         return linkedMapOf(
@@ -38,6 +41,9 @@ object EnvFile {
             "ARCH" to Util.arch(),
             "EXT_ROOT" to ext,
             "EXT_DIR" to "$ext/ToolScript",
+            "LANGUAGE" to LanguagePrefs.deviceLocale().language,
+            "LANGAPP" to LanguagePrefs.effectiveTag(context, language),
+            "COUNTRY" to LanguagePrefs.deviceLocale().country,
         )
     }
 
@@ -53,17 +59,25 @@ object EnvFile {
         return out to unknown.toList()
     }
 
-    /** Đọc asset, thay key, ghi ra thư mục app. Trả về null nếu app không có file env.sh. */
-    fun prepare(context: Context): PreparedEnv? {
+    /**
+     * Đọc asset, thay key, ghi ra thư mục app. Trả về null nếu app không có file env.sh.
+     * Gọi lại được lúc app đang chạy (ví dụ khi đổi ngôn ngữ để cập nhật `LANGAPP`): ghi file tạm rồi đổi tên nên lệnh đang nạp env.sh không đọc phải file dở.
+     */
+    fun prepare(context: Context, language: AppLanguage? = null): PreparedEnv? {
         val text = try {
             context.assets.open(ASSET).bufferedReader(Charsets.UTF_8).use { it.readText() }
         } catch (e: FileNotFoundException) {
             return null
         }
-        val (rendered, unknown) = render(text, keys(context))
+        val (rendered, unknown) = render(text, keys(context, language))
         val dest = File(Util.scriptsDir(context), "env.sh")
         dest.parentFile?.mkdirs()
-        dest.writeText(rendered, Charsets.UTF_8)
+        val tmp = File(dest.parentFile, "env.sh.tmp")
+        tmp.writeText(rendered, Charsets.UTF_8)
+        if (!tmp.renameTo(dest)) {
+            dest.writeText(rendered, Charsets.UTF_8)
+            tmp.delete()
+        }
         File(context.filesDir, "state").mkdirs()
         return PreparedEnv(dest, unknown)
     }

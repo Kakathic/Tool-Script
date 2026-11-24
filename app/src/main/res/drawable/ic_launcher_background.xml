@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lớp nền của icon launcher: màu phẳng ic_launcher_bg (trắng ban ngày, đen xám ban đêm; xem values và values-night). -->
+<!-- Lớp nền icon launcher: ic_launcher_bg (đen xám ở chế độ sáng, trắng ở chế độ tối). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@color/ic_launcher_bg" />
 </shape>

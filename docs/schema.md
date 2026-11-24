@@ -30,7 +30,6 @@ assets/configs/
 ```toml
 [app]
 name    = "Tool Script"   # hiện làm tiêu đề thanh trên cùng
-lang    = "vi"
 env     = "export PATH=$PATH:/data/adb/bin"   # tùy chọn, xem bên dưới
 
 [[tab]]
@@ -53,6 +52,33 @@ file  = "pages/switches.toml"
   - Đường dẫn ngoài: `/sdcard/ToolScript/icons/home.png`.
 - Thanh tab hiện tối đa 4 tab, tối thiểu 2 (xem mục 5).
 
+### Ngôn ngữ (`@khóa`)
+
+Chuỗi hiển thị trong TOML có thể viết `@khóa`; app thay bằng văn bản lấy từ bảng chuỗi được nạp từ `[app]`:
+
+```toml
+[app]
+lang           = "lang/vi.txt"       # tệp khóa=văn bản
+lang-sh        = "lang/lang.sh"      # tệp shell: những gì nó in ra là khóa=văn bản
+load-string    = "wifi_title=Wi-Fi"  # khóa=văn bản nhập thẳng, để bổ sung vài khóa nhỏ
+load-string-sh = "echo wifi_desc=Bật hoặc tắt"   # lệnh shell nhập thẳng (ví dụ echo)
+```
+
+- Cả bốn khóa đều tùy chọn và dùng cùng lúc được. Khóa nào xuất hiện sau thì **đè** khóa trước theo thứ tự `lang` < `lang-sh` < `load-string` < `load-string-sh`. `load-string` chủ yếu để thêm vài khóa lẻ mà không phải sửa tệp ngôn ngữ.
+- **Định dạng** (giống bash, dùng cho cả tệp, đầu ra shell và chuỗi nhập thẳng): mỗi dòng `khóa=giá trị`.
+  - Bỏ dòng trống và dòng bắt đầu bằng `#`; chấp nhận tiền tố `export ` và khoảng trắng quanh `=` (nên tệp TOML phẳng `khóa = "văn bản"` cũng đọc được).
+  - Giá trị không nháy chạy đến hết dòng (hoặc đến ` #` bắt đầu ghi chú). Nháy đơn: nguyên văn. Nháy kép: hiểu `\n` (xuống dòng), `\t`, `\"`, `\\`, `\$`.
+  - Khóa gồm chữ, số, gạch dưới, không bắt đầu bằng số. Khóa trùng thì dòng sau thắng. Dòng sai dạng chỉ bị bỏ qua kèm cảnh báo.
+- `lang` và `lang-sh` là đường dẫn tính từ thư mục configs (assets). Đường dẫn ngoài và đường dẫn theo ngôn ngữ chưa hỗ trợ.
+- `lang-sh` và `load-string-sh` chạy bằng chính shell của app, sau `env.sh` và `[app] env`, tối đa **5 giây**; lỗi, hết giờ hoặc thoát khác 0 thì cảnh báo và bỏ nguồn đó. Chỉ stdout được đọc (stderr bị bỏ). Script chọn chuỗi theo ngôn ngữ bằng biến `$LANGAPP` (ngôn ngữ app đang dùng), `$LANGUAGE` (ngôn ngữ thiết bị) và `$COUNTRY` từ `env.sh`, ví dụ `lang-sh = "lang/lang.sh"` với `case "$LANGAPP" in vi) echo wifi_title=Wi-Fi ;; esac`.
+- **Cách thay:** ở bất cứ chuỗi nào, nếu có `@khóa` mà **khóa đó có trong bảng** thì thay; không có thì giữ nguyên (nên `user@host`, `@progress` không bị đụng).
+  - `@` không được đứng ngay sau chữ, số, gạch dưới hay `@` khác; `@khóa` nhận trọn một định danh ("Xin chào @ten." giữ dấu chấm). Cần viết liền chữ phía sau thì dùng `@{khóa}`.
+  - Không thay lồng nhau: văn bản vừa thay vào không bị quét lại.
+  - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `shell`, `columns`, `lock_mode`, `input_type`, `style`, `tab`, `page`, `file`, `visible_if`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
+  - Các khóa còn lại thay được, kể cả lệnh `run`, `on`, `off`, `get` và `[app] env`; bản dịch nằm trong lệnh shell nên tránh ký tự `'`, `"`, `$`, `` ` ``, `\` nếu lệnh đặt nó trong dấu nháy.
+- Output của lệnh, nội dung log và biến không đi qua bước thay này.
+- **Khóa lạ:** mọi khóa TOML không có trong code (thường là gõ sai, kể cả trong `[app]`, `[[tab]]`, `[[item]]`, `[[group]]`) đều hiện cảnh báo cấu hình. Khóa `lang` cũ (mã ngôn ngữ như `"vi"`) không còn nghĩa đó: giờ nó là đường dẫn tệp.
+
 ### env.sh (biến dùng chung cho mọi lệnh)
 
 `assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra `no_backup/scripts/env.sh` (cùng thư mục với `init.sh`, nằm cạnh `$HOME`); **mọi lệnh shell chạy qua app đều nạp file này trước** (`run`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
@@ -73,6 +99,9 @@ file  = "pages/switches.toml"
 | `@ARCH@` | kiến trúc CPU, lấy từ `Os.uname().machine` của Android (như `uname -m`): `aarch64`, `armv7l`, `x86_64`, `i686`... |
 | `@EXT_ROOT@` | gốc bộ nhớ trong (thường `/storage/emulated/0`) |
 | `@EXT_DIR@` | thư mục làm việc ngoài của app (`@EXT_ROOT@/ToolScript`) |
+| `@LANGUAGE@` | ngôn ngữ của thiết bị (mã hai chữ thường, vd `vi`, `en`), không bị ngôn ngữ riêng của app ảnh hưởng |
+| `@LANGAPP@` | ngôn ngữ app đang dùng (`vi` hoặc `en`): lựa chọn trong Cài đặt của app, hoặc ngôn ngữ thiết bị nếu app hỗ trợ (không thì `en`). Đổi ngôn ngữ trong Cài đặt thì app ghi lại `env.sh`, lệnh chạy sau đó thấy giá trị mới |
+| `@COUNTRY@` | quốc gia của thiết bị (mã hai chữ hoa, vd `VN`, `US`); rỗng nếu ngôn ngữ hệ thống không kèm quốc gia |
 
 ```sh
 export FILES_DIR="@FILES_DIR@"

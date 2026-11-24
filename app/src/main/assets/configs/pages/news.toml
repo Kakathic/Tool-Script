@@ -161,6 +161,12 @@ run   = 'echo "FILES_DIR=$FILES_DIR"; echo "CACHE_DIR=$CACHE_DIR"; echo "EXT_DIR
 
 [[group.item]]
 type  = "button"
+title = "Xem biến ngôn ngữ"
+desc  = "LANGUAGE (thiết bị), LANGAPP (app đang dùng, đổi theo Cài đặt), COUNTRY"
+run   = 'echo "LANGUAGE=$LANGUAGE"; echo "LANGAPP=$LANGAPP"; echo "COUNTRY=$COUNTRY"'
+
+[[group.item]]
+type  = "button"
 title = "slog / glog"
 desc  = "Ghi rồi đọc lại n_demo_key bằng lệnh dựng sẵn"
 run   = 'slog n_demo_key "xin chào"; echo "n_demo_key=$(glog n_demo_key)"'

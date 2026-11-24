@@ -36,8 +36,10 @@ import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
 import com.tool.script.ui.theme.isDarkTheme
 import com.tool.script.util.AppLanguage
+import com.tool.script.util.EnvFile
 import com.tool.script.util.LanguagePrefs
 import com.tool.script.util.Util
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     /** Mã log đã ẩn cần mở lại (do chạm vào thông báo); MainScreen mở xong thì xóa. */
@@ -105,9 +107,12 @@ class MainActivity : ComponentActivity() {
                             ThemePrefs.save(context, it)
                         },
                         language = language,
-                        onLanguageChange = {
-                            language = it
-                            LanguagePrefs.save(activityContext, it)
+                        onLanguageChange = { chosen ->
+                            language = chosen
+                            LanguagePrefs.save(activityContext, chosen)
+                            // env.sh có LANGAPP nên ghi lại bản mới; lệnh chạy sau đó thấy ngôn ngữ app vừa chọn.
+                            val appContext = applicationContext
+                            thread(name = "env-refresh") { runCatching { EnvFile.prepare(appContext, chosen) } }
                         },
                         onExit = { finish() },
                         openLogId = openLogId,

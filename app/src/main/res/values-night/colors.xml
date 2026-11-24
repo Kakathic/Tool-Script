@@ -1,8 +1,11 @@
 <resources>
     <color name="window_bg">#FF000000</color>
-    <!-- Nền icon launcher bản tối (bản sáng nằm trong values/colors.xml) -->
-    <color name="ic_launcher_bg">#FF1A1A1A</color>
-    <!-- Màu icon cửa sổ terminal: thân cửa sổ và dấu nhắc >_ (bản tối) -->
+    <!-- Icon launcher đảo theo chủ đề: chế độ tối dùng icon sáng -->
+    <color name="ic_launcher_bg">#FFFFFFFF</color>
+    <color name="ic_launcher_window">#FF1B2A4A</color>
+    <color name="ic_launcher_prompt">#FF3482FF</color>
+    <color name="ic_launcher_cursor">#FFFFFFFF</color>
+    <!-- Màu logo splash: thân cửa sổ và dấu nhắc >_ (bản tối) -->
     <color name="ic_term_window">#FF2C3E63</color>
     <color name="ic_term_prompt">#FF6FA8FF</color>
 </resources>
