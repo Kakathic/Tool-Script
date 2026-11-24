@@ -405,8 +405,8 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
 private fun SettingsCardDivider(startInset: Dp = 0.dp) {
     Box(
         Modifier
-            .padding(start = startInset)
             .fillMaxWidth()
+            .padding(start = startInset)
             .height(1.dp)
             .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
     )
