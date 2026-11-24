@@ -1,15 +1,10 @@
 <resources>
     <color name="window_bg">#FFFFFFFF</color>
-    <!-- Icon launcher cố định (không đổi theo night): app chế độ sáng dùng icon tối, chế độ tối dùng icon sáng; bảng màu neon xanh lá. Việc chọn do AppIcon đổi activity-alias. -->
-    <color name="ic_for_light_bg">#FF0B0F14</color>
-    <color name="ic_for_light_window">#FF161D27</color>
-    <color name="ic_for_light_stroke">#FF2A3646</color>
-    <color name="ic_for_light_prompt">#FF3DDC97</color>
-    <color name="ic_for_light_cursor">#FFE6EDF3</color>
-    <color name="ic_for_dark_bg">#FFF1F5F9</color>
-    <color name="ic_for_dark_window">#FF111827</color>
-    <color name="ic_for_dark_prompt">#FF34D399</color>
-    <color name="ic_for_dark_cursor">#FFFFFFFF</color>
+    <!-- Icon launcher: một bộ màu cố định cho cả hai chế độ (không có bản values-night). -->
+    <color name="ic_launcher_bg">#FF4B5563</color>
+    <color name="ic_launcher_window">#FF1B2A4A</color>
+    <color name="ic_launcher_prompt">#FF3482FF</color>
+    <color name="ic_launcher_cursor">#FFFFFFFF</color>
     <!-- Màu logo splash: thân cửa sổ và dấu nhắc >_ (bản sáng) -->
     <color name="ic_term_window">#FF1B2A4A</color>
     <color name="ic_term_prompt">#FF3482FF</color>

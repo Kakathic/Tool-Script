@@ -15,8 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +35,6 @@ import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
 import com.tool.script.ui.theme.isDarkTheme
-import com.tool.script.util.AppIcon
 import com.tool.script.util.AppLanguage
 import com.tool.script.util.EnvFile
 import com.tool.script.util.LanguagePrefs
@@ -79,8 +76,6 @@ class MainActivity : ComponentActivity() {
             var hapticEnabled by remember { mutableStateOf(ThemePrefs.loadHaptic(context)) }
             var blurEnabled by remember { mutableStateOf(ThemePrefs.loadBlur(context)) }
             val dark = isDarkTheme(themeMode)
-            // Icon launcher đổi theo chủ đề app (sáng dùng icon tối, tối dùng icon sáng).
-            LaunchedEffect(dark) { withContext(Dispatchers.IO) { AppIcon.apply(activityContext, dark) } }
             // Thanh trạng thái / thanh điều hướng đổi màu icon theo chủ đề app (có thể khác chủ đề hệ thống).
             DisposableEffect(dark) {
                 val barStyle = if (dark) {

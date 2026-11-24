@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icon mặc định cho Android 7.x (API 24-25), cùng bộ với icon chế độ sáng. -->
+<!-- Icon Android 7.x (API 24-25, không có adaptive icon). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/ic_for_light_bg" />
-    <item android:drawable="@drawable/ic_launcher_fg_for_light" />
+    <item android:drawable="@color/ic_launcher_bg" />
+    <item android:drawable="@drawable/ic_launcher_fg" />
 </layer-list>
