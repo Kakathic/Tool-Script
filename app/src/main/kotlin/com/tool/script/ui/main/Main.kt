@@ -302,6 +302,8 @@ fun MainScreen(
                             transitionSpec = {
                                 val from = initialState
                                 val to = targetState
+                                // zIndex theo độ sâu trong stack (tab = 0): AnimatedContent giữ zIndex đặt lúc trang là đích, nên giá trị cố định +1/-1 làm lần đóng thứ hai bị vẽ sai lớp.
+                                val depth = if (to == null) 0f else (stack.lastIndexOf(to) + 1).toFloat()
                                 when {
                                     // Trang con thường: mở thì trượt vào từ phải, trang bên dưới lùi nhẹ sang trái;
                                     // đóng thì trang trên trượt ra phải, trang bên dưới trượt về chỗ cũ.
@@ -310,13 +312,13 @@ fun MainScreen(
                                         (
                                             slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it } togetherWith
                                                 slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX }
-                                            ).also { it.targetContentZIndex = 1f }
+                                            ).also { it.targetContentZIndex = depth }
                                     from != null && from !in stack ->
                                         (
                                             slideInHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { -it / PAGE_PARALLAX } togetherWith
                                                 slideOutHorizontally(tween(PAGE_MILLIS, easing = FastOutSlowInEasing)) { it }
-                                            ).also { it.targetContentZIndex = -1f }
-                                    else -> EnterTransition.None togetherWith ExitTransition.None
+                                            ).also { it.targetContentZIndex = depth }
+                                    else -> (EnterTransition.None togetherWith ExitTransition.None).also { it.targetContentZIndex = depth }
                                 }
                             },
                             label = "subPage",

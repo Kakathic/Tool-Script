@@ -1,6 +1,6 @@
 # Báo cáo bug
 Quét gần nhất: 2026-11-24 06:30 (quét lại sau khi sửa các rủi ro trong Kotlin)
-Tổng: 0 lỗi, 3 rủi ro, 3 không xác định, 11 đã sửa
+Tổng: 0 lỗi, 3 rủi ro, 3 không xác định, 12 đã sửa
 
 Phạm vi: đọc toàn bộ 31 tệp Kotlin (7.595 dòng), script `assets/scripts`, `assets/bin`, `AndroidManifest.xml`, các tệp Gradle, `build.yml`, `proguard-rules.pro`, tài nguyên chuỗi, và kiểm tra các tệp TOML mẫu bằng script. Bỏ qua icon svg, ảnh và tệp `*.bak`.
 Giới hạn: đây là đọc tĩnh. Chưa build và chưa chạy trên máy thật, nên mục nào phụ thuộc hành vi Android thật đều ghi rõ.
@@ -25,7 +25,7 @@ Tool-Script/
 │           ├── executor/Executor.kt   (đã sửa 1)
 │           └── ui/
 │               ├── feedback/LogFiles.kt (đã sửa 3)
-│               ├── main/Main.kt         (đã sửa 1)
+│               ├── main/Main.kt         (đã sửa 2)
 │               └── render/Render.kt     (không xác định 1, đã sửa 1)
 └── gradle/libs.versions.toml          (không xác định 1)
 ```
@@ -63,6 +63,7 @@ Không xác định:
 ### app/src/main/kotlin/com/tool/script/ui/main/Main.kt
 Đã sửa lỗi (cam kết không bị lại):
 + [DialogContentMeasurer, dòng 786-805] Bản vẽ ẩn dùng để đo chiều cao dialog chạy `get` lần thứ hai mỗi lần mở dialog. Đã sửa gián tiếp ở Render.kt: item không chạy `get` khi `env.varsOnly` (môi trường của bản đo). Kiểm tra tái phát: hai `LaunchedEffect` của `get` trong Render.kt phải có điều kiện `env.varsOnly`.
++ [AnimatedContent `subPage`, transitionSpec] Từ tab mở trang rồi mở trang con, đóng trang con thì đúng nhưng đóng tiếp trang đầu thì hiệu ứng trở lại sai (báo từ người dùng, suy ra từ code, chưa chạy máy thật). Nguyên nhân gốc: `targetContentZIndex` cố định +1/-1, mà AnimatedContent giữ zIndex đặt lúc trang là đích; ở lần đóng thứ hai trang đang thoát (zIndex -1 từ lần đóng trước) bằng zIndex với trang đích (-1) nên bị vẽ sai lớp. Đã sửa: zIndex = độ sâu trong stack (tab = 0). Kiểm tra tái phát: không có `targetContentZIndex = 1f` hoặc `-1f` cố định trong Main.kt; mọi nhánh đặt `= depth`. Thử: tab → trang → trang con → Back → Back.
 
 ### app/src/main/kotlin/com/tool/script/executor/Executor.kt
 Đã sửa lỗi (cam kết không bị lại):
