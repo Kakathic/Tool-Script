@@ -9,7 +9,10 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
+import com.tool.script.ui.theme.isDarkTheme
 import androidx.core.content.FileProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,13 +76,24 @@ class CrashActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         val title = intent.getStringExtra(EXTRA_TITLE) ?: getString(R.string.crash_title_default)
         val text = intent.getStringExtra(EXTRA_TEXT) ?: getString(R.string.crash_no_content)
         val fatal = intent.getBooleanExtra(EXTRA_FATAL, true)
         val filePath = intent.getStringExtra(EXTRA_FILE)
         setContent {
-            ToolScriptTheme(ThemePrefs.load(this), ThemePrefs.loadHaptic(this)) {
+            val themeMode = ThemePrefs.load(this)
+            val dark = isDarkTheme(themeMode)
+            // Thanh trạng thái / điều hướng theo chủ đề app (có thể khác chủ đề hệ thống), giống MainActivity.
+            DisposableEffect(dark) {
+                val barStyle = if (dark) {
+                    SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
+                onDispose { }
+            }
+            ToolScriptTheme(themeMode, ThemePrefs.loadHaptic(this)) {
                 CrashScreen(
                     title = title,
                     text = text,
