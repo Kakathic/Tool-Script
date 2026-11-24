@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
@@ -66,7 +68,16 @@ fun BlurDialog(
         enableWindowDim = requests == null,
         onDismissRequest = onDismissRequest,
         largeScreen = if (centered) true else null,
-        content = content,
+        content = {
+            // Giữ lề hai bên của mọi dialog cố định ở 16dp.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                content()
+            }
+        },
     )
 }
 
