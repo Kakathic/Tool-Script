@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -68,13 +69,17 @@ import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
+import com.tool.script.util.AppLanguage
 import com.tool.script.util.Util
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Icon ở thanh trên cùng và menu thả xuống ngay dưới icon:
-// Chủ đề -> tùy chỉnh giao diện, Nguồn -> tùy chọn khởi động lại.
+// Icon ở thanh trên cùng:
+// Cài đặt (sát lề phải) -> hộp thoại giữa màn hình: giao diện, tùy chọn, ngôn ngữ;
+// Nguồn -> menu thả xuống ngay dưới icon với các tùy chọn khởi động lại.
 
 /** Độ trong của icon khi đang nhấn (chế độ [TopBarIcon] pressAlpha). */
 private const val PressedIconAlpha = 0.4f
@@ -89,7 +94,7 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: B
     val interactionSource = remember { MutableInteractionSource() }
     val rippleColor = MiuixTheme.colorScheme.onBackground
     val ripple = remember(rippleColor) { CompactRipple(color = rippleColor) }
-    // pressAlpha: không gợn sóng, icon mờ đi khi đang nhấn (dùng cho icon chủ đề / nguồn).
+    // pressAlpha: không gợn sóng, icon mờ đi khi đang nhấn (dùng cho icon cài đặt / nguồn).
     val pressed by interactionSource.collectIsPressedAsState()
     val pressedAlpha by animateFloatAsState(if (pressAlpha && pressed) PressedIconAlpha else 1f, tween(90), label = "iconPress")
     Box(
@@ -245,7 +250,7 @@ internal fun MenuPopup(
 /** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
 private const val MenuSelectedAlpha = 0.24f
 
-/** Độ đậm nền ô đang chọn / đang bật trong menu chủ đề (0.16, bằng ô chọn nhiều mục). */
+/** Độ đậm nền ô đang chọn / đang bật trong hộp thoại cài đặt (0.16, bằng ô chọn nhiều mục). */
 private const val ThemeSelectedAlpha = 0.16f
 
 /** Khoảng cách dọc mỗi bên của một mục menu (hai mục liền nhau cách nhau gấp đôi giá trị này). */
@@ -311,12 +316,11 @@ private fun MenuSectionLabel(text: String) {
  * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo, không đổi độ đậm chữ.
  */
 @Composable
-internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
     val trackShape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
             .clip(trackShape)
             .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
             .padding(4.dp),
@@ -345,17 +349,17 @@ internal fun MenuSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect
     }
 }
 
-/** Một ô bật / tắt trong [MenuToggleGrid]. */
-internal class MenuToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
+/** Một ô bật / tắt trong [SettingsToggleGrid]. */
+internal class SettingToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
 
 /**
  * Lưới ô bật / tắt 2 cột (thay cho công tắc): ô bo góc, tắt thì nền xám nhạt, bật thì nền màu chủ đạo nhạt, chữ màu chủ đạo; bên phải là ô tích tròn.
- * Bấm ô để đổi trạng thái, menu giữ nguyên. Hai ô cùng hàng luôn cao bằng nhau; hàng lẻ chừa ô trống bên phải.
+ * Bấm ô để đổi trạng thái, hộp thoại giữ nguyên. Hai ô cùng hàng luôn cao bằng nhau; hàng lẻ chừa ô trống bên phải.
  */
 @Composable
-internal fun MenuToggleGrid(toggles: List<MenuToggle>) {
+internal fun SettingsToggleGrid(toggles: List<SettingToggle>) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         toggles.chunked(2).forEach { rowItems ->
@@ -364,7 +368,7 @@ internal fun MenuToggleGrid(toggles: List<MenuToggle>) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 rowItems.forEach { toggle ->
-                    MenuToggleTile(toggle, Modifier.weight(1f).fillMaxHeight())
+                    SettingsToggleTile(toggle, Modifier.weight(1f).fillMaxHeight())
                 }
                 if (rowItems.size == 1) Spacer(Modifier.weight(1f))
             }
@@ -373,7 +377,7 @@ internal fun MenuToggleGrid(toggles: List<MenuToggle>) {
 }
 
 @Composable
-private fun MenuToggleTile(toggle: MenuToggle, modifier: Modifier) {
+private fun SettingsToggleTile(toggle: SettingToggle, modifier: Modifier) {
     val on = toggle.checked
     Row(
         modifier = modifier
@@ -411,49 +415,91 @@ private fun MenuDivider() {
     )
 }
 
+/** Nút Cài đặt ở thanh trên (icon bánh răng, đặt sát lề phải): bấm để mở [SettingsDialog]. */
+@Composable
+fun SettingsButton(onClick: () -> Unit) {
+    TopBarIcon(
+        icon = AppIcons.BarSettings,
+        description = stringResource(R.string.settings_title),
+        onClick = onClick,
+        pressAlpha = true,
+    )
+}
+
+/** Nhãn nhóm trong hộp thoại cài đặt (lề trái 4dp, khớp mép các ô bên dưới). */
+@Composable
+private fun SettingsSectionLabel(text: String) {
+    Text(
+        text = text,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+    )
+}
+
 /**
- * Nút chủ đề: menu tùy chỉnh giao diện.
- * Nhóm "Giao diện": chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối (chọn xong áp dụng ngay và đóng menu).
- * Lưới (không có nhãn nhóm) ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm trên), Rung khi chạm, Làm mờ nền; đổi xong menu giữ nguyên.
+ * Hộp thoại Cài đặt hiện giữa màn hình (thay cho menu thả xuống cũ của nút chủ đề). Ba nhóm, đổi xong áp dụng ngay và hộp thoại giữ nguyên
+ * để thấy kết quả phía sau; bấm Đóng, chạm ra ngoài hoặc Back để đóng:
+ * - Giao diện: chọn một, xếp ngang trong khay phân đoạn: Hệ thống / Sáng / Tối.
+ * - Tùy chọn: lưới ô bật / tắt 2 cột: Màu động (áp lên mục đang chọn ở nhóm Giao diện), Rung khi chạm, Làm mờ nền (chỉ hiện khi máy hỗ trợ).
+ * - Ngôn ngữ: chọn một: Hệ thống / English / Tiếng Việt.
  */
 @Composable
-fun ThemeMenu(
-    expanded: Boolean,
-    current: ThemeMode,
-    onOpen: () -> Unit,
+fun SettingsDialog(
+    show: Boolean,
     onDismiss: () -> Unit,
+    current: ThemeMode,
     onSelect: (ThemeMode) -> Unit,
     haptic: Boolean,
     onHapticChange: (Boolean) -> Unit,
     blur: Boolean,
     onBlurChange: (Boolean) -> Unit,
+    language: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
 ) {
-    TopBarMenu(
-        icon = AppIcons.BarTheme,
-        description = stringResource(R.string.theme_menu_description),
-        expanded = expanded,
-        onOpen = onOpen,
-        onDismiss = onDismiss,
-        minWidth = 280.dp,
+    // Màn hình thấp (xoay ngang): giới hạn chiều cao phần nhóm cài đặt và cho cuộn, nút Đóng luôn nằm dưới.
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
+    BlurDialog(
+        show = show,
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.settings_title),
+        centered = true,
     ) {
-        MenuSectionLabel(stringResource(R.string.menu_section_appearance))
-        MenuSegmentedRow(
-            labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-            selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-            onSelect = { index ->
-                onSelect(BASE_THEME_MODES[index].withMonet(current.monet))
-                onDismiss()
-            },
-        )
-        MenuDivider()
-        MenuToggleGrid(
-            buildList {
-                add(MenuToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-                add(MenuToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
-                if (isBlurSupported()) add(MenuToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-            },
-        )
-        Spacer(Modifier.height(4.dp))
+        Column {
+            Column(
+                modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SettingsSectionLabel(stringResource(R.string.menu_section_appearance))
+                SettingsSegmentedRow(
+                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                )
+                SettingsSectionLabel(stringResource(R.string.menu_section_options))
+                SettingsToggleGrid(
+                    buildList {
+                        add(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+                        add(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+                        if (isBlurSupported()) add(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                    },
+                )
+                SettingsSectionLabel(stringResource(R.string.menu_section_language))
+                SettingsSegmentedRow(
+                    labels = AppLanguage.entries.map { stringResource(it.labelRes) },
+                    selectedIndex = AppLanguage.entries.indexOf(language),
+                    onSelect = { index -> onLanguageChange(AppLanguage.entries[index]) },
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            TextButton(
+                text = stringResource(R.string.action_close),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+        }
     }
 }
 

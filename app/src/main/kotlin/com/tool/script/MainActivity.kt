@@ -3,6 +3,7 @@ package com.tool.script
 import com.tool.script.R
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -14,10 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +35,8 @@ import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.ui.theme.ThemePrefs
 import com.tool.script.ui.theme.ToolScriptTheme
 import com.tool.script.ui.theme.isDarkTheme
+import com.tool.script.util.AppLanguage
+import com.tool.script.util.LanguagePrefs
 import com.tool.script.util.Util
 
 class MainActivity : ComponentActivity() {
@@ -53,7 +58,18 @@ class MainActivity : ComponentActivity() {
         // Chỉ lần mở mới: Activity dựng lại (xoay màn hình) thì Intent cũ còn nguyên, không mở lại log lần nữa.
         if (savedInstanceState == null) openLogId = readLogId(intent)
         setContent {
-            val context = LocalContext.current
+            val activityContext = LocalContext.current
+            val systemConfig = LocalConfiguration.current
+            // Đọc lại mỗi khi cấu hình đổi (Android 13+: người dùng có thể đổi ngôn ngữ app từ Cài đặt hệ thống).
+            var language by remember(systemConfig) { mutableStateOf(LanguagePrefs.load(activityContext)) }
+            // Android 12 trở xuống: bọc Context + Configuration của Compose để đổi ngôn ngữ ngay mà không dựng lại Activity
+            // (lệnh shell đang chạy gắn với màn hình này). Android 13+: hệ thống tự áp dụng nên không cần bọc.
+            val context = remember(language, activityContext, systemConfig) { LanguagePrefs.localize(activityContext, language) }
+            val localeProviders: Array<ProvidedValue<*>> = if (Build.VERSION.SDK_INT < 33) {
+                arrayOf(LocalContext provides context, LocalConfiguration provides context.resources.configuration)
+            } else {
+                emptyArray()
+            }
             var themeMode by remember { mutableStateOf(ThemePrefs.load(context)) }
             var hapticEnabled by remember { mutableStateOf(ThemePrefs.loadHaptic(context)) }
             var blurEnabled by remember { mutableStateOf(ThemePrefs.loadBlur(context)) }
@@ -70,7 +86,7 @@ class MainActivity : ComponentActivity() {
             }
             // Miuix (OverlayDialog) cần NavigationEventDispatcher để bắt nút Back. ComponentActivity (activity >= 1.12)
             // chính là NavigationEventDispatcherOwner; cung cấp rõ ràng để không phụ thuộc việc tìm qua view tree.
-            CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides this@MainActivity) {
+            CompositionLocalProvider(*localeProviders, LocalNavigationEventDispatcherOwner provides this@MainActivity) {
                 ToolScriptTheme(themeMode, hapticEnabled) {
                     AppRoot(
                         themeMode = themeMode,
@@ -87,6 +103,11 @@ class MainActivity : ComponentActivity() {
                         onThemeChange = {
                             themeMode = it
                             ThemePrefs.save(context, it)
+                        },
+                        language = language,
+                        onLanguageChange = {
+                            language = it
+                            LanguagePrefs.save(activityContext, it)
                         },
                         onExit = { finish() },
                         openLogId = openLogId,
@@ -109,6 +130,8 @@ private fun AppRoot(
     blurEnabled: Boolean,
     onBlurChange: (Boolean) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
+    language: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
     onExit: () -> Unit,
     openLogId: Int?,
     onLogOpened: () -> Unit,
@@ -160,6 +183,8 @@ private fun AppRoot(
             onHapticChange = onHapticChange,
             blurEnabled = blurEnabled,
             onBlurChange = onBlurChange,
+            language = language,
+            onLanguageChange = onLanguageChange,
             onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },
             openLogId = openLogId,
             onLogOpened = onLogOpened,

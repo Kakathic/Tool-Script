@@ -4,6 +4,7 @@ import android.content.Context
 import com.tool.script.R
 import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
+import com.tool.script.util.AppLanguage
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -146,6 +147,7 @@ import kotlin.math.max
 
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
+ * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi người dùng chọn ngôn ngữ khác trong hộp thoại Cài đặt.
  * @param onShowDetails mở Trung tâm lỗi với (tiêu đề, nội dung).
  * @param openLogId mã log đã ẩn cần mở lại (khi chạm vào thông báo); mở xong gọi [onLogOpened].
  */
@@ -158,6 +160,8 @@ fun MainScreen(
     onHapticChange: (Boolean) -> Unit,
     blurEnabled: Boolean,
     onBlurChange: (Boolean) -> Unit,
+    language: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
     onShowDetails: (title: String, text: String) -> Unit,
     openLogId: Int? = null,
     onLogOpened: () -> Unit = {},
@@ -177,7 +181,7 @@ fun MainScreen(
     val titleScroll = MiuixScrollBehavior()
     val context = LocalContext.current
     var showRestartMenu by remember { mutableStateOf(false) }
-    var showThemeMenu by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
 
     // Ngăn xếp trang con (khóa = đường dẫn file); rỗng thì đang ở màn hình chính.
     var stack by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
@@ -345,19 +349,7 @@ fun MainScreen(
                                             scrollBehavior = titleScroll,
                                             backdrop = backdrop,
                                             actions = {
-                                                // Nút chủ đề: menu tùy chỉnh giao diện, thả xuống ngay dưới icon.
-                                                ThemeMenu(
-                                                    expanded = showThemeMenu,
-                                                    current = themeMode,
-                                                    onOpen = { showThemeMenu = true },
-                                                    onDismiss = { showThemeMenu = false },
-                                                    onSelect = onThemeChange,
-                                                    haptic = hapticEnabled,
-                                                    onHapticChange = onHapticChange,
-                                                    blur = blurEnabled,
-                                                    onBlurChange = onBlurChange,
-                                                )
-                                                // Nút nguồn: khởi động lại / đóng app, tắt và khởi động lại máy (kiểu Magisk), thả xuống ngay dưới icon.
+                                                // Nút nguồn (nằm trong, cạnh nút cài đặt): khởi động lại / đóng app, tắt và khởi động lại máy (kiểu Magisk), thả xuống ngay dưới icon.
                                                 PowerMenu(
                                                     expanded = showRestartMenu,
                                                     onOpen = { showRestartMenu = true },
@@ -381,6 +373,8 @@ fun MainScreen(
                                                         }
                                                     },
                                                 )
+                                                // Nút cài đặt: sát lề phải, mở hộp thoại giữa màn hình (giao diện, tùy chọn, ngôn ngữ).
+                                                SettingsButton(onClick = { showSettings = true })
                                             },
                                         )
                                     },
@@ -454,6 +448,18 @@ fun MainScreen(
                                             )
                                         }
                                         FeedbackDialogs(feedback, env)
+                                        SettingsDialog(
+                                            show = showSettings,
+                                            onDismiss = { showSettings = false },
+                                            current = themeMode,
+                                            onSelect = onThemeChange,
+                                            haptic = hapticEnabled,
+                                            onHapticChange = onHapticChange,
+                                            blur = blurEnabled,
+                                            onBlurChange = onBlurChange,
+                                            language = language,
+                                            onLanguageChange = onLanguageChange,
+                                        )
                                     }
                                 }
                             }

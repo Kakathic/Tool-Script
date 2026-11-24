@@ -3,13 +3,20 @@ package com.tool.script
 import com.tool.script.util.AppText
 import com.tool.script.R
 import android.app.Application
+import android.content.Context
 import android.os.Build
 import android.os.Process
 import com.tool.script.crash.CrashActivity
 import com.tool.script.ui.feedback.LogCenter
+import com.tool.script.util.LanguagePrefs
 import kotlin.system.exitProcess
 
 class App : Application() {
+    // Android 12 trở xuống: chuỗi dùng Context của ứng dụng (thông báo...) theo ngôn ngữ app đã chọn ngay từ lúc mở.
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LanguagePrefs.localize(base))
+    }
+
     override fun onCreate() {
         super.onCreate()
         // Tiến trình ":crash" không gắn bộ bắt lỗi, tránh vòng lặp mở CrashActivity.

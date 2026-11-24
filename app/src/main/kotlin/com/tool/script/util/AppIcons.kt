@@ -9,6 +9,6 @@ object AppIcons {
     const val BarClose = "icons/bar_close.svg"
     const val BarLock = "icons/bar_lock.svg"
     const val BarPower = "icons/bar_power.svg"
-    const val BarTheme = "icons/bar_theme.svg"
+    const val BarSettings = "icons/bar_settings.svg"
     const val BarUpDown = "icons/bar_updown.svg"
 }

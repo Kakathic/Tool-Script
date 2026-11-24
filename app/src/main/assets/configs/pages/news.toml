@@ -16,8 +16,8 @@ content = "Tên app hiện chữ lớn ở đầu trang, vuốt lên thì thu th
 
 [[group.item]]
 type    = "text"
-title   = "Menu chủ đề"
-content = "Biểu tượng Thông tin ở thanh trên: chọn Hệ thống / Sáng / Tối, và ba ô tích Màu động, Rung khi chạm, Làm mờ nền (Android 13+). Lựa chọn được lưu lại."
+title   = "Hộp thoại Cài đặt"
+content = "Biểu tượng bánh răng sát lề phải thanh trên mở hộp thoại giữa màn hình: Giao diện (Hệ thống / Sáng / Tối), các ô tích Màu động, Rung khi chạm, Làm mờ nền (Android 13+) và Ngôn ngữ (Hệ thống / English / Tiếng Việt). Đổi xong áp dụng ngay và được lưu lại."
 
 [[group.item]]
 type    = "text"

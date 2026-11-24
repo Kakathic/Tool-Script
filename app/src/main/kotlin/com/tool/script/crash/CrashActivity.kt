@@ -66,6 +66,11 @@ import java.util.Locale
  */
 class CrashActivity : ComponentActivity() {
 
+    // Android 12 trở xuống: màn hình lỗi cũng theo ngôn ngữ app đã chọn (Android 13+ hệ thống tự áp dụng).
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(com.tool.script.util.LanguagePrefs.localize(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

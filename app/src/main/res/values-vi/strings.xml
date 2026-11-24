@@ -67,10 +67,12 @@
     <string name="power_error_timeout">%1$s: hết thời gian chờ</string>
     <string name="power_error_failed">Không thực hiện được \"%1$s\" (cần root)</string>
 
-    <!-- Menu chủ đề -->
-    <string name="theme_menu_description">Tùy chỉnh chủ đề</string>
+    <!-- Hộp thoại cài đặt (giao diện, tùy chọn, ngôn ngữ) -->
+    <string name="settings_title">Cài đặt</string>
     <string name="menu_section_appearance">Giao diện</string>
     <string name="menu_section_options">Tùy chọn</string>
+    <string name="menu_section_language">Ngôn ngữ</string>
+    <string name="language_system">Hệ thống</string>
     <string name="option_dynamic_color">Màu động</string>
     <string name="option_haptic">Rung khi chạm</string>
     <string name="option_blur">Làm mờ nền</string>

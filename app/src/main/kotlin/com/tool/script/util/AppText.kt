@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 
 /**
  * Lấy chuỗi tài nguyên ở những nơi không có Context (parser TOML, executor, tệp log...).
- * Gắn Context của ứng dụng một lần trong `App.onCreate`; chuỗi luôn theo ngôn ngữ hiện tại của hệ thống.
+ * Gắn Context của ứng dụng một lần trong `App.onCreate`; chuỗi theo ngôn ngữ app đang chọn (xem [LanguagePrefs]), mặc định theo hệ thống.
  */
 object AppText {
     @Volatile
@@ -15,5 +15,5 @@ object AppText {
         this.context = context.applicationContext
     }
 
-    fun get(@StringRes id: Int, vararg args: Any): String = context?.getString(id, *args).orEmpty()
+    fun get(@StringRes id: Int, vararg args: Any): String = context?.let { LanguagePrefs.localize(it).getString(id, *args) }.orEmpty()
 }
