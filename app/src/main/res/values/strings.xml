@@ -169,6 +169,12 @@
     <string name="cfg_link_tab_missing">%1$s: link \"%2$s\" points to tab \"%3$s\", which doesn\'t exist</string>
     <string name="cfg_link_style_mismatch">%1$s: link \"%2$s\" has a different style from the first link to %3$s, using the first link\'s style</string>
     <string name="cfg_dialog_item_unsupported">%1$s: %2$s \"%3$s\" can\'t be used in a dialog (a dialog only passes variables), ignored</string>
+    <string name="cfg_unknown_key">%1$s: unknown key \"%2$s\" (typo?), ignored</string>
+    <string name="cfg_lang_file_failed">%1$s: can\'t read language file %2$s: %3$s</string>
+    <string name="cfg_lang_sh_error">%1$s: failed to run: %2$s</string>
+    <string name="cfg_lang_sh_failed">%1$s: shell exited with code %2$d, source ignored</string>
+    <string name="cfg_lang_sh_timeout">%1$s: shell timed out after %2$d seconds, source ignored</string>
+    <string name="cfg_lang_bad_line">%1$s, line %2$d: not in key=value form, ignored</string>
 
     <!-- Log khởi động -->
     <string name="boot_detecting">Detecting system privileges...</string>

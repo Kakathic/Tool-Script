@@ -164,6 +164,12 @@
     <string name="cfg_link_tab_missing">%1$s: link \"%2$s\" trỏ tới tab \"%3$s\" không tồn tại</string>
     <string name="cfg_link_style_mismatch">%1$s: link \"%2$s\" khác style với link đầu tiên trỏ tới %3$s, dùng style của link đầu tiên</string>
     <string name="cfg_dialog_item_unsupported">%1$s: %2$s \"%3$s\" không dùng được trong dialog (dialog chỉ để truyền biến), bỏ qua</string>
+    <string name="cfg_unknown_key">%1$s: khóa lạ \"%2$s\" (gõ sai?), bỏ qua</string>
+    <string name="cfg_lang_file_failed">%1$s: không đọc được tệp ngôn ngữ %2$s: %3$s</string>
+    <string name="cfg_lang_sh_error">%1$s: không chạy được: %2$s</string>
+    <string name="cfg_lang_sh_failed">%1$s: shell thoát với mã %2$d, bỏ qua nguồn này</string>
+    <string name="cfg_lang_sh_timeout">%1$s: shell quá %2$d giây, bỏ qua nguồn này</string>
+    <string name="cfg_lang_bad_line">%1$s, dòng %2$d: không đúng dạng khóa=giá trị, bỏ qua</string>
 
     <!-- Log khởi động -->
     <string name="boot_detecting">Đang dò quyền hệ thống...</string>
