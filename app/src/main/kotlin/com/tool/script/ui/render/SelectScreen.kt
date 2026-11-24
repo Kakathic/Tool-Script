@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -66,6 +67,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Chọn toàn màn hình cho `singleselect` / `multiselect` khi có từ FULLSCREEN_MIN_OPTIONS mục trở lên.
 // Dưới ngưỡng này vẫn dùng hộp thoại nhỏ như cũ (xem Render.kt). docs/schema.md, mục 7.
+
+/** Chiều cao chung của ô tìm kiếm và các nút Hủy / Xác nhận ở màn hình chọn (ép cả hai về cùng một giá trị để luôn bằng nhau). */
+private val SELECT_CONTROL_HEIGHT = 50.dp
 
 /** Số mục tối thiểu để chuyển từ hộp thoại nhỏ sang toàn màn hình. */
 internal const val FULLSCREEN_MIN_OPTIONS = 6
@@ -304,10 +308,10 @@ internal fun SelectFullScreen(
                 TextField(
                     value = query,
                     onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN).height(SELECT_CONTROL_HEIGHT),
                     label = stringResource(R.string.select_search),
                     singleLine = true,
-                    insideMargin = TEXT_FIELD_MARGIN,
+                    insideMargin = DpSize(16.dp, 13.dp),
                 )
                 Spacer(Modifier.height(SCREEN_MARGIN))
 
@@ -399,14 +403,14 @@ internal fun SelectFullScreen(
                     modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
                     horizontalArrangement = Arrangement.spacedBy(SCREEN_MARGIN),
                 ) {
-                    TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f))
+                    TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
                     TextButton(
                         text = stringResource(R.string.action_confirm),
                         onClick = {
                             val result = draft
                             close { onConfirm(result) }
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                     )
                 }
