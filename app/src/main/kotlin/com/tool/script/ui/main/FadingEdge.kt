@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 // Mép mờ dần ở vùng cuộn, tương đương android:requiresFadingEdge="vertical" của View.
 // Mép nào đã chạm đầu / cuối nội dung thì không mờ. Trạng thái cuộn chỉ đọc ở bước vẽ nên cuộn không gây recomposition.
 
-private val FadingEdgeLength = 24.dp
+private val FadingEdgeLength = 16.dp
 
 /** Đặt ở ngoài cùng của vùng cuộn (trước verticalScroll / trước khung chứa LazyColumn). */
 fun Modifier.fadingEdges(state: LazyListState, length: Dp = FadingEdgeLength): Modifier =

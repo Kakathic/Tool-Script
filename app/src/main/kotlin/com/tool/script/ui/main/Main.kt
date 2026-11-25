@@ -748,11 +748,13 @@ private fun SubPageScreen(
         bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha),
     ) { inner ->
+        // Dialog full màn hình: danh sách kết thúc ngay trên thanh nút (không cuộn xuống sau nút), mép mờ nằm sát nút.
+        val sheetBottom = if (page.dialog && sheetFull) inner.calculateBottomPadding() else 0.dp
         Column(
             Modifier
                 .fillMaxSize()
                 .then(if (page.dialog) Modifier else Modifier.nestedScroll(titleScroll.nestedScrollConnection))
-                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = inner.calculateTopPadding()))
+                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = inner.calculateTopPadding(), bottom = sheetBottom))
                 .then(contentModifier),
         ) {
             Box(Modifier.weight(1f)) {
@@ -762,7 +764,7 @@ private fun SubPageScreen(
                     file = page.file,
                     warnings = page.warnings,
                     env = pageEnv,
-                    bottomInset = inner.calculateBottomPadding(),
+                    bottomInset = if (page.dialog && sheetFull) 0.dp else inner.calculateBottomPadding(),
                     topInset = if (backdrop != null) inner.calculateTopPadding() else 0.dp,
                     fadeEdges = page.dialog,
                 )
