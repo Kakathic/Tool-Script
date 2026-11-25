@@ -745,7 +745,7 @@ private fun SubPageScreen(
             }
         },
         snackbarHost = { SnackbarHost(feedback.snackbarState) },
-        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
+        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm, surfaceAlpha = surfaceAlpha) },
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha),
     ) { inner ->
         Column(
@@ -854,10 +854,11 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
 
 /** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). */
 @Composable
-private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
+private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit, surfaceAlpha: Float = 1f) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

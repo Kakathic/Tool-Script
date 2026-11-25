@@ -96,11 +96,11 @@ title = "Chọn toàn màn hình và dialog"
 type    = "singleselect"
 id      = "n_single_full"
 title   = "singleselect toàn màn hình"
-desc    = "Từ 6 mục: có ô tìm không phân biệt dấu, thử gõ da lat"
+desc    = "30 mục (từ 6 mục là toàn màn hình): danh sách cuộn được, có ô tìm không phân biệt dấu, thử gõ da lat"
 default = "danang"
 run     = 'echo "Đã chọn: $n_single_full"'
 shell   = "banner"
-options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho"]
+options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho", "Hạ Long|halong", "Lào Cai|laocai", "Điện Biên Phủ|dienbien", "Sơn La|sonla", "Thái Nguyên|thainguyen", "Bắc Ninh|bacninh", "Nam Định|namdinh", "Ninh Bình|ninhbinh", "Thanh Hóa|thanhhoa", "Vinh|vinh", "Đồng Hới|donghoi", "Quảng Ngãi|quangngai", "Quy Nhơn|quynhon", "Tuy Hòa|tuyhoa", "Pleiku|pleiku", "Buôn Ma Thuột|buonmathuot", "Phan Thiết|phanthiet", "Biên Hòa|bienhoa", "Vũng Tàu|vungtau", "Mỹ Tho|mytho", "Cà Mau|camau", "Phú Quốc|phuquoc"]
 
 [[group.item]]
 type    = "multiselect"
