@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "link"
-content = "Không lưu giá trị, không có id. tab chuyển sang một tab theo id; page mở file trang con; style = dialog mở trang con dạng sheet trượt từ dưới lên."
+content = "Không lưu giá trị, không có id. tab chuyển sang một tab theo id; page mở file trang con; style = dialog mở trang con dạng hộp thoại: ít mục thì nhỏ gọn giữa màn hình, từ 5 mục thì full màn hình."
 
 [[group]]
 title = "Chuyển tab (tab)"

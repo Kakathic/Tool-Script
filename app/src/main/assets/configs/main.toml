@@ -2,6 +2,8 @@
 name    = "Tool Script"
 # env: đoạn shell chạy đầu tiên trước mọi lệnh của app (ví dụ đặt PATH). Bỏ dấu # để bật.
 # env  = "export PATH=$PATH:/data/adb/bin"
+# lang-sh: tệp shell in ra bảng chuỗi khóa=văn bản; trong TOML viết @khóa để thay (xem trang Tính năng mới, nhóm "Trang đa ngôn ngữ").
+lang-sh = "lang/lang.sh"
 
 # Bộ demo gồm 5 tab. Thanh tab hiện cửa sổ trượt 4 ô: vuốt tới tab thứ 4 thì tab 5 hiện ra.
 # Mọi lệnh trong demo chỉ là echo / sleep / ls, không đổi thông số thiết bị

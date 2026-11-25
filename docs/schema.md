@@ -39,6 +39,10 @@ icon  = "icons/home.svg"        # bắt buộc, đường dẫn icon tab
 file  = "pages/switches.toml"
 ```
 
+- **Đường dẫn trang** (`file` của tab, `page` của link, `lang`, `lang-sh`): không bắt đầu bằng `/` thì tính từ `assets/configs`; bắt đầu bằng `/` thì đọc thẳng file ngoài APK, ví dụ `file = "/sdcard/ToolScript/pages/extra.toml"`.
+  - App chỉ đọc được nơi nó có quyền: thư mục riêng của app, hoặc nơi đã cấp quyền bộ nhớ. File không tồn tại hoặc không đọc được thì trang hiện lỗi "không đọc được file" (riêng `main.toml` luôn đọc từ assets).
+  - `main.toml` vẫn nằm trong assets, nên chỉ trang con và tab mới trỏ ra ngoài được. Chưa có reload nóng.
+
 - `[app] env` (tùy chọn): đoạn shell chạy **đầu tiên** trước mọi lệnh của app: `run`, `on`, `off`, `get`, lệnh của link dialog và lệnh khởi động lại máy. Dùng để đặt `PATH`, nạp hàm dùng chung, v.v.
   - Được ghép vào đầu mỗi lệnh (cách bằng xuống dòng), trước cả các biến `export` của item, nên không dùng được `$id` của item trong `env`.
   - Biến dựng sẵn (`SDK`, `ABI`, `ARCH`, `ROOT_MODE`) cũng chưa có khi `env` chạy.
@@ -69,13 +73,15 @@ load-string-sh = "echo wifi_desc=Bật hoặc tắt"   # lệnh shell nhập th�
   - Bỏ dòng trống và dòng bắt đầu bằng `#`; chấp nhận tiền tố `export ` và khoảng trắng quanh `=` (nên tệp TOML phẳng `khóa = "văn bản"` cũng đọc được).
   - Giá trị không nháy chạy đến hết dòng (hoặc đến ` #` bắt đầu ghi chú). Nháy đơn: nguyên văn. Nháy kép: hiểu `\n` (xuống dòng), `\t`, `\"`, `\\`, `\$`.
   - Khóa gồm chữ, số, gạch dưới, không bắt đầu bằng số. Khóa trùng thì dòng sau thắng. Dòng sai dạng chỉ bị bỏ qua kèm cảnh báo.
-- `lang` và `lang-sh` là đường dẫn tính từ thư mục configs (assets). Đường dẫn ngoài và đường dẫn theo ngôn ngữ chưa hỗ trợ.
+- `lang` và `lang-sh` là đường dẫn tính từ thư mục configs (assets), hoặc đường dẫn tuyệt đối bắt đầu bằng `/` để đọc file ngoài (xem mục 3). Đường dẫn theo ngôn ngữ chưa hỗ trợ.
 - `lang-sh` và `load-string-sh` chạy bằng chính shell của app, sau `env.sh` và `[app] env`, tối đa **5 giây**; lỗi, hết giờ hoặc thoát khác 0 thì cảnh báo và bỏ nguồn đó. Chỉ stdout được đọc (stderr bị bỏ). Script chọn chuỗi theo ngôn ngữ bằng biến `$LANGAPP` (ngôn ngữ app đang dùng), `$LANGUAGE` (ngôn ngữ thiết bị) và `$COUNTRY` từ `env.sh`, ví dụ `lang-sh = "lang/lang.sh"` với `case "$LANGAPP" in vi) echo wifi_title=Wi-Fi ;; esac`.
 - **Cách thay:** ở bất cứ chuỗi nào, nếu có `@khóa` mà **khóa đó có trong bảng** thì thay; không có thì giữ nguyên (nên `user@host`, `@progress` không bị đụng).
   - `@` không được đứng ngay sau chữ, số, gạch dưới hay `@` khác; `@khóa` nhận trọn một định danh ("Xin chào @ten." giữ dấu chấm). Cần viết liền chữ phía sau thì dùng `@{khóa}`.
   - Không thay lồng nhau: văn bản vừa thay vào không bị quét lại.
   - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `shell`, `columns`, `lock_mode`, `input_type`, `style`, `tab`, `page`, `file`, `visible_if`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
   - Các khóa còn lại thay được, kể cả lệnh `run`, `on`, `off`, `get` và `[app] env`; bản dịch nằm trong lệnh shell nên tránh ký tự `'`, `"`, `$`, `` ` ``, `\` nếu lệnh đặt nó trong dấu nháy.
+- **Đổi ngôn ngữ:** bảng chuỗi chỉ nạp lúc mở app (cùng lúc nạp TOML). Đổi `app_language` thì app đổi ngay, còn chuỗi `@khóa` chọn theo `$LANGAPP` (`lang-sh`, `load-string-sh`) chỉ đổi theo từ lần mở app sau.
+- **Demo:** `main.toml` khai báo `lang-sh = "lang/lang.sh"`; script chọn chuỗi `vi` / `en` theo `$LANGAPP`. Xem nhóm "Trang đa ngôn ngữ" ở tab Tính năng mới (`pages/news.toml`): `@demo_lang_title`, `@demo_lang_body`, `@demo_lang_button`, `@demo_lang_echo`.
 - Output của lệnh, nội dung log và biến không đi qua bước thay này.
 - **Khóa lạ:** mọi khóa TOML không có trong code (thường là gõ sai, kể cả trong `[app]`, `[[tab]]`, `[[item]]`, `[[group]]`) đều hiện cảnh báo cấu hình. Khóa `lang` cũ (mã ngôn ngữ như `"vi"`) không còn nghĩa đó: giờ nó là đường dẫn tệp.
 
@@ -282,16 +288,15 @@ page  = "pages/advanced.toml"    # file trang con, tính từ thư mục configs
 type  = "link"
 title = "Nhập nhanh"
 page  = "pages/quick.toml"
-style = "dialog"                 # dialog toàn màn hình
+style = "dialog"                 # dialog: dưới 5 mục thì nhỏ gọn giữa màn hình, từ 5 mục thì full màn hình
 run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
 ```
 
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
   Mở trang con: trang mới trượt vào từ bên phải, trang bên dưới lùi nhẹ sang trái; đóng thì ngược lại (dialog vẫn trượt từ dưới lên).
-- `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang trượt từ dưới lên, thanh trên có nút đóng (X) thay vì mũi tên.
-  - Dialog là sheet trượt từ dưới lên, nền mờ phía sau (bấm vào nền mờ là Hủy). Chiều cao mở **tự tính theo nội dung thật** (thanh trên + toàn bộ mục + hai nút), tối thiểu 30% màn hình; nội dung cao quá 80% màn hình thì mở **toàn màn hình**.
-  - **Kéo thanh trên** để đổi chiều cao. Thả tay: dưới 30% thì **đóng** như Hủy, trên 80% thì **lên toàn màn hình**, ở giữa thì giữ nguyên chiều cao vừa kéo. **Vuốt mạnh lên thì lên toàn màn hình, vuốt mạnh xuống thì đóng** (như Hủy); vuốt nhẹ thì chỉ đổi chiều cao theo đà vuốt (giảm không thấp hơn 30% và không đóng, tăng vượt 80% thì lên toàn màn hình). Cuộn nội dung lên khi chưa full thì sheet mở rộng trước; nội dung đã ở đầu mà còn kéo xuống thì sheet thu lại (không thấp hơn 30%, không đóng).
-  - Hai nút **Hủy** và **Xác nhận** cố định ở đáy sheet; kéo sheet thấp xuống thì các mục phía trên bị che dần, hai nút vẫn thấy.
+- `style` (chỉ với `page`): `page` (mặc định) hoặc `dialog`. `dialog` mở trang dưới dạng hộp thoại; chế độ tự chọn **theo số mục hiển thị** (mục trong `group` tính riêng từng mục con, bản thân `group` không tính), chốt một lần lúc mở:
+  - **Dưới 5 mục: dialog nhỏ gọn** ở giữa màn hình, có tiêu đề, các mục (cuộn nếu cao) và hai nút **Hủy** / **Xác nhận**. Chạm ra ngoài hoặc Back là Hủy.
+  - **Từ 5 mục: full màn hình**, trượt từ dưới lên, thanh trên có nút đóng (X) ở góc trái, hai nút **Hủy** / **Xác nhận** cố định ở đáy. Không kéo thu gọn, không có dấu tích.
 - Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
   - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
   - **Xác nhận**: đóng dialog rồi chạy `run` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `run` thì chỉ lưu biến.
@@ -466,6 +471,5 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 
 Lộ trình thành phần Miuix (xếp từ dễ đến khó, mức 1 đã xong) nằm trong `README.md`, mục "Lộ trình thành phần Miuix".
 
-- Nạp config từ thư mục ngoài và reload nóng.
-- Đa ngôn ngữ theo khóa (`title_vi`, `title_en`...).
+- Reload nóng (nạp lại khi file đổi) và nạp `main.toml` từ thư mục ngoài.
 - Backend ROM: danh sách lệnh cho phép.

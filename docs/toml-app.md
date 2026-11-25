@@ -61,7 +61,7 @@ Mọi lệnh demo chỉ là `echo` / `sleep` / `ls`, không đổi thông số t
 | Tab | File | Nội dung |
 |---|---|---|
 | Các type | `pages/types.toml` | Danh sách link; mỗi type một trang demo trong `pages/types/` (`text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `singleselect`, `multiselect`, `progress`, `link`, `group`). Trang `link` còn dùng `link_sub`, `link_sub2`, `link_dialog` |
-| Tính năng mới | `pages/news.toml` | Các tính năng thêm gần đây, mỗi nhóm có nút bấm thử: snackbar, notice, `@progress`, Ẩn log, Hủy bằng killtree, chọn toàn màn hình, dialog kéo được, icon, env.sh, slog/glog, busybox |
+| Tính năng mới | `pages/news.toml` | Các tính năng thêm gần đây, mỗi nhóm có nút bấm thử: snackbar, notice, `@progress`, Ẩn log, Hủy bằng killtree, chọn toàn màn hình, dialog nhỏ gọn / full màn hình, icon, env.sh, slog/glog, busybox, trang đa ngôn ngữ (`@khóa`) |
 | Giới thiệu | `pages/about.toml` | Tác giả (chủ dự án), người viết code (Claude), phân công, công nghệ, thông tin máy |
 | Lỗi code | `pages/crash.toml` | Crash app (`@crash`, `@crash-thread`), lỗi lệnh shell (exit 1, not found, sai cú pháp, permission denied, SIGKILL, hết giờ), lỗi ở mọi kiểu hiển thị, công tắc có lệnh lỗi |
 | Trang hỏng | `pages/broken.toml` | Link tới các trang cố ý hỏng trong `pages/broken/`: `syntax`, `syntax_dup`, mất file, `fields`, `options`, `links`, `nested`, `dialog_bad` |
@@ -90,4 +90,4 @@ Quy ước: `id` của item demo có tiền tố theo trang (`t_switch_...`, `n_
 
 ## 7. Chưa làm
 
-Nạp cấu hình từ thư mục ngoài và reload nóng, nội dung TOML đa ngôn ngữ, backend ROM và adb, group lồng group. Danh sách đầy đủ ở `README.md`, mục "Lộ trình". Một số tính năng chưa được thử hết trên máy thật, cũng ghi ở đó.
+Reload nóng, nạp `main.toml` từ thư mục ngoài, nội dung TOML đa ngôn ngữ, backend ROM và adb, group lồng group. Danh sách đầy đủ ở `README.md`, mục "Lộ trình". Một số tính năng chưa được thử hết trên máy thật, cũng ghi ở đó.

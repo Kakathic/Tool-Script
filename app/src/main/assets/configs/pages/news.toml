@@ -114,8 +114,8 @@ options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", 
 
 [[group.item]]
 type  = "link"
-title = "Dialog kéo được"
-desc  = "Kéo thanh trên: dưới 30% thì đóng, trên 80% thì toàn màn hình"
+title = "Dialog nhỏ gọn / full màn hình"
+desc  = "Tối đa 4 mục: hộp thoại giữa màn hình; từ 5 mục: full màn hình có X"
 page  = "pages/types/link_dialog.toml"
 style = "dialog"
 run   = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'
@@ -189,5 +189,12 @@ title = "Trang đa ngôn ngữ"
 
 [[group.item]]
 type    = "text"
-title   = "Giao diện app có English và Vietnamese"
-content = "Chuỗi của app theo ngôn ngữ hệ thống. Nội dung các file TOML vẫn là tiếng Việt, chưa đa ngôn ngữ."
+title   = "@demo_lang_title"
+content = "@demo_lang_body"
+
+[[group.item]]
+type  = "button"
+title = "@demo_lang_button"
+desc  = 'lang-sh = "lang/lang.sh", chọn chuỗi theo $LANGAPP'
+run   = 'echo "@demo_lang_echo"'
+shell = "banner"

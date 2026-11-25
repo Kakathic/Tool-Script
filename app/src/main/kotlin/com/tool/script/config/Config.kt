@@ -11,6 +11,7 @@ import dev.eav.tomlkt.Toml
 import dev.eav.tomlkt.TomlArray
 import dev.eav.tomlkt.TomlLiteral
 import dev.eav.tomlkt.TomlTable
+import java.io.File
 import java.io.IOException
 
 // Model + parser TOML theo docs/schema.md.
@@ -507,13 +508,17 @@ fun Item.normalizeMulti(raw: String): String {
     return options.filter { it.value in chosen }.joinToString(separator) { it.value }
 }
 
-/** Đọc `assets/configs`. Nạp từ thư mục ngoài và reload nóng để lại sau (schema mục 12). */
+/** Đọc `assets/configs`; đường dẫn bắt đầu bằng `/` thì đọc thẳng file ngoài APK. Reload nóng để lại sau (schema mục 12). */
 object ConfigRepository {
 
     private const val ROOT = "configs"
 
     private fun readAsset(context: Context, path: String): String =
-        context.assets.open("$ROOT/$path").bufferedReader(Charsets.UTF_8).use { it.readText() }
+        if (path.startsWith("/")) {
+            File(path).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } else {
+            context.assets.open("$ROOT/$path").bufferedReader(Charsets.UTF_8).use { it.readText() }
+        }
 
     /** Thời gian tối đa cho một lệnh shell nạp chuỗi ngôn ngữ (`lang-sh`, `load-string-sh`). */
     private const val LANG_SHELL_TIMEOUT_SEC = 5

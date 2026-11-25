@@ -1,5 +1,5 @@
-# Trang dùng cho link có style = "dialog". Sheet trượt từ dưới lên, chiều cao tự tính theo nội dung
-# (tối thiểu 30% màn hình; cao quá 80% thì toàn màn hình). Kéo thanh trên để đổi chiều cao.
+# Trang dùng cho link có style = "dialog". Tối đa 4 mục hiển thị: dialog nhỏ gọn giữa màn hình;
+# từ 5 mục: full màn hình (X ở góc trái, nút Hủy / Xác nhận ở đáy).
 # Item trong dialog chỉ để truyền biến: đổi giá trị không chạy lệnh (run / on / off / confirm bị bỏ qua).
 # button và link không dùng được trong dialog.
 # Bấm Xác nhận mới chạy run của link đã mở dialog; Hủy, X hoặc Back thì khôi phục biến về lúc mở.

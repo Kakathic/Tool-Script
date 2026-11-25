@@ -128,8 +128,9 @@ Giai đoạn 4: backend mở rộng
 
 Giai đoạn 5: cấu hình và schema
 
-- [ ] Nạp cấu hình từ thư mục ngoài và reload nóng (hiện chỉ đọc từ `assets/configs`).
-- [x] Đa ngôn ngữ theo `@khóa` trong TOML (`lang`, `lang-sh`, `load-string`, `load-string-sh` trong `[app]`, xem docs/schema.md). `env.sh` có sẵn `LANGUAGE`, `LANGAPP`, `COUNTRY`. Còn lại: đường dẫn ngoài, nạp lại chuỗi TOML khi đổi ngôn ngữ trong Cài đặt.
+- [x] Đọc trang từ đường dẫn ngoài: `file`, `page`, `lang`, `lang-sh` bắt đầu bằng `/` thì đọc thẳng file ngoài APK; `main.toml` vẫn ở `assets/configs`.
+- [ ] Reload nóng (tự nạp lại khi file đổi).
+- [x] Đa ngôn ngữ theo `@khóa` trong TOML (`lang`, `lang-sh`, `load-string`, `load-string-sh` trong `[app]`, xem docs/schema.md). `env.sh` có sẵn `LANGUAGE`, `LANGAPP`, `COUNTRY`. Còn lại: nạp lại chuỗi TOML khi đổi ngôn ngữ trong Cài đặt.
 - [ ] Điều kiện: dấu ngoặc và so sánh lớn / nhỏ.
 - [ ] `[[group]]`: hiển thị `desc`, hỗ trợ group lồng group (`[[group.group]]` hiện bị bỏ qua kèm cảnh báo).
 
