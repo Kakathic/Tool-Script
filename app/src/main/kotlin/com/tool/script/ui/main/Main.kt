@@ -830,7 +830,9 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
         CompositionLocalProvider(LocalSelectHost provides null) {
         Column(Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.fillMaxWidth().heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                // weight(fill = false): Column đo Spacer và hàng nút trước, vùng cuộn chỉ nhận phần chiều cao còn lại.
+                // Không có weight thì vùng cuộn ăn hết chiều cao khung dialog và hàng nút bị ép về 0.
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (shouldShowPageWarnings(page.file, page.warnings)) PageWarningBanner(page.file, page.warnings)
