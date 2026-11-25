@@ -301,7 +301,7 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
   - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
   - **Xác nhận**: đóng dialog rồi chạy `run` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `run` thì chỉ lưu biến.
   - **Hủy**, nút X hoặc Back của máy: đóng dialog và khôi phục biến về giá trị lúc mở.
-- `button` và `link` không dùng được trong dialog: bị bỏ qua kèm cảnh báo.
+- `button` và `link` không dùng được trong dialog (đã có Hủy / Xác nhận): bị bỏ qua kèm cảnh báo.
 - Cùng một file trang con được nhiều link trỏ tới thì dùng `title` và `style` của link đầu tiên.
 - File trang con viết như file trang thường (mục 4); trong đó có thể có link tới trang con khác.
 - Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.

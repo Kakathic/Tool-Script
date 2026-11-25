@@ -1,0 +1,81 @@
+# Demo đủ các loại item dùng được trong dialog: text, group, switch, checkbox, input, slider, radio, dropdown, singleselect, multiselect, progress.
+# Nhiều hơn 4 mục nên mở full màn hình. Item trong dialog chỉ đổi biến, không chạy lệnh; bấm Xác nhận mới chạy run của link.
+# Không dùng được: button và link (đã có Hủy / Xác nhận).
+
+[[item]]
+type    = "text"
+title   = "Tất cả loại item"
+content = "Đổi các giá trị bên dưới rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để khôi phục."
+
+[[group]]
+title = "Công tắc và ô tick"
+
+[[group.item]]
+type    = "switch"
+id      = "t_ldlg_all_switch"
+title   = "Công tắc"
+default = "1"
+
+[[group.item]]
+type  = "checkbox"
+id    = "t_ldlg_all_check"
+title = "Ô tick"
+
+[[group]]
+title = "Nhập liệu"
+
+[[group.item]]
+type    = "input"
+id      = "t_ldlg_all_input"
+title   = "Ô nhập"
+hint    = "Nhập nội dung"
+default = "xin chào"
+
+[[group.item]]
+type    = "slider"
+id      = "t_ldlg_all_slider"
+title   = "Thanh trượt"
+min     = 0
+max     = 100
+step    = 10
+default = 50
+
+[[group]]
+title = "Chọn giá trị"
+
+[[group.item]]
+type    = "radio"
+id      = "t_ldlg_all_radio"
+title   = "Radio"
+default = "balanced"
+options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
+
+[[group.item]]
+type    = "dropdown"
+id      = "t_ldlg_all_dropdown"
+title   = "Thả xuống"
+default = "2"
+options = ["Một|1", "Hai|2", "Ba|3"]
+
+[[group.item]]
+type    = "singleselect"
+id      = "t_ldlg_all_single"
+title   = "Chọn một"
+default = "wifi"
+options = ["Wi-Fi|wifi", "Dữ liệu di động|mobile", "Bluetooth|bt"]
+
+[[group.item]]
+type    = "multiselect"
+id      = "t_ldlg_all_multi"
+title   = "Chọn nhiều"
+default = "a\nc"
+options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
+
+[[group]]
+title = "Chỉ hiển thị"
+
+[[group.item]]
+type  = "progress"
+id    = "t_progress_get"
+title = "Thanh tiến trình"
+desc  = "Dùng chung biến t_progress_get với trang progress; trong dialog không chạy get, chỉ hiện giá trị đã có"

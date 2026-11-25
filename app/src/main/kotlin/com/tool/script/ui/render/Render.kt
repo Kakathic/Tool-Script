@@ -23,6 +23,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -125,11 +127,13 @@ class RenderEnv(
     val openPage: (String) -> Unit,
     /** true = chỉ truyền biến (trang dialog): item không chạy lệnh, lệnh do nút Xác nhận của dialog chạy. */
     val varsOnly: Boolean = false,
+    /** Các button đã chọn trong dialog, chạy theo thứ tự chọn khi bấm Xác nhận (Hủy hoặc đóng thì bỏ). Dùng chung giữa bản gốc và [asVarsOnly]. */
+    val queued: SnapshotStateList<Item> = mutableStateListOf(),
 ) {
     var confirm by mutableStateOf<ConfirmRequest?>(null)
 
-    /** Bản dùng trong dialog: cùng kho biến, nhưng item chỉ đổi biến, không chạy lệnh. */
-    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true)
+    /** Bản dùng trong dialog: cùng kho biến, item chỉ đổi biến; button chỉ đánh dấu chờ chạy ([queued]), lệnh do nút Xác nhận chạy. */
+    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true, queued = queued)
 
     /**
      * Chạy [command] của [item] với các biến trong kho cộng [extra]; hiện kết quả theo `shell`.
@@ -283,14 +287,22 @@ private fun GroupItem(item: Item, env: RenderEnv) {
 
 @Composable
 private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    // Trong dialog: bấm để chọn / bỏ chọn, lệnh chỉ chạy khi bấm Xác nhận của dialog.
+    val queued = env.varsOnly && env.queued.any { it === item }
+    val toggle = withTapHaptic { if (queued) env.queued.removeAll { it === item } else env.queued.add(item) }
     ItemSurface(modifier, inGroup) {
         BasicComponent(
             insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
+            endActions = if (env.varsOnly) {
+                { Checkbox(state = if (queued) ToggleableState.On else ToggleableState.Off, enabled = enabled, onClick = toggle) }
+            } else {
+                null
+            },
             enabled = enabled,
-            onClick = withTapHaptic { env.run(item, item.run) },
+            onClick = if (env.varsOnly) toggle else withTapHaptic { env.run(item, item.run) },
         )
     }
 }

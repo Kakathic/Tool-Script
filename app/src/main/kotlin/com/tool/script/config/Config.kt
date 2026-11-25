@@ -661,7 +661,7 @@ object ConfigRepository {
         return result
     }
 
-    /** Dialog chỉ để truyền biến: bỏ button và link (không có biến để truyền), cảnh báo từng mục bị bỏ. */
+    /** Dialog chỉ để truyền biến: bỏ button và link (đã có Hủy / Xác nhận), cảnh báo từng mục bị bỏ. */
     private fun dialogItems(file: String, link: Item, items: List<Item>, warnings: MutableList<String>): List<Item> {
         if (!link.dialog) return items
         fun filter(list: List<Item>): List<Item> = list.mapNotNull { item ->

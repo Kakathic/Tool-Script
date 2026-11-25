@@ -827,9 +827,11 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
     val pageEnv = remember(env) { env.asVarsOnly() }
     val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
     BlurDialog(show = show, onDismissRequest = onBack, title = page.title, centered = true, fullScreen = true) {
-        Column {
+        // Màn hình chọn của singleselect / multiselect: không dùng host ở gốc (bị popup này che), mở bằng cửa sổ riêng nằm trên dialog.
+        CompositionLocalProvider(LocalSelectHost provides null) {
+        Column(Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (shouldShowPageWarnings(page.file, page.warnings)) PageWarningBanner(page.file, page.warnings)
@@ -837,7 +839,7 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
                 page.items.filter { isShown(it, pageEnv.store) }.forEach { ItemRenderer(it, pageEnv) }
             }
             Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(text = stringResource(R.string.action_cancel), onClick = onBack, modifier = Modifier.weight(1f))
                 TextButton(
                     text = stringResource(R.string.action_confirm),
@@ -846,6 +848,7 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                 )
             }
+        }
         }
     }
 }
