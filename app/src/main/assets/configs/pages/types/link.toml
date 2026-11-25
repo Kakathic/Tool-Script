@@ -59,13 +59,3 @@ page  = "pages/types/link_dialog.toml"
 style = "dialog"
 run   = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'
 shell = "live"
-
-[[group.item]]
-type    = "link"
-title   = "Dialog có hỏi xác nhận"
-desc    = "confirm, shell và timeout của link áp dụng như button"
-page    = "pages/types/link_dialog.toml"
-style   = "dialog"
-run     = 'echo "Đã chọn mức $t_ldlg_level"'
-confirm = "Chạy lệnh với các giá trị vừa chọn?"
-shell   = "banner"

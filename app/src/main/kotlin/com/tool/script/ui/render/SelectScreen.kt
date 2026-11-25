@@ -104,6 +104,7 @@ internal class SelectRequest(
     val onDismiss: () -> Unit,
     val onConfirm: (Set<String>) -> Unit,
     val desc: String? = null,
+    val instant: Boolean = false,
 )
 
 /**
@@ -132,16 +133,17 @@ internal fun SelectFullScreenSlot(
     onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
     desc: String? = null,
+    instant: Boolean = false,
 ) {
     val host = LocalSelectHost.current
     if (host == null) {
-        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm, desc = desc)
+        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm, desc = desc, instant = instant)
     } else {
         val latestDismiss by rememberUpdatedState(onDismiss)
         val latestConfirm by rememberUpdatedState(onConfirm)
         DisposableEffect(show) {
             if (!show) return@DisposableEffect onDispose {}
-            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) }, desc)
+            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) }, desc, instant)
             host.request = request
             onDispose { if (host.request === request) host.request = null }
         }
@@ -162,6 +164,7 @@ fun SelectFullScreenHost(host: SelectHost) {
             onConfirm = request.onConfirm,
             inline = true,
             desc = request.desc,
+            instant = request.instant,
         )
     }
 }
@@ -173,6 +176,9 @@ fun SelectFullScreenHost(host: SelectHost) {
  * - Chọn tất cả chỉ tác động lên các mục đang hiện trong kết quả tìm; mục ngoài kết quả giữ nguyên.
  *   Chưa tìm gì thì kết quả là toàn bộ danh sách.
  * - Chỉ khi bấm Xác nhận mới gọi [onConfirm]; Hủy, Back hoặc chạm ra ngoài thì [onDismiss] và bỏ thay đổi.
+ *
+ * [instant] = true (item trong dialog, chỉ truyền biến, đã có Hủy / Xác nhận của dialog): không có Xác nhận. Chọn một: chạm dòng là chọn luôn và đóng;
+ * chọn nhiều: mỗi lần đổi gọi [onConfirm] ngay (không đóng), nút Đóng ở đáy (hoặc Back) để thoát.
  *
  * Gọi khi cần hiện (`if (show) SelectFullScreen(...)`) để mỗi lần mở bắt đầu lại từ [selected].
  *
@@ -189,6 +195,7 @@ internal fun SelectFullScreen(
     onConfirm: (Set<String>) -> Unit,
     inline: Boolean = false,
     desc: String? = null,
+    instant: Boolean = false,
 ) {
     var draft by remember { mutableStateOf(selected) }
     var query by remember { mutableStateOf("") }
@@ -205,13 +212,18 @@ internal fun SelectFullScreen(
         checkedVisible == visibleValues.size -> ToggleableState.On
         else -> ToggleableState.Indeterminate
     }
+    // Chọn nhiều ở chế độ instant: mỗi lần đổi gửi ngay lên item.
+    val applyDraft: (Set<String>) -> Unit = { next ->
+        draft = next
+        if (instant && multi) onConfirm(next)
+    }
     val toggleAll = {
         if (allState == ToggleableState.On) {
             haptic.performHapticFeedback(HapticFeedbackType.ToggleOff)
-            draft = draft - visibleValues.toSet()
+            applyDraft(draft - visibleValues.toSet())
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.ToggleOn)
-            draft = draft + visibleValues
+            applyDraft(draft + visibleValues)
         }
     }
 
@@ -361,10 +373,11 @@ internal fun SelectFullScreen(
                                 val click = {
                                     if (multi) {
                                         haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
-                                        draft = if (checked) draft - option.value else draft + option.value
+                                        applyDraft(if (checked) draft - option.value else draft + option.value)
                                     } else {
                                         if (!checked) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                         draft = setOf(option.value)
+                                        if (instant) close { onConfirm(setOf(option.value)) }
                                     }
                                 }
                                 BasicComponent(
@@ -403,16 +416,25 @@ internal fun SelectFullScreen(
                     modifier = Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN, bottom = SCREEN_MARGIN),
                     horizontalArrangement = Arrangement.spacedBy(SCREEN_MARGIN),
                 ) {
-                    TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
-                    TextButton(
-                        text = stringResource(R.string.action_confirm),
-                        onClick = {
-                            val result = draft
-                            close { onConfirm(result) }
-                        },
-                        modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                    )
+                    if (instant) {
+                        TextButton(
+                            text = stringResource(R.string.action_close),
+                            onClick = { close(onDismiss) },
+                            modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    } else {
+                        TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
+                        TextButton(
+                            text = stringResource(R.string.action_confirm),
+                            onClick = {
+                                val result = draft
+                                close { onConfirm(result) }
+                            },
+                            modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
                 }
             }
         }

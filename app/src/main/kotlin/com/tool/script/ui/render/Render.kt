@@ -23,8 +23,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -127,13 +125,11 @@ class RenderEnv(
     val openPage: (String) -> Unit,
     /** true = chỉ truyền biến (trang dialog): item không chạy lệnh, lệnh do nút Xác nhận của dialog chạy. */
     val varsOnly: Boolean = false,
-    /** Các button đã chọn trong dialog, chạy theo thứ tự chọn khi bấm Xác nhận (Hủy hoặc đóng thì bỏ). Dùng chung giữa bản gốc và [asVarsOnly]. */
-    val queued: SnapshotStateList<Item> = mutableStateListOf(),
 ) {
     var confirm by mutableStateOf<ConfirmRequest?>(null)
 
-    /** Bản dùng trong dialog: cùng kho biến, item chỉ đổi biến; button chỉ đánh dấu chờ chạy ([queued]), lệnh do nút Xác nhận chạy. */
-    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true, queued = queued)
+    /** Bản dùng trong dialog: cùng kho biến, nhưng item chỉ đổi biến, không chạy lệnh. */
+    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true)
 
     /**
      * Chạy [command] của [item] với các biến trong kho cộng [extra]; hiện kết quả theo `shell`.
@@ -287,22 +283,14 @@ private fun GroupItem(item: Item, env: RenderEnv) {
 
 @Composable
 private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
-    // Trong dialog: bấm để chọn / bỏ chọn, lệnh chỉ chạy khi bấm Xác nhận của dialog.
-    val queued = env.varsOnly && env.queued.any { it === item }
-    val toggle = withTapHaptic { if (queued) env.queued.removeAll { it === item } else env.queued.add(item) }
     ItemSurface(modifier, inGroup) {
         BasicComponent(
             insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
-            endActions = if (env.varsOnly) {
-                { Checkbox(state = if (queued) ToggleableState.On else ToggleableState.Off, enabled = enabled, onClick = toggle) }
-            } else {
-                null
-            },
             enabled = enabled,
-            onClick = if (env.varsOnly) toggle else withTapHaptic { env.run(item, item.run) },
+            onClick = withTapHaptic { env.run(item, item.run) },
         )
     }
 }
@@ -572,9 +560,10 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
         options = item.options,
         multi = true,
         selected = currentSet,
+        instant = env.varsOnly,
         onDismiss = { showDialog = false },
         onConfirm = { chosen ->
-            showDialog = false
+            if (!env.varsOnly) showDialog = false
             val newValue = item.options.filter { it.value in chosen }.joinToString(item.separator) { it.value }
             if (newValue != current) {
                 env.run(item, item.run, mapOf(id to newValue)) { result ->
@@ -588,10 +577,13 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             item.options.chunked(item.columns).forEach { rowOptions ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     rowOptions.forEach { option ->
-                        val checked = option.value in draft
+                        // Trong dialog: không có Xác nhận, đổi là ghi vào biến ngay (Hủy của dialog khôi phục).
+                        val checked = option.value in (if (env.varsOnly) currentSet else draft)
                         val toggle = {
                             haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn)
-                            draft = if (checked) draft - option.value else draft + option.value
+                            val next = if (checked) draft - option.value else draft + option.value
+                            draft = next
+                            if (env.varsOnly) env.store[id] = item.options.filter { it.value in next }.joinToString(item.separator) { it.value }
                         }
                         // 1 cột: không nền (chỉ chữ + ô tích); 2 cột: giữ thẻ có nền như cũ.
                         ChoiceCard(option.label, checked, toggle, Modifier.weight(1f), framed = item.columns > 1)
@@ -599,8 +591,8 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (!env.varsOnly) Spacer(Modifier.height(8.dp))
+            if (!env.varsOnly) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
                 TextButton(
                     text = stringResource(R.string.action_confirm),
@@ -715,6 +707,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
         options = item.options,
         multi = false,
         selected = setOf(current),
+        instant = env.varsOnly,
         onDismiss = { showDialog = false },
         onConfirm = { chosen ->
             showDialog = false
@@ -735,14 +728,19 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                         val pick = {
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
+                            // Trong dialog: chạm là chọn luôn và đóng, không có Xác nhận (Hủy của dialog khôi phục).
+                            if (env.varsOnly) {
+                                env.store[id] = option.value
+                                showDialog = false
+                            }
                         }
                         ChoiceCard(option.label, selected, pick, Modifier.weight(1f), framed = item.columns > 1, radio = true)
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (!env.varsOnly) Spacer(Modifier.height(8.dp))
+            if (!env.varsOnly) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
                 TextButton(
                     text = stringResource(R.string.action_confirm),

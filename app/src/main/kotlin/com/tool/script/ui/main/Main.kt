@@ -691,11 +691,10 @@ private const val SheetGlassAlpha = 0.6f
  * Thanh trên của dialog full màn hình: tiêu đề ở giữa, X (Hủy) trong nền tròn bên trái; Xác nhận nằm ở thanh nút phía dưới.
  */
 @Composable
-private fun SheetTopBar(title: String, onCancel: () -> Unit, surfaceAlpha: Float = 1f) {
+private fun SheetTopBar(title: String, onCancel: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .statusBarsPadding()
             .height(DIALOG_TOP_BAR_HEIGHT)
             .padding(horizontal = 4.dp),
@@ -739,14 +738,14 @@ private fun SubPageScreen(
         topBar = {
             Box(topBarModifier) {
                 if (page.dialog) {
-                    SheetTopBar(page.title, onCancel = onBack, surfaceAlpha = surfaceAlpha)
+                    SheetTopBar(page.title, onCancel = onBack)
                 } else {
                     LargeTitleTopBar(title = page.title, scrollBehavior = titleScroll, onBack = onBack, backdrop = backdrop)
                 }
             }
         },
         snackbarHost = { SnackbarHost(feedback.snackbarState) },
-        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm, surfaceAlpha = surfaceAlpha) },
+        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha),
     ) { inner ->
         Column(
@@ -855,11 +854,10 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
 
 /** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). */
 @Composable
-private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit, surfaceAlpha: Float = 1f) {
+private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
