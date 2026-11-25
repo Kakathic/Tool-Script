@@ -3,6 +3,8 @@ package com.tool.script.ui.render
 import com.tool.script.R
 import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppIcons
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -65,7 +68,6 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
@@ -418,7 +420,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 title = option.label,
                 enabled = enabled,
                 endActions = {
-                    RadioButton(selected = option.value == current, enabled = enabled, onClick = { select() })
+                    RadioDot(selected = option.value == current)
                 },
                 onClick = { select() },
             )
@@ -659,7 +661,7 @@ private fun ChoiceCard(
         )
         Spacer(Modifier.width(8.dp))
         if (radio) {
-            RadioButton(selected = checked, onClick = onClick)
+            RadioDot(selected = checked)
         } else {
             Checkbox(
                 state = if (checked) ToggleableState.On else ToggleableState.Off,
@@ -792,6 +794,26 @@ private fun TitleRow(item: Item, title: @Composable () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         ItemIconInline(item)
         title()
+    }
+}
+
+// Nút tròn của radio / singleselect: đĩa tròn đặc, chọn rồi thì nền màu chủ đạo và có chấm trắng ở giữa, chưa chọn thì đĩa xám.
+private val RADIO_SIZE = 28.dp
+private val RADIO_DOT_SIZE = 12.dp
+
+/** Chỉ để hiển thị: bấm đã do cả hàng xử lý (dùng chung cho `radio`, hộp thoại và màn hình chọn một). */
+@Composable
+internal fun RadioDot(selected: Boolean) {
+    val background by animateColorAsState(
+        if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+        label = "radioBackground",
+    )
+    val dot by animateDpAsState(if (selected) RADIO_DOT_SIZE else 0.dp, label = "radioDot")
+    Box(
+        modifier = Modifier.size(RADIO_SIZE).clip(CircleShape).background(background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.size(dot).clip(CircleShape).background(Color.White))
     }
 }
 

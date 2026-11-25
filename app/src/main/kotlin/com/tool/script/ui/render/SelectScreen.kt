@@ -59,7 +59,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.RadioButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -404,7 +403,7 @@ internal fun SelectFullScreen(
                                                 onClick = { click() },
                                             )
                                         } else {
-                                            RadioButton(selected = checked, onClick = { click() })
+                                            RadioDot(selected = checked)
                                         }
                                     },
                                 )
