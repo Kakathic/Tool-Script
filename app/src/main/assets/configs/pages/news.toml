@@ -114,8 +114,17 @@ options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", 
 
 [[group.item]]
 type  = "link"
-title = "Dialog nhỏ gọn / full màn hình"
-desc  = "Tối đa 4 mục: hộp thoại giữa màn hình; từ 5 mục: full màn hình có X"
+title = "Dialog nhỏ gọn"
+desc  = "Tối đa 4 mục: hộp thoại giữa màn hình"
+page  = "pages/types/link_dialog_small.toml"
+style = "dialog"
+run   = 'echo "tên=$t_ldlg_small_name chế độ=$t_ldlg_small_mode cờ=$t_ldlg_small_flag"'
+shell = "banner"
+
+[[group.item]]
+type  = "link"
+title = "Dialog full màn hình"
+desc  = "Từ 5 mục: full màn hình, X ở góc trái"
 page  = "pages/types/link_dialog.toml"
 style = "dialog"
 run   = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'

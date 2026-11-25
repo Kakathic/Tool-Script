@@ -1,0 +1,21 @@
+# Trang dialog nhỏ gọn: tối đa 4 mục hiển thị nên hiện hộp thoại giữa màn hình (từ 5 mục thì full màn hình, xem link_dialog.toml).
+# Hộp thoại có tiêu đề, các mục, nút Hủy / Xác nhận; chạm ra ngoài hoặc Back là Hủy.
+
+[[item]]
+type    = "input"
+id      = "t_ldlg_small_name"
+title   = "Tên"
+hint    = "Nhập tên"
+default = "bạn"
+
+[[item]]
+type    = "radio"
+id      = "t_ldlg_small_mode"
+title   = "Chế độ"
+default = "balanced"
+options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
+
+[[item]]
+type  = "switch"
+id    = "t_ldlg_small_flag"
+title = "Bật cờ"
