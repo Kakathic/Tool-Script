@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icon nhỏ của thông báo: chỉ dùng kênh alpha, không thu nhỏ để chữ rõ ở 24dp. -->
+<!-- Icon nhỏ của thông báo: giống ic_logo_mono (khung cửa sổ viền + dấu nhắc >_), chỉ dùng kênh alpha. ic_logo_mono thu 0.667 cho adaptive icon; ở đây phóng 1.35 để lấp đầy khung 24dp, nét đủ dày để rõ trên thanh trạng thái. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,25 +8,23 @@
     <group
         android:pivotX="54"
         android:pivotY="54"
-        android:scaleX="1.0"
-        android:scaleY="1.0">
+        android:scaleX="1.35"
+        android:scaleY="1.35">
         <path
-            android:pathData="M31,28H24V80H31M77,28H84V80H77"
+            android:pathData="M33,28H75A11,11 0 0 1 86,39V69A11,11 0 0 1 75,80H33A11,11 0 0 1 22,69V39A11,11 0 0 1 33,28Z"
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
+            android:strokeWidth="4.5"
+            android:strokeLineJoin="round" />
         <path
-            android:pathData="M36,41.5H52M44,41.5V69"
+            android:pathData="M40,46L52,54L40,62"
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
         <path
-            android:pathData="M69.5,47V41.5H58.5V54H69.5V66.5H58.5V61"
+            android:pathData="M58,64H72"
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="5"
-            android:strokeLineCap="butt"
-            android:strokeLineJoin="miter" />
+            android:strokeWidth="5.5"
+            android:strokeLineCap="round" />
     </group>
 </vector>

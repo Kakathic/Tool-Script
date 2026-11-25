@@ -16,4 +16,6 @@ object AppIcons {
     const val BarPower = "icons/bar_power.svg"
     const val BarSettings = "icons/bar_settings.svg"
     const val BarUpDown = "icons/bar_updown.svg"
+    const val BarRun = "icons/bar_run.svg"
+    const val BarRadio = "icons/bar_radio.svg"
 }

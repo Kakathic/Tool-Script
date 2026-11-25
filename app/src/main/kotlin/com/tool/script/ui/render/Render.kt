@@ -289,6 +289,7 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
+            endActions = { EndIcon(AppIcons.BarRun) },
             enabled = enabled,
             onClick = withTapHaptic { env.run(item, item.run) },
         )
@@ -393,7 +394,14 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val current = env.store[id]
     val haptic = LocalHapticFeedback.current
     ItemSurface(modifier, inGroup) {
-        BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
+        BasicComponent(
+            insideMargin = CardInsideMargin,
+            title = item.title,
+            summary = item.desc,
+            enabled = enabled,
+            startAction = itemIcon(item),
+            endActions = { EndIcon(AppIcons.BarRadio) },
+        )
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
         if (item.options.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -787,16 +795,20 @@ private fun TitleRow(item: Item, title: @Composable () -> Unit) {
     }
 }
 
-/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `multiselect`, `singleselect` và `dropdown`. */
+/** Icon nhỏ ở cuối hàng (bên phải), tô màu phụ của theme; mỗi type có icon riêng (trừ `text`). */
 @Composable
-private fun UpDownIcon() {
+private fun EndIcon(icon: String) {
     AsyncImage(
-        model = Util.iconModel(AppIcons.BarUpDown),
+        model = Util.iconModel(icon),
         contentDescription = null,
         modifier = Modifier.size(20.dp),
         colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
     )
 }
+
+/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `multiselect`, `singleselect` và `dropdown`. */
+@Composable
+private fun UpDownIcon() = EndIcon(AppIcons.BarUpDown)
 
 /**
  * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (không dùng hộp thoại):
