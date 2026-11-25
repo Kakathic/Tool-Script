@@ -4,7 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.style.TextAlign
@@ -583,7 +585,11 @@ fun ToolbarFullScreen(
         }
     }
     BackHandler(enabled = show, onBack = onDismiss)
-    AnimatedVisibility(visible = show, enter = fadeIn(tween(220)), exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180))) {
+    AnimatedVisibility(
+        visible = show,
+        enter = slideInVertically(tween(260, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(160)),
+        exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180)),
+    ) {
         val base = MiuixTheme.colorScheme.background
         Column(
             modifier = Modifier
