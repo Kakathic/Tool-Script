@@ -770,7 +770,7 @@ fun PowerMenu(onOpen: () -> Unit) {
 }
 
 /**
- * Màn hình Nguồn toàn màn hình (X ở góc trái hoặc Back để đóng). Danh sách dài, hiện sẵn tất cả (không mở / thu), nội dung dài thì cuộn. Ba nhóm, mỗi nhóm một thẻ có vạch kẻ:
+ * Menu Nguồn. Có root: màn hình toàn màn hình (X ở góc trái hoặc Back để đóng); chưa root: hộp thoại giữa màn hình (chạm ra ngoài hoặc Back để đóng). Danh sách dài, hiện sẵn tất cả (không mở / thu), nội dung dài thì cuộn. Ba nhóm, mỗi nhóm một thẻ có vạch kẻ:
  * - Ứng dụng: Khởi động lại ứng dụng, Đóng ứng dụng.
  * - Thiết bị (cần root): Tắt máy, Khởi động lại máy.
  * - Nâng cao: Recovery, Khởi động lại mềm, Bootloader, Download, EDL.
@@ -787,7 +787,8 @@ fun PowerScreen(
     hasRoot: Boolean = true,
 ) {
     val advancedActions = remember { PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS } }
-    ToolbarFullScreen(show = show, title = stringResource(R.string.power_menu_description), onDismiss = onDismiss) {
+    val title = stringResource(R.string.power_menu_description)
+    val appSection: @Composable () -> Unit = {
         SettingsSection(stringResource(R.string.power_section_app)) {
             PowerCard {
                 PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
@@ -795,16 +796,24 @@ fun PowerScreen(
                 PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
             }
         }
-        SettingsSection(stringResource(R.string.power_section_device)) {
-            if (hasRoot) {
+    }
+    if (hasRoot) {
+        ToolbarFullScreen(show = show, title = title, onDismiss = onDismiss) {
+            appSection()
+            SettingsSection(stringResource(R.string.power_section_device)) {
                 PowerActionsCard(BASIC_POWER_ACTIONS, onDeviceAction)
-            } else {
-                PowerCard { PowerLockedRow(stringResource(R.string.power_need_root)) }
             }
-        }
-        if (hasRoot) {
             SettingsSection(stringResource(R.string.power_section_advanced)) {
                 PowerActionsCard(advancedActions, onDeviceAction)
+            }
+        }
+    } else {
+        BlurDialog(show = show, onDismissRequest = onDismiss, title = title, centered = true, fullScreen = true) {
+            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                appSection()
+                SettingsSection(stringResource(R.string.power_section_device)) {
+                    PowerCard { PowerLockedRow(stringResource(R.string.power_need_root)) }
+                }
             }
         }
     }
