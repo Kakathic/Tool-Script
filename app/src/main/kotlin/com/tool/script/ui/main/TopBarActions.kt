@@ -410,8 +410,8 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
     }
 }
 
-/** Lề vạch kẻ của dòng có icon 20dp: trái 48dp (16 + 20 + 12) cho vạch thẳng với chữ, phải 16dp. */
-private val RowDividerStart = 48.dp
+/** Lề vạch kẻ của dòng trong thẻ: 16dp hai bên, khớp padding ngang của dòng. */
+private val RowDividerStart = 16.dp
 private val RowDividerEnd = 16.dp
 
 /** Vạch kẻ mảnh trong thẻ; [startInset] / [endInset] chừa lề hai bên (thẻ giới thiệu đã có padding riêng nên để 0). */
