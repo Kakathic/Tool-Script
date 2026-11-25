@@ -764,6 +764,7 @@ private fun SubPageScreen(
                     env = pageEnv,
                     bottomInset = inner.calculateBottomPadding(),
                     topInset = if (backdrop != null) inner.calculateTopPadding() else 0.dp,
+                    fadeEdges = page.dialog,
                 )
             }
             FeedbackDialogs(feedback, env)
@@ -828,11 +829,12 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
     BlurDialog(show = show, onDismissRequest = onBack, title = page.title, centered = true, fullScreen = true) {
         // Màn hình chọn của singleselect / multiselect: không dùng host ở gốc (bị popup này che), mở bằng cửa sổ riêng nằm trên dialog.
         CompositionLocalProvider(LocalSelectHost provides null) {
+        val contentScroll = rememberScrollState()
         Column(Modifier.fillMaxWidth()) {
             Column(
                 // weight(fill = false): Column đo Spacer và hàng nút trước, vùng cuộn chỉ nhận phần chiều cao còn lại.
                 // Không có weight thì vùng cuộn ăn hết chiều cao khung dialog và hàng nút bị ép về 0.
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = maxContentHeight).fadingEdges(contentScroll).verticalScroll(contentScroll),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (shouldShowPageWarnings(page.file, page.warnings)) PageWarningBanner(page.file, page.warnings)
@@ -912,6 +914,7 @@ private fun PageList(
     bottomInset: androidx.compose.ui.unit.Dp,
     topInset: androidx.compose.ui.unit.Dp = 0.dp,
     appBanner: (@Composable () -> Unit)? = null,
+    fadeEdges: Boolean = false,
 ) {
     val showWarnings = shouldShowPageWarnings(file, warnings)
     // Lấy trạng thái cuộn theo file từ MainScreen (lấy một lần cho lần dựng này: trang đang trượt ra không bị nhảy về đầu khi vừa bị quên).
@@ -919,7 +922,7 @@ private fun PageList(
     val listState = if (scrolls != null) remember(file, scrolls) { scrolls.of(file) } else rememberLazyListState()
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize().imePadding(),
+        modifier = Modifier.fillMaxSize().imePadding().then(if (fadeEdges) Modifier.fadingEdges(listState) else Modifier),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
