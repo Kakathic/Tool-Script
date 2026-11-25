@@ -745,7 +745,7 @@ private fun SubPageScreen(
             }
         },
         snackbarHost = { SnackbarHost(feedback.snackbarState) },
-        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm, surfaceAlpha = surfaceAlpha) },
+        bottomBar = { if (page.dialog && sheetFull) DialogButtons(onCancel = onBack, onConfirm = onConfirm) },
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha),
     ) { inner ->
         Column(
@@ -854,13 +854,12 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
     }
 }
 
-/** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). */
+/** Thanh nút cuối dialog: Hủy (khôi phục biến) và Xác nhận (chạy lệnh). Không tự vẽ nền: dùng nền của Scaffold để blur phía sau lộ ra đồng đều. */
 @Composable
-private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit, surfaceAlpha: Float = 1f) {
+private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MiuixTheme.colorScheme.surface.copy(alpha = surfaceAlpha))
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
