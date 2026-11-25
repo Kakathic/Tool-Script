@@ -697,7 +697,7 @@ private fun SheetTopBar(title: String, onCancel: () -> Unit) {
             .fillMaxWidth()
             .statusBarsPadding()
             .height(DIALOG_TOP_BAR_HEIGHT)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 10.dp),
     ) {
         Text(
             text = title,
