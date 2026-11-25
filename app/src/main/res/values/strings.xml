@@ -169,6 +169,7 @@
     <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" is invalid (1 or 2), using 1</string>
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" is invalid (positive number), using 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" is invalid (true or false), using true</string>
+    <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" is invalid (true or false), using false</string>
     <string name="cfg_invalid_lock_mode">%1$s \"%2$s\": lock_mode = \"%3$s\" is invalid, using readonly</string>
     <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s is invalid (expected \"label|value\"), ignored</string>
     <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) has no valid options</string>

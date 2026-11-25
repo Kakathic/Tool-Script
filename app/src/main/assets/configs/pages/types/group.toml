@@ -85,3 +85,22 @@ type  = "button"
 title = "Nút chỉ có khi root"
 run   = 'echo "Đang có root"'
 shell = "banner"
+
+[[group]]
+title = "Đường kẻ ngăn cách"
+
+[[group.item]]
+type    = "text"
+title   = "Item một"
+content = "divider = true: đường kẻ nằm giữa item một và item hai."
+divider = true
+
+[[group.item]]
+type    = "text"
+title   = "Item hai"
+content = "Không có divider nên dính liền item ba."
+
+[[group.item]]
+type    = "text"
+title   = "Item ba"
+content = "Item cuối: divider ở đây (nếu có) sẽ không được vẽ."

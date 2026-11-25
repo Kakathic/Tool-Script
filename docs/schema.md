@@ -78,7 +78,7 @@ load-string-sh = "echo wifi_desc=Bật hoặc tắt"   # lệnh shell nhập th�
 - **Cách thay:** ở bất cứ chuỗi nào, nếu có `@khóa` mà **khóa đó có trong bảng** thì thay; không có thì giữ nguyên (nên `user@host`, `@progress` không bị đụng).
   - `@` không được đứng ngay sau chữ, số, gạch dưới hay `@` khác; `@khóa` nhận trọn một định danh ("Xin chào @ten." giữ dấu chấm). Cần viết liền chữ phía sau thì dùng `@{khóa}`.
   - Không thay lồng nhau: văn bản vừa thay vào không bị quét lại.
-  - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `shell`, `columns`, `lock_mode`, `input_type`, `style`, `tab`, `page`, `file`, `visible_if`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
+  - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `divider`, `shell`, `columns`, `lock_mode`, `input_type`, `style`, `tab`, `page`, `file`, `visible_if`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
   - Các khóa còn lại thay được, kể cả lệnh `run`, `on`, `off`, `get` và `[app] env`; bản dịch nằm trong lệnh shell nên tránh ký tự `'`, `"`, `$`, `` ` ``, `\` nếu lệnh đặt nó trong dấu nháy.
 - **Đổi ngôn ngữ:** bảng chuỗi chỉ nạp lúc mở app (cùng lúc nạp TOML). Đổi `app_language` thì app đổi ngay, còn chuỗi `@khóa` chọn theo `$LANGAPP` (`lang-sh`, `load-string-sh`) chỉ đổi theo từ lần mở app sau.
 - **Demo:** `main.toml` khai báo `lang-sh = "lang/lang.sh"`; script chọn chuỗi `vi` / `en` theo `$LANGAPP`. Xem nhóm "Trang đa ngôn ngữ" ở tab Tính năng mới (`pages/news.toml`): `@demo_lang_title`, `@demo_lang_body`, `@demo_lang_button`, `@demo_lang_echo`.
@@ -186,6 +186,7 @@ lock_mode = "readonly"
 | `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Mặc định tô màu theo theme (xem `icon_tint`). Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
 | `icon_size` | không | Kích thước icon (dp), số dương, mặc định `24` |
 | `icon_tint` | không | `true` (mặc định): tô icon theo màu theme; `false`: giữ nguyên màu của ảnh (PNG / SVG nhiều màu) |
+| `divider` | không | Chỉ có tác dụng với item con của `[[group]]`. `true`: vẽ đường kẻ ngăn cách ngay dưới item này (giữa nó và item hiện kế tiếp). Mặc định `false`. Không vẽ ở item cuối của group (kể cả khi các item sau bị ẩn) và group chỉ có một item; item đứng ngoài group bỏ qua khóa này |
 | `visible_if` | không | Điều kiện hiển thị (mục 8) |
 | `lock` | không | Điều kiện khóa item (mục 9) |
 | `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
@@ -233,6 +234,7 @@ title = "Chế độ game"
 - `[[group]]` dùng được `title` (không bắt buộc), `visible_if`, `lock`, `lock_mode`; không có `type`.
 - Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
 - Các item con trong một `[[group]]` nằm chung trong một thẻ lớn. `[[item]]` đứng ngoài group thì mỗi item một thẻ riêng.
+- Muốn kẻ ngang giữa các item con, đặt `divider = true` ở item đứng trên đường kẻ (ví dụ `divider = true` ở item một thì đường kẻ nằm giữa item một và item hai). Đường kẻ không vẽ sau item cuối đang hiện của group.
 - Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả group (kể cả tiêu đề nếu có).
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).
 

@@ -79,6 +79,8 @@ data class Item(
     val dialog: Boolean,
     // group
     val children: List<Item>,
+    // item con của group: true = vẽ đường kẻ ngăn cách ngay dưới item này (không vẽ ở item cuối của group)
+    val divider: Boolean = false,
 )
 
 /** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
@@ -146,7 +148,7 @@ object TomlParser {
      * Mọi khóa còn lại (title, desc, hint, confirm, content, nhãn trong options, lệnh run/on/off/get, name, env...) đều được thay.
      */
     private val RAW_KEYS = setOf(
-        "id", "type", "icon", "icon_size", "icon_tint", "shell", "columns", "lock_mode", "input_type", "style",
+        "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "lock_mode", "input_type", "style",
         "tab", "page", "file", "visible_if", "lock", "timeout", "min", "max", "step", "default", "separator",
         "lang", "lang-sh", "load-string", "load-string-sh",
     )
@@ -158,7 +160,7 @@ object TomlParser {
     private val ITEM_KEYS = setOf(
         "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible_if", "lock", "lock_mode", "confirm", "timeout",
         "content", "run", "on", "off", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
-        "columns", "tab", "page", "style", "shell",
+        "columns", "tab", "page", "style", "shell", "divider",
     )
 
     /** Khóa không có trong code (thường là gõ sai) đều báo cáo. Bảng vẫn được đọc, chỉ riêng khóa lạ bị bỏ qua. */
@@ -399,6 +401,14 @@ object TomlParser {
                 true
             }
         }
+        val divider = when (t.str("divider")?.lowercase()) {
+            null, "false" -> false
+            "true" -> true
+            else -> {
+                warnings += AppText.get(R.string.cfg_invalid_divider, label, title, t.str("divider").orEmpty())
+                false
+            }
+        }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: "\n"
         val lockMode = when (t.str("lock_mode")?.lowercase()) {
             null, "readonly" -> LockMode.Readonly
@@ -494,6 +504,7 @@ object TomlParser {
             page = t.str("page")?.takeIf { it.isNotBlank() },
             dialog = dialog && t.str("page").isNullOrBlank().not(),
             children = children,
+            divider = divider,
         )
     }
 }

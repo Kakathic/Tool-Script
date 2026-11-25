@@ -164,6 +164,7 @@
     <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" không hợp lệ (1 hoặc 2), dùng 1</string>
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" không hợp lệ (số dương), dùng 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" không hợp lệ (true hoặc false), dùng true</string>
+    <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" không hợp lệ (true hoặc false), dùng false</string>
     <string name="cfg_invalid_lock_mode">%1$s \"%2$s\": lock_mode = \"%3$s\" không hợp lệ, dùng readonly</string>
     <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s không hợp lệ (cần dạng \"nhãn|giá trị\"), bỏ qua</string>
     <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) không có options hợp lệ</string>

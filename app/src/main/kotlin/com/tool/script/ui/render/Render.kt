@@ -278,7 +278,13 @@ private fun GroupItem(item: Item, env: RenderEnv) {
         }
         // Mọi item con gộp chung trong một thẻ lớn, tiêu đề dính sát thẻ.
         Card(Modifier.fillMaxWidth()) {
-            children.forEach { ItemRenderer(it, env, inGroup = true) }
+            children.forEachIndexed { index, child ->
+                ItemRenderer(child, env, inGroup = true)
+                // Đường kẻ chỉ vẽ giữa hai item đang hiện: item cuối (kể cả khi các item sau bị ẩn) và group chỉ có một item thì bỏ qua.
+                if (child.divider && index < children.lastIndex) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
         }
     }
 }
