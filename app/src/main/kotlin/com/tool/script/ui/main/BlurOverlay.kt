@@ -44,6 +44,7 @@ private const val MenuBlurCloseMillis = 180
 /**
  * Thay cho OverlayDialog: có blur thì tắt lớp tối của Miuix và đăng ký để [DialogBlurScrim] vẽ nền mờ,
  * không có blur thì y hệt OverlayDialog.
+ * Có blur thì luôn vẽ ở lớp popup của Scaffold gốc (trên nền mờ), nếu không dialog nằm trong trang và bị [DialogBlurScrim] phủ mờ theo.
  * [centered] = true: dialog hiện giữa màn hình (phóng to / mờ dần) kể cả trên điện thoại, thay cho kiểu trượt lên từ đáy mặc định của Miuix.
  */
 @Composable
@@ -70,7 +71,7 @@ fun BlurDialog(
         enableWindowDim = requests == null,
         onDismissRequest = onDismissRequest,
         largeScreen = if (centered) true else null,
-        renderInRootScaffold = fullScreen,
+        renderInRootScaffold = fullScreen || requests != null,
         outsideMargin = DpSize(16.dp, 16.dp),
         content = content,
     )
