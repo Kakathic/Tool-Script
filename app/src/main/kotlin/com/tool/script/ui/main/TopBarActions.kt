@@ -1,6 +1,14 @@
 package com.tool.script.ui.main
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import com.tool.script.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -85,8 +93,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Icon ở thanh trên cùng:
-// Cài đặt (sát lề phải) -> hộp thoại giữa màn hình: giao diện, tùy chọn, ngôn ngữ;
-// Nguồn -> hộp thoại giữa màn hình: nhóm ứng dụng (khởi động lại, đóng) và nhóm thiết bị (tắt / khởi động lại máy).
+// Cài đặt (sát lề phải) -> màn hình toàn màn hình có X ở góc trái: giao diện, tùy chọn, liên kết;
+// Nguồn -> màn hình toàn màn hình có X ở góc trái: nhóm ứng dụng (khởi động lại, đóng) và nhóm thiết bị (tắt / khởi động lại máy).
+// Cả hai vẽ ở gốc Main ([ToolbarFullScreen]), nên nút chỉ mở / đóng cờ hiển thị còn nội dung đặt cạnh LogFullScreen.
 
 /** Độ trong của icon khi đang nhấn (chế độ [TopBarIcon] pressAlpha). */
 private const val PressedIconAlpha = 0.4f
@@ -549,8 +558,65 @@ private fun SettingsLinksCard() {
 }
 
 /**
- * Hộp thoại Cài đặt hiện giữa màn hình. Đổi xong áp dụng ngay, hộp thoại giữ nguyên để thấy kết quả phía sau;
- * chạm ra ngoài hoặc Back để đóng (không có nút Đóng); nội dung dài thì cuộn. Bốn phần, từ trên xuống:
+ * Màn hình toàn màn hình của Cài đặt / Nguồn: thanh trên có X ở góc trái (đóng) và tiêu đề ở giữa, nội dung cuộn bên dưới.
+ * Vẽ thẳng trong cây giao diện, đặt ở gốc Main (trên DialogBlurScrim): có blur thì trang phía sau mờ và tối nhẹ, nền màn hình trong suốt một phần;
+ * không có blur thì nền đặc. Back và X đều đóng.
+ */
+@Composable
+fun ToolbarFullScreen(
+    show: Boolean,
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val requests = LocalBlurRequests.current
+    if (requests != null) {
+        DisposableEffect(show, requests) {
+            if (show) requests.dialogs++
+            onDispose { if (show) requests.dialogs-- }
+        }
+    }
+    BackHandler(enabled = show, onBack = onDismiss)
+    AnimatedVisibility(visible = show, enter = fadeIn(tween(220)), exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180))) {
+        val base = MiuixTheme.colorScheme.background
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (requests != null) base.copy(alpha = 0.6f) else base)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp)) {
+                Text(
+                    text = title,
+                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Box(Modifier.align(Alignment.CenterStart)) {
+                    TopBarIcon(icon = AppIcons.BarClose, description = stringResource(R.string.action_cancel), onClick = onDismiss, circle = true)
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+/**
+ * Màn hình Cài đặt toàn màn hình (X ở góc trái hoặc Back để đóng); đổi xong áp dụng ngay; nội dung dài thì cuộn. Bốn phần, từ trên xuống:
  * - Thẻ giới thiệu ([SettingsAboutCard]): logo, tên app, phiên bản, giới thiệu, tác giả, kiểm tra phiên bản mới.
  * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
  * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
@@ -568,35 +634,22 @@ fun SettingsDialog(
     blur: Boolean,
     onBlurChange: (Boolean) -> Unit,
 ) {
-    // Màn hình thấp (xoay ngang): giới hạn chiều cao và cho cuộn.
-    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.7f).dp
-    BlurDialog(
-        show = show,
-        onDismissRequest = onDismiss,
-        title = stringResource(R.string.settings_title),
-        centered = true,
-        fullScreen = true,
-    ) {
-        Column(
-            modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            SettingsAboutCard()
-            SettingsSection(stringResource(R.string.menu_section_appearance)) {
-                SettingsSegmentedRow(
-                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-                )
-            }
-            SettingsSection(stringResource(R.string.menu_section_options)) {
-                SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-                if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-                SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
-            }
-            SettingsSection(stringResource(R.string.menu_section_links)) {
-                SettingsLinksCard()
-            }
+    ToolbarFullScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
+        SettingsAboutCard()
+        SettingsSection(stringResource(R.string.menu_section_appearance)) {
+            SettingsSegmentedRow(
+                labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+            )
+        }
+        SettingsSection(stringResource(R.string.menu_section_options)) {
+            SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+            if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+            SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+        }
+        SettingsSection(stringResource(R.string.menu_section_links)) {
+            SettingsLinksCard()
         }
     }
 }
@@ -609,6 +662,7 @@ fun MenuDialog(show: Boolean, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = stringResource(R.string.menu_title),
         centered = true,
+        fullScreen = true,
     ) {
         Spacer(Modifier.height(8.dp))
     }
@@ -704,9 +758,19 @@ private fun PowerActionsCard(actions: List<PowerAction>, onDeviceAction: (PowerA
 /** Icon của từng kiểu tắt / khởi động lại máy (Tắt máy dùng icon nguồn, còn lại dùng icon khởi động lại). */
 private fun PowerAction.icon(): String = if (this == PowerAction.PowerOff) AppIcons.BarPower else AppIcons.BarRestart
 
+/** Nút nguồn trên thanh trên: chỉ bấm để mở; màn hình Nguồn là [PowerScreen], vẽ ở gốc Main. */
+@Composable
+fun PowerMenu(onOpen: () -> Unit) {
+    TopBarIcon(
+        icon = AppIcons.BarPower,
+        description = stringResource(R.string.power_menu_description),
+        onClick = onOpen,
+        pressAlpha = true,
+    )
+}
+
 /**
- * Nút nguồn: bấm mở hộp thoại giữa màn hình (cùng kiểu hộp thoại Cài đặt), chạm ra ngoài hoặc Back để đóng.
- * Danh sách dài, hiện sẵn tất cả (không mở / thu), nội dung dài thì cuộn. Ba nhóm, mỗi nhóm một thẻ có vạch kẻ:
+ * Màn hình Nguồn toàn màn hình (X ở góc trái hoặc Back để đóng). Danh sách dài, hiện sẵn tất cả (không mở / thu), nội dung dài thì cuộn. Ba nhóm, mỗi nhóm một thẻ có vạch kẻ:
  * - Ứng dụng: Khởi động lại ứng dụng, Đóng ứng dụng.
  * - Thiết bị (cần root): Tắt máy, Khởi động lại máy.
  * - Nâng cao: Recovery, Khởi động lại mềm, Bootloader, Download, EDL.
@@ -714,9 +778,8 @@ private fun PowerAction.icon(): String = if (this == PowerAction.PowerOff) AppIc
  * Việc xác nhận và thực thi do nơi gọi xử lý.
  */
 @Composable
-fun PowerMenu(
-    expanded: Boolean,
-    onOpen: () -> Unit,
+fun PowerScreen(
+    show: Boolean,
     onDismiss: () -> Unit,
     onRestartApp: () -> Unit,
     onCloseApp: () -> Unit,
@@ -724,46 +787,24 @@ fun PowerMenu(
     hasRoot: Boolean = true,
 ) {
     val advancedActions = remember { PowerAction.entries.filter { it !in BASIC_POWER_ACTIONS } }
-    // Màn hình thấp (xoay ngang): giới hạn chiều cao và cho cuộn.
-    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.7f).dp
-    Box {
-        TopBarIcon(
-            icon = AppIcons.BarPower,
-            description = stringResource(R.string.power_menu_description),
-            onClick = onOpen,
-            pressAlpha = true,
-        )
-        BlurDialog(
-            show = expanded,
-            onDismissRequest = onDismiss,
-            title = stringResource(R.string.power_menu_description),
-            centered = true,
-            fullScreen = hasRoot,
-        ) {
-            Column(
-                modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                SettingsSection(stringResource(R.string.power_section_app)) {
-                    PowerCard {
-                        PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
-                        SettingsCardDivider()
-                        PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
-                    }
-                }
-                SettingsSection(stringResource(R.string.power_section_device)) {
-                    if (hasRoot) {
-                        PowerActionsCard(BASIC_POWER_ACTIONS, onDeviceAction)
-                    } else {
-                        // Chưa có root: không hiện các kiểu của máy, chỉ một dòng khóa mờ, không bấm được.
-                        PowerCard { PowerLockedRow(stringResource(R.string.power_need_root)) }
-                    }
-                }
-                if (hasRoot) {
-                    SettingsSection(stringResource(R.string.power_section_advanced)) {
-                        PowerActionsCard(advancedActions, onDeviceAction)
-                    }
-                }
+    ToolbarFullScreen(show = show, title = stringResource(R.string.power_menu_description), onDismiss = onDismiss) {
+        SettingsSection(stringResource(R.string.power_section_app)) {
+            PowerCard {
+                PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
+                SettingsCardDivider()
+                PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
+            }
+        }
+        SettingsSection(stringResource(R.string.power_section_device)) {
+            if (hasRoot) {
+                PowerActionsCard(BASIC_POWER_ACTIONS, onDeviceAction)
+            } else {
+                PowerCard { PowerLockedRow(stringResource(R.string.power_need_root)) }
+            }
+        }
+        if (hasRoot) {
+            SettingsSection(stringResource(R.string.power_section_advanced)) {
+                PowerActionsCard(advancedActions, onDeviceAction)
             }
         }
     }

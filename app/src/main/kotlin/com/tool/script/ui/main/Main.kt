@@ -352,31 +352,9 @@ fun MainScreen(
                                             leading = { TopBarIcon(icon = AppIcons.BarMenu, description = stringResource(R.string.menu_title), onClick = { showMenu = true }, pressAlpha = true) },
                                             backdrop = backdrop,
                                             actions = {
-                                                // Nút nguồn (nằm trong, cạnh nút cài đặt): khởi động lại / đóng app, tắt và khởi động lại máy (kiểu Magisk), thả xuống ngay dưới icon.
-                                                PowerMenu(
-                                                    expanded = showRestartMenu,
-                                                    onOpen = { showRestartMenu = true },
-                                                    onDismiss = { showRestartMenu = false },
-                                                    hasRoot = ExecutorManager.hasRoot,
-                                                    onRestartApp = {
-                                                        showRestartMenu = false
-                                                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_restart_app)) { Util.restartApp(context) }
-                                                    },
-                                                    onCloseApp = {
-                                                        showRestartMenu = false
-                                                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_close_app)) { Util.exitApp(context) }
-                                                    },
-                                                    onDeviceAction = { action ->
-                                                        showRestartMenu = false
-                                                        env.confirm = ConfirmRequest(context.getString(action.confirmRes)) {
-                                                            scope.launch {
-                                                                val result = ExecutorManager.current.exec(action.command, 10)
-                                                                if (!result.ok) feedback.toast(powerErrorText(context, action, result))
-                                                            }
-                                                        }
-                                                    },
-                                                )
-                                                // Nút cài đặt: sát lề phải, mở hộp thoại giữa màn hình (giao diện, tùy chọn, ngôn ngữ).
+                                                // Nút nguồn (cạnh nút cài đặt): mở màn hình Nguồn toàn màn hình (vẽ ở gốc, bên dưới).
+                                                PowerMenu(onOpen = { showRestartMenu = true })
+                                                // Nút cài đặt: sát lề phải, mở màn hình Cài đặt toàn màn hình (giao diện, tùy chọn, liên kết).
                                                 SettingsButton(onClick = { showSettings = true })
                                             },
                                         )
@@ -451,16 +429,6 @@ fun MainScreen(
                                         }
                                         FeedbackDialogs(feedback, env)
                                         MenuDialog(show = showMenu, onDismiss = { showMenu = false })
-                                        SettingsDialog(
-                                            show = showSettings,
-                                            onDismiss = { showSettings = false },
-                                            current = themeMode,
-                                            onSelect = onThemeChange,
-                                            haptic = hapticEnabled,
-                                            onHapticChange = onHapticChange,
-                                            blur = blurEnabled,
-                                            onBlurChange = onBlurChange,
-                                        )
                                     }
                                 }
                             }
@@ -480,6 +448,39 @@ fun MainScreen(
                 }
                 // Chọn toàn màn hình: cùng chỗ với log toàn màn hình (ngoài lớp bị menu làm mờ, trên trang và dialog sheet).
                 SelectFullScreenHost(selectHost)
+                // Nguồn và Cài đặt toàn màn hình: ngoài lớp bị menu làm mờ, trên lớp scrim, dưới log toàn màn hình.
+                PowerScreen(
+                    show = showRestartMenu,
+                    onDismiss = { showRestartMenu = false },
+                    hasRoot = ExecutorManager.hasRoot,
+                    onRestartApp = {
+                        showRestartMenu = false
+                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_restart_app)) { Util.restartApp(context) }
+                    },
+                    onCloseApp = {
+                        showRestartMenu = false
+                        env.confirm = ConfirmRequest(context.getString(R.string.confirm_close_app)) { Util.exitApp(context) }
+                    },
+                    onDeviceAction = { action ->
+                        showRestartMenu = false
+                        env.confirm = ConfirmRequest(context.getString(action.confirmRes)) {
+                            scope.launch {
+                                val result = ExecutorManager.current.exec(action.command, 10)
+                                if (!result.ok) feedback.toast(powerErrorText(context, action, result))
+                            }
+                        }
+                    },
+                )
+                SettingsDialog(
+                    show = showSettings,
+                    onDismiss = { showSettings = false },
+                    current = themeMode,
+                    onSelect = onThemeChange,
+                    haptic = hapticEnabled,
+                    onHapticChange = onHapticChange,
+                    blur = blurEnabled,
+                    onBlurChange = onBlurChange,
+                )
                 // Log toàn màn hình nằm ngoài lớp bị menu làm mờ, để menu ba chấm của chính log không làm mờ log.
                 LogFullScreen(
                     entry = feedback.log,
