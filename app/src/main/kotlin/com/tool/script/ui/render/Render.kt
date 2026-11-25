@@ -396,14 +396,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     val current = env.store[id]
     val haptic = LocalHapticFeedback.current
     ItemSurface(modifier, inGroup) {
-        BasicComponent(
-            insideMargin = CardInsideMargin,
-            title = item.title,
-            summary = item.desc,
-            enabled = enabled,
-            startAction = itemIcon(item),
-            endActions = { EndIcon(AppIcons.BarRadio) },
-        )
+        BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.desc, enabled = enabled, startAction = itemIcon(item))
         // Đường kẻ ngăn cách giữa tiêu đề và danh sách lựa chọn
         if (item.options.isNotEmpty()) {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))

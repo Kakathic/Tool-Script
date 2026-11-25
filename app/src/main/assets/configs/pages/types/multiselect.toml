@@ -44,4 +44,4 @@ desc    = 'Thử gõ "m" rồi bấm Chọn tất cả'
 default = "audio\nnet"
 run     = 'echo "Đã chọn: $t_multi_full"'
 shell   = "banner"
-options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage"]
+options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage"]
