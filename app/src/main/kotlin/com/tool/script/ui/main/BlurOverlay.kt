@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -52,6 +53,7 @@ fun BlurDialog(
     title: String? = null,
     summary: String? = null,
     centered: Boolean = false,
+    fullScreen: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val requests = LocalBlurRequests.current
@@ -68,16 +70,9 @@ fun BlurDialog(
         enableWindowDim = requests == null,
         onDismissRequest = onDismissRequest,
         largeScreen = if (centered) true else null,
-        content = {
-            // Giữ lề hai bên của mọi dialog cố định ở 16dp.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
-                content()
-            }
-        },
+        renderInRootScaffold = fullScreen,
+        outsideMargin = DpSize(16.dp, 16.dp),
+        content = content,
     )
 }
 

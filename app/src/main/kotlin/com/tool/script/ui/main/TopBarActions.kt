@@ -402,11 +402,10 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
 
 /** Vạch kẻ mảnh trong thẻ (giới thiệu, liên kết); [startInset] chừa lề trái cho vạch thẳng với chữ. */
 @Composable
-private fun SettingsCardDivider(startInset: Dp = 0.dp) {
+private fun SettingsCardDivider() {
     Box(
         Modifier
             .fillMaxWidth()
-            .padding(start = startInset)
             .height(1.dp)
             .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
     )
@@ -543,7 +542,7 @@ private fun SettingsLinksCard() {
     ) {
         SettingsLinkRow(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
         if (AppAbout.OtherUrl.isNotBlank()) {
-            SettingsCardDivider(startInset = 48.dp)
+            SettingsCardDivider()
             SettingsLinkRow(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
         }
     }
@@ -576,6 +575,7 @@ fun SettingsDialog(
         onDismissRequest = onDismiss,
         title = stringResource(R.string.settings_title),
         centered = true,
+        fullScreen = true,
     ) {
         Column(
             modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
@@ -695,7 +695,7 @@ private fun PowerCard(content: @Composable ColumnScope.() -> Unit) {
 private fun PowerActionsCard(actions: List<PowerAction>, onDeviceAction: (PowerAction) -> Unit) {
     PowerCard {
         actions.forEachIndexed { index, action ->
-            if (index > 0) SettingsCardDivider(startInset = 48.dp)
+            if (index > 0) SettingsCardDivider()
             PowerRow(action.icon(), stringResource(action.labelRes)) { onDeviceAction(action) }
         }
     }
@@ -738,6 +738,7 @@ fun PowerMenu(
             onDismissRequest = onDismiss,
             title = stringResource(R.string.power_menu_description),
             centered = true,
+            fullScreen = hasRoot,
         ) {
             Column(
                 modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
@@ -746,7 +747,7 @@ fun PowerMenu(
                 SettingsSection(stringResource(R.string.power_section_app)) {
                     PowerCard {
                         PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
-                        SettingsCardDivider(startInset = 48.dp)
+                        SettingsCardDivider()
                         PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
                     }
                 }
