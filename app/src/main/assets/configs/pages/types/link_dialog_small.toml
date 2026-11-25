@@ -19,3 +19,12 @@ options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|po
 type  = "switch"
 id    = "t_ldlg_small_flag"
 title = "Bật cờ"
+
+[[item]]
+type    = "slider"
+id      = "t_ldlg_small_level"
+title   = "Mức"
+min     = 0
+max     = 100
+step    = 10
+default = 50

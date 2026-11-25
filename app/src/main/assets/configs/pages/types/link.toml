@@ -39,7 +39,7 @@ title = "Dialog nhỏ gọn"
 desc  = "Tối đa 4 mục: hộp thoại giữa màn hình"
 page  = "pages/types/link_dialog_small.toml"
 style = "dialog"
-run   = 'echo "tên=$t_ldlg_small_name chế độ=$t_ldlg_small_mode cờ=$t_ldlg_small_flag"'
+run   = 'echo "tên=$t_ldlg_small_name chế độ=$t_ldlg_small_mode cờ=$t_ldlg_small_flag mức=$t_ldlg_small_level"'
 shell = "banner"
 
 [[group.item]]
