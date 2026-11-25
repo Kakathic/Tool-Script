@@ -410,12 +410,17 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
     }
 }
 
-/** Vạch kẻ mảnh trong thẻ (giới thiệu, liên kết); [startInset] chừa lề trái cho vạch thẳng với chữ. */
+/** Lề vạch kẻ của dòng có icon 20dp: trái 48dp (16 + 20 + 12) cho vạch thẳng với chữ, phải 16dp. */
+private val RowDividerStart = 48.dp
+private val RowDividerEnd = 16.dp
+
+/** Vạch kẻ mảnh trong thẻ; [startInset] / [endInset] chừa lề hai bên (thẻ giới thiệu đã có padding riêng nên để 0). */
 @Composable
-private fun SettingsCardDivider() {
+private fun SettingsCardDivider(startInset: Dp = 0.dp, endInset: Dp = 0.dp) {
     Box(
         Modifier
             .fillMaxWidth()
+            .padding(start = startInset, end = endInset)
             .height(1.dp)
             .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
     )
@@ -552,7 +557,7 @@ private fun SettingsLinksCard() {
     ) {
         SettingsLinkRow(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
         if (AppAbout.OtherUrl.isNotBlank()) {
-            SettingsCardDivider()
+            SettingsCardDivider(RowDividerStart, RowDividerEnd)
             SettingsLinkRow(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
         }
     }
@@ -588,7 +593,7 @@ fun ToolbarFullScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding(),
         ) {
-            Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp)) {
+            Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 10.dp)) {
                 Text(
                     text = title,
                     modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
@@ -750,7 +755,7 @@ private fun PowerCard(content: @Composable ColumnScope.() -> Unit) {
 private fun PowerActionsCard(actions: List<PowerAction>, onDeviceAction: (PowerAction) -> Unit) {
     PowerCard {
         actions.forEachIndexed { index, action ->
-            if (index > 0) SettingsCardDivider()
+            if (index > 0) SettingsCardDivider(RowDividerStart, RowDividerEnd)
             PowerRow(action.icon(), stringResource(action.labelRes)) { onDeviceAction(action) }
         }
     }
@@ -793,7 +798,7 @@ fun PowerScreen(
         SettingsSection(stringResource(R.string.power_section_app)) {
             PowerCard {
                 PowerRow(AppIcons.BarRestart, stringResource(R.string.power_restart_app), onRestartApp)
-                SettingsCardDivider()
+                SettingsCardDivider(RowDividerStart, RowDividerEnd)
                 PowerRow(AppIcons.BarClose, stringResource(R.string.power_close_app), onCloseApp)
             }
         }
