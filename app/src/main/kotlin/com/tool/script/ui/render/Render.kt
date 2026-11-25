@@ -661,7 +661,7 @@ private fun ChoiceCard(
     }
 }
 
-// Chọn một có xác nhận: hàng hiện mục đang chọn; hộp thoại (hoặc toàn màn hình khi từ 6 mục) có nút tròn bên phải mỗi dòng, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+// Chọn một: hàng hiện mục đang chọn. Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy `run` luôn (chỉ khi có thay đổi), không có nút. Toàn màn hình (từ 6 mục, có ô tìm): chọn rồi bấm Xác nhận mới lưu và chạy.
 @Composable
 private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -728,34 +728,19 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                         val pick = {
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
-                            // Trong dialog: chạm là chọn luôn và đóng, không có Xác nhận (Hủy của dialog khôi phục).
-                            if (env.varsOnly) {
-                                env.store[id] = option.value
-                                showDialog = false
+                            // Hộp nhỏ: chạm là chọn luôn và đóng, không có Hủy / Xác nhận (chạm ra ngoài hoặc Back để thoát).
+                            // Trong dialog thì chỉ ghi biến (Hủy của dialog khôi phục); ngoài dialog chạy `run` nếu giá trị đổi.
+                            showDialog = false
+                            if (option.value != current) {
+                                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                    if (result.ok) env.store[id] = option.value
+                                }
                             }
                         }
                         ChoiceCard(option.label, selected, pick, Modifier.weight(1f), framed = item.columns > 1, radio = true)
                     }
                     repeat(item.columns - rowOptions.size) { Spacer(Modifier.weight(1f)) }
                 }
-            }
-            if (!env.varsOnly) Spacer(Modifier.height(8.dp))
-            if (!env.varsOnly) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
-                TextButton(
-                    text = stringResource(R.string.action_confirm),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        showDialog = false
-                        val newValue = draft
-                        if (newValue != current) {
-                            env.run(item, item.run, mapOf(id to newValue)) { result ->
-                                if (result.ok) env.store[id] = newValue
-                            }
-                        }
-                    },
-                )
             }
         }
     }

@@ -325,7 +325,8 @@ internal fun SelectFullScreen(
                     singleLine = true,
                     insideMargin = DpSize(16.dp, 13.dp),
                 )
-                Spacer(Modifier.height(SCREEN_MARGIN))
+                // Khoảng cách ô tìm tới chữ dòng đầu = SCREEN_MARGIN: dòng đã có đệm trên 12dp (ListRowMargin) nên chỉ chừa phần còn lại.
+                Spacer(Modifier.height(SCREEN_MARGIN - ListRowMargin.calculateTopPadding()))
 
                 // Vùng danh sách: không bọc khung đặc (không Card), các dòng nằm thẳng trên nền màn hình
                 // nên khi có blur thì list hiện trên trang phía sau đã làm mờ. Lề ngoài 16dp hai bên.

@@ -1,11 +1,12 @@
-# type = "singleselect": chọn một, có Xác nhận. Trường riêng: options, default, run, columns (1 hoặc 2).
-# Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy run một lần. Hủy hoặc Back thì bỏ thay đổi.
+# type = "singleselect": chọn một. Trường riêng: options, default, run, columns (1 hoặc 2).
+# Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy run luôn, không có nút; chạm ra ngoài hoặc Back để thoát.
+# Toàn màn hình (từ 6 mục): chọn rồi bấm Xác nhận mới lưu và chạy run một lần; Hủy hoặc Back thì bỏ thay đổi.
 # Từ 6 mục trở lên: mở toàn màn hình, có ô tìm không phân biệt hoa thường và dấu tiếng Việt.
 
 [[item]]
 type    = "text"
 title   = "singleselect"
-content = "Hàng hiện nhãn đang chọn kèm mũi tên. Bấm để mở hộp thoại chọn một mục rồi bấm Xác nhận."
+content = "Hàng hiện nhãn đang chọn kèm mũi tên. Bấm để mở hộp thoại, chạm một mục là chọn luôn (từ 6 mục thì mở toàn màn hình và bấm Xác nhận)."
 
 [[group]]
 title = "Hộp thoại nhỏ (dưới 6 mục)"

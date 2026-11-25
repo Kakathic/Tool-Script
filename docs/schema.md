@@ -207,7 +207,7 @@ lock_mode = "readonly"
 | `radio` | `options`, `default`, `run` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
 | `dropdown` | `options`, `default`, `run` (chọn bằng menu thả xuống) |
 | `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
-| `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục có Xác nhận, xem bên dưới) |
+| `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục: hộp nhỏ chạm là chọn luôn, toàn màn hình có Xác nhận, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `slider`: `max < min` thì hai giá trị được đổi chỗ; `min = max` thì `max` được đặt lại thành `min + step`; `step` không chia hết `max - min` thì thanh trượt không tới được `max`. Cả ba trường hợp đều hiện cảnh báo cấu hình ở đầu trang.
@@ -327,7 +327,7 @@ run       = 'echo "Đã chọn: $features"'
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
-`singleselect` – chọn một mục, có Xác nhận:
+`singleselect` – chọn một mục: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy `run` luôn (chỉ khi giá trị đổi), không có nút, chạm ra ngoài hoặc Back để thoát; toàn màn hình (từ 6 mục) có Xác nhận:
 
 ```toml
 [[item]]
@@ -351,7 +351,7 @@ run     = 'echo "Đã chọn: $mode"'
 - Nền: khi bật **Làm mờ nền** (Android 13+) màn hình có nền bán trong suốt, trang phía sau mờ và tối nhẹ, giống log toàn màn hình; tắt blur hoặc máy không hỗ trợ thì nền đặc. Cũng vậy với dialog sheet khi kéo lên full màn hình.
 - Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
 - `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Góc phải trên cùng màn hình hiện khung bo góc không viền, nền màu chủ đạo nhạt `Đã chọn x/y` tính trên toàn bộ danh sách.
-- `singleselect` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận. `multiselect` giữ nguyên màu chữ, chỉ đổi ô tích.
+- `singleselect` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận (chế độ toàn màn hình). `multiselect` giữ nguyên màu chữ, chỉ đổi ô tích.
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
