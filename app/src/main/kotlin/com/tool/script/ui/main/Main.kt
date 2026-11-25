@@ -767,6 +767,8 @@ private fun SubPageScreen(
                     bottomInset = if (page.dialog && sheetFull) 0.dp else inner.calculateBottomPadding(),
                     topInset = if (backdrop != null) inner.calculateTopPadding() else 0.dp,
                     fadeEdges = page.dialog,
+                    // Dialog full màn hình: thanh nút đáy đã nâng theo bàn phím và Scaffold dồn danh sách lên theo, nên danh sách không thêm imePadding nữa (tránh cộng đôi).
+                    imePadding = !(page.dialog && sheetFull),
                 )
             }
             FeedbackDialogs(feedback, env)
@@ -864,6 +866,8 @@ private fun DialogButtons(onCancel: () -> Unit, onConfirm: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // imePadding đặt trước navigationBarsPadding: khi bàn phím hiện, imePadding đã tính cả phần thanh điều hướng nên không bị cộng đôi.
+            .imePadding()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -917,6 +921,7 @@ private fun PageList(
     topInset: androidx.compose.ui.unit.Dp = 0.dp,
     appBanner: (@Composable () -> Unit)? = null,
     fadeEdges: Boolean = false,
+    imePadding: Boolean = true,
 ) {
     val showWarnings = shouldShowPageWarnings(file, warnings)
     // Lấy trạng thái cuộn theo file từ MainScreen (lấy một lần cho lần dựng này: trang đang trượt ra không bị nhảy về đầu khi vừa bị quên).
@@ -924,7 +929,7 @@ private fun PageList(
     val listState = if (scrolls != null) remember(file, scrolls) { scrolls.of(file) } else rememberLazyListState()
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize().imePadding().then(if (fadeEdges) Modifier.fadingEdges(listState) else Modifier),
+        modifier = Modifier.fillMaxSize().then(if (imePadding) Modifier.imePadding() else Modifier).then(if (fadeEdges) Modifier.fadingEdges(listState) else Modifier),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

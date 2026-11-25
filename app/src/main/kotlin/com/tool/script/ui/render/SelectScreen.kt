@@ -273,8 +273,8 @@ internal fun SelectFullScreen(
                         },
                     )
                     .statusBarsPadding()
-                    .navigationBarsPadding()
-                    .imePadding(),
+                    .imePadding()
+                    .navigationBarsPadding(),
             ) {
                 Row(
                     modifier = Modifier
