@@ -124,6 +124,7 @@ import com.tool.script.ui.render.RenderEnv
 import com.tool.script.ui.render.SelectFullScreenHost
 import com.tool.script.ui.render.SelectHost
 import com.tool.script.ui.render.isShown
+import com.tool.script.ui.theme.LocalGlassEnabled
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
 import kotlinx.coroutines.Job
@@ -165,6 +166,8 @@ fun MainScreen(
     onHapticChange: (Boolean) -> Unit,
     blurEnabled: Boolean,
     onBlurChange: (Boolean) -> Unit,
+    glassEnabled: Boolean,
+    onGlassChange: (Boolean) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     onShowDetails: (title: String, text: String) -> Unit,
@@ -319,6 +322,8 @@ fun MainScreen(
         LocalPageWarnings provides pageWarningHost,
         LocalPageScroll provides scrollStates,
         LocalBlurRequests provides (if (fullBackdrop != null) blurRequests else null),
+        LocalGlassEnabled provides (glassEnabled && isBlurSupported()),
+        LocalGlassBackdrop provides fullBackdrop,
         LocalSelectHost provides selectHost,
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.
@@ -505,6 +510,8 @@ fun MainScreen(
                     onHapticChange = onHapticChange,
                     blur = blurEnabled,
                     onBlurChange = onBlurChange,
+                    glass = glassEnabled,
+                    onGlassChange = onGlassChange,
                 )
                 // Log toàn màn hình nằm ngoài lớp bị menu làm mờ, để menu ba chấm của chính log không làm mờ log.
                 LogFullScreen(

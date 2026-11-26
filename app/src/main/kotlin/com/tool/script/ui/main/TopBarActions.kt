@@ -597,7 +597,7 @@ fun ToolbarFullScreen(
  * Màn hình Cài đặt toàn màn hình (X ở góc trái hoặc Back để đóng); đổi xong áp dụng ngay; nội dung dài thì cuộn. Bốn phần, từ trên xuống:
  * - Thẻ giới thiệu ([SettingsAboutCard]): logo, tên app, phiên bản, giới thiệu, tác giả, kiểm tra phiên bản mới.
  * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
- * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
+ * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền và Giao diện kính (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
  * - Liên kết ([SettingsLinksCard]): GitHub và liên kết khác.
  * Ngôn ngữ không còn ở đây: đổi bằng item `app_language` trong TOML.
  */
@@ -611,6 +611,8 @@ fun SettingsDialog(
     onHapticChange: (Boolean) -> Unit,
     blur: Boolean,
     onBlurChange: (Boolean) -> Unit,
+    glass: Boolean,
+    onGlassChange: (Boolean) -> Unit,
 ) {
     ToolbarFullScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
         SettingsAboutCard()
@@ -624,6 +626,7 @@ fun SettingsDialog(
         SettingsSection(stringResource(R.string.menu_section_options)) {
             SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
             if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+            if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
             SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
         }
         SettingsSection(stringResource(R.string.menu_section_links)) {

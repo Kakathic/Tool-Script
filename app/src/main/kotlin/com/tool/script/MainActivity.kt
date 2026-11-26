@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
             var themeMode by remember { mutableStateOf(ThemePrefs.load(context)) }
             var hapticEnabled by remember { mutableStateOf(ThemePrefs.loadHaptic(context)) }
             var blurEnabled by remember { mutableStateOf(ThemePrefs.loadBlur(context)) }
+            var glassEnabled by remember { mutableStateOf(ThemePrefs.loadGlass(context)) }
             val dark = isDarkTheme(themeMode)
             // Thanh trạng thái / thanh điều hướng đổi màu icon theo chủ đề app (có thể khác chủ đề hệ thống).
             DisposableEffect(dark) {
@@ -101,6 +102,11 @@ class MainActivity : ComponentActivity() {
                         onBlurChange = {
                             blurEnabled = it
                             ThemePrefs.saveBlur(context, it)
+                        },
+                        glassEnabled = glassEnabled,
+                        onGlassChange = {
+                            glassEnabled = it
+                            ThemePrefs.saveGlass(context, it)
                         },
                         onThemeChange = {
                             themeMode = it
@@ -134,6 +140,8 @@ private fun AppRoot(
     onHapticChange: (Boolean) -> Unit,
     blurEnabled: Boolean,
     onBlurChange: (Boolean) -> Unit,
+    glassEnabled: Boolean,
+    onGlassChange: (Boolean) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
@@ -188,6 +196,8 @@ private fun AppRoot(
             onHapticChange = onHapticChange,
             blurEnabled = blurEnabled,
             onBlurChange = onBlurChange,
+            glassEnabled = glassEnabled,
+            onGlassChange = onGlassChange,
             language = language,
             onLanguageChange = onLanguageChange,
             onShowDetails = { title, text -> CrashActivity.launch(context, title, text, fatal = false) },

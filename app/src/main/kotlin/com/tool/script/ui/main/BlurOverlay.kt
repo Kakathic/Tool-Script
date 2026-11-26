@@ -31,6 +31,9 @@ class BlurRequests {
 
 val LocalBlurRequests = staticCompositionLocalOf<BlurRequests?> { null }
 
+/** Backdrop của cả trang (không gồm lớp popup của Scaffold gốc) để các thành phần glass làm mờ phần phía sau; null thì glass dùng nền đặc. */
+val LocalGlassBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+
 /**
  * Thay cho OverlayDialog: có blur thì tắt lớp tối của Miuix và đăng ký để [DialogBlurScrim] vẽ nền mờ,
  * không có blur thì y hệt OverlayDialog.

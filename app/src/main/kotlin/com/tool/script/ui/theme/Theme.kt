@@ -51,6 +51,7 @@ object ThemePrefs {
     private const val KEY_MODE = "mode"
     private const val KEY_HAPTIC = "haptic"
     private const val KEY_BLUR = "blur"
+    private const val KEY_GLASS = "glass"
 
     fun load(context: Context): ThemeMode {
         val key = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_MODE, null)
@@ -74,6 +75,14 @@ object ThemePrefs {
 
     fun saveBlur(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_BLUR, enabled).apply()
+    }
+
+    /** Giao diện kính (miuix-glass); mặc định tắt (chỉ có tác dụng trên Android 13+). */
+    fun loadGlass(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_GLASS, false)
+
+    fun saveGlass(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_GLASS, enabled).apply()
     }
 }
 
@@ -110,6 +119,9 @@ private object NoHapticFeedback : HapticFeedback {
 }
 
 val LocalHapticEnabled = staticCompositionLocalOf { true }
+
+/** Đang dùng giao diện kính (đã tính máy có hỗ trợ blur): các thành phần đọc giá trị này để chọn bản glass. */
+val LocalGlassEnabled = staticCompositionLocalOf { false }
 
 /** Đang bật Màu động (Monet) hay không; để các thành phần chỉnh lại màu mà Miuix pha xám ở chế độ này. */
 val LocalMonetEnabled = staticCompositionLocalOf { false }

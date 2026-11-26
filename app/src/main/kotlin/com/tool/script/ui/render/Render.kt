@@ -62,6 +62,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -79,7 +80,9 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import com.tool.script.ui.main.BlurDialog
+import com.tool.script.ui.main.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.tool.script.ui.theme.LocalGlassEnabled
 import com.tool.script.ui.theme.LocalMonetEnabled
 import kotlin.math.roundToInt
 
@@ -834,13 +837,39 @@ private fun UpDownIcon() = EndIcon(AppIcons.BarUpDown)
 /**
  * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (không dùng hộp thoại):
  * bên phải hiện giá trị đang chọn kèm mũi tên lên/xuống; mục đang chọn nổi nền, có dấu tích bên phải.
+ * Bật Giao diện kính thì hàng và menu là [GlassDropdownPreference] của miuix-glass.
  */
 @Composable
 private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
+    val current = env.store[id]
+
+    if (LocalGlassEnabled.current) {
+        val backdrop = LocalGlassBackdrop.current
+        val selectedIndex = item.options.indexOfFirst { it.value == current }
+        ItemSurface(modifier, inGroup) {
+            GlassDropdownPreference(
+                title = item.title,
+                summary = item.desc,
+                startAction = itemIcon(item),
+                items = item.options.map { it.label },
+                selectedIndex = selectedIndex,
+                insideMargin = CardInsideMargin,
+                enabled = enabled,
+                backdrop = backdrop,
+                onSelectedIndexChange = { index ->
+                    val option = item.options[index]
+                    env.run(item, item.run, mapOf(id to option.value)) { result ->
+                        if (result.ok) env.store[id] = option.value
+                    }
+                },
+            )
+        }
+        return
+    }
+
     var expanded by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val current = env.store[id]
     val label = item.options.firstOrNull { it.value == current }?.label ?: current
 
     ItemSurface(modifier, inGroup) {
