@@ -130,6 +130,7 @@ import com.tool.script.util.Util
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -367,6 +368,9 @@ fun MainScreen(
                                 val floatingBar = glassEnabled && isBlurSupported() && pages.size >= 2
                                 var floatingBarHeight by remember { mutableStateOf(0.dp) }
                                 val density = LocalDensity.current
+                                // Thanh trên kính chỉ hiện chất liệu khi trang hiện tại đã cuộn khỏi đầu.
+                                val currentFile = pages.getOrNull(pagerState.currentPage)?.ref?.file
+                                val pageScrolled by remember(currentFile) { derivedStateOf { currentFile?.let { scrollStates.of(it).canScrollBackward } == true } }
                                 Scaffold(
                                     topBar = {
                                         // Màn hình chính: tên app cố định (không phóng to / thu nhỏ), icon 3 gạch bên trái mở cửa sổ menu.
@@ -374,6 +378,7 @@ fun MainScreen(
                                             title = config.app.name,
                                             leading = { TopBarIcon(icon = AppIcons.BarMenu, description = stringResource(R.string.menu_title), onClick = { showMenu = true }, pressAlpha = true) },
                                             backdrop = backdrop,
+                                            scrolled = pageScrolled,
                                             actions = {
                                                 // Nút nguồn (cạnh nút cài đặt): mở màn hình Nguồn toàn màn hình (vẽ ở gốc, bên dưới).
                                                 PowerMenu(onOpen = { showRestartMenu = true })
@@ -559,8 +564,36 @@ private fun AppTopBar(
     closeStyle: Boolean = false,
     leading: (@Composable () -> Unit)? = null,
     backdrop: LayerBackdrop? = null,
+    scrolled: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
+    if (LocalGlassEnabled.current) {
+        // Giao diện kính: GlassTopAppBar của Miuix; nút bên trong là viên kính (TopBarIcon tự đổi theo LocalInGlassBar).
+        GlassTopAppBar(
+            title = title,
+            isContentScrolled = scrolled,
+            expandable = false,
+            backdrop = backdrop,
+            progressiveBlur = backdrop != null,
+            navigationIcon = {
+                CompositionLocalProvider(LocalInGlassBar provides true) {
+                    if (onBack != null) {
+                        TopBarIcon(
+                            icon = if (closeStyle) AppIcons.BarClose else AppIcons.BarBack,
+                            description = stringResource(if (closeStyle) R.string.action_close else R.string.action_back),
+                            onClick = onBack,
+                        )
+                    }
+                    leading?.invoke()
+                }
+            },
+            actions = {
+                val rowScope = this
+                CompositionLocalProvider(LocalInGlassBar provides true) { rowScope.actions() }
+            },
+        )
+        return
+    }
     val hasLeading = onBack != null || leading != null
     Row(
         modifier = Modifier
@@ -618,6 +651,27 @@ private fun LargeTitleTopBar(
     backdrop: LayerBackdrop? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
+    if (LocalGlassEnabled.current) {
+        // Giao diện kính: GlassTopAppBar có tiêu đề lớn thu gọn theo scrollBehavior, y hệt trang mẫu của Miuix.
+        GlassTopAppBar(
+            title = title,
+            expandable = true,
+            largeTitle = title,
+            scrollBehavior = scrollBehavior,
+            backdrop = backdrop,
+            progressiveBlur = backdrop != null,
+            navigationIcon = {
+                CompositionLocalProvider(LocalInGlassBar provides true) {
+                    if (onBack != null) TopBarIcon(icon = AppIcons.BarBack, description = stringResource(R.string.action_back), onClick = onBack)
+                }
+            },
+            actions = {
+                val rowScope = this
+                CompositionLocalProvider(LocalInGlassBar provides true) { rowScope.actions() }
+            },
+        )
+        return
+    }
     val state = scrollBehavior.state
     // Có nút quay lại bên trái thì chữ lớn nằm hẳn dưới hàng nút (không đè lên mũi tên); không có thì như cũ (đè lên hàng icon bên phải).
     val largeTopPadding = if (onBack != null) LargeTitleTopPaddingWithBack else LargeTitleTopPadding

@@ -95,6 +95,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.tool.script.ui.theme.LocalGlassEnabled
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
@@ -109,6 +110,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // Nguồn -> màn hình toàn màn hình có X ở góc trái: nhóm ứng dụng (khởi động lại, đóng) và nhóm thiết bị (tắt / khởi động lại máy).
 // Cả hai vẽ ở gốc Main ([ToolbarFullScreen]), nên nút chỉ mở / đóng cờ hiển thị còn nội dung đặt cạnh LogFullScreen.
 
+/** true bên trong slot của GlassTopAppBar: [TopBarIcon] vẽ thành nút kính. */
+val LocalInGlassBar = staticCompositionLocalOf { false }
+
 /** Độ trong của icon khi đang nhấn (chế độ [TopBarIcon] pressAlpha). */
 private const val PressedIconAlpha = 0.4f
 
@@ -119,6 +123,18 @@ private const val PressedIconAlpha = 0.4f
  */
 @Composable
 fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: Boolean = false, pressAlpha: Boolean = false) {
+    // Trong GlassTopAppBar (giao diện kính): nút là viên kính GlassIconButton của Miuix thay cho icon trần.
+    if (LocalInGlassBar.current) {
+        GlassIconButton(onClick = onClick) {
+            AsyncImage(
+                model = Util.iconModel(icon),
+                contentDescription = description,
+                modifier = Modifier.size(22.dp),
+                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+            )
+        }
+        return
+    }
     val interactionSource = remember { MutableInteractionSource() }
     val rippleColor = MiuixTheme.colorScheme.onBackground
     val ripple = remember(rippleColor) { CompactRipple(color = rippleColor) }
