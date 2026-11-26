@@ -22,7 +22,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 // Làm mờ nền phía sau dialog (OverlayDialog của Miuix, vẽ ở lớp popup của Scaffold gốc) bật nền mờ riêng thay cho lớp tối của Miuix.
 // Đăng ký qua [BlurRequests], chỉ có khi MainScreen bật blur ([LocalBlurRequests] = null thì mọi thứ chạy như cũ).
-// Menu thả xuống không làm mờ trang mà làm mờ ngay trong khung menu bằng [LocalMenuBackdrop].
 
 /** Số lớp phủ đang yêu cầu làm mờ nền. */
 @Stable
@@ -31,9 +30,6 @@ class BlurRequests {
 }
 
 val LocalBlurRequests = staticCompositionLocalOf<BlurRequests?> { null }
-
-/** Backdrop để khung menu thả xuống làm mờ phần phía sau; null khi tắt blur hoặc máy không hỗ trợ (khung menu nền đặc). */
-val LocalMenuBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 /**
  * Thay cho OverlayDialog: có blur thì tắt lớp tối của Miuix và đăng ký để [DialogBlurScrim] vẽ nền mờ,

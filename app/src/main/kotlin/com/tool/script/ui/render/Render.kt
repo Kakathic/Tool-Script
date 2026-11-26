@@ -861,13 +861,15 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                 },
                 onClick = withTapHaptic { expanded = true },
             )
-            MenuPopup(show = expanded, onDismiss = { expanded = false }, minWidth = 180.dp) {
-                item.options.forEach { option ->
-                    MenuItem(label = option.label, selected = option.value == current) {
-                        expanded = false
-                        if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        env.run(item, item.run, mapOf(id to option.value)) { result ->
-                            if (result.ok) env.store[id] = option.value
+            if (expanded) {
+                MenuPopup(onDismiss = { expanded = false }, minWidth = 180.dp) {
+                    item.options.forEach { option ->
+                        MenuItem(label = option.label, selected = option.value == current) {
+                            expanded = false
+                            if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                if (result.ok) env.store[id] = option.value
+                            }
                         }
                     }
                 }

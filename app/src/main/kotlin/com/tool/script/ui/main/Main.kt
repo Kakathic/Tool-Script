@@ -319,7 +319,6 @@ fun MainScreen(
         LocalPageWarnings provides pageWarningHost,
         LocalPageScroll provides scrollStates,
         LocalBlurRequests provides (if (fullBackdrop != null) blurRequests else null),
-        LocalMenuBackdrop provides fullBackdrop,
         LocalSelectHost provides selectHost,
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.

@@ -825,16 +825,18 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             LogToolbarDivider()
             Box {
                 LogIconButton(R.drawable.ic_more_vert, stringResource(R.string.log_menu)) { menuOpen = true }
-                MenuPopup(show = menuOpen, onDismiss = { menuOpen = false }, minWidth = 160.dp) {
-                    MenuItem(label = stringResource(R.string.log_wrap), selected = entry.wrap) {
-                        entry.wrap = !entry.wrap
-                        LogPrefs.saveWrap(context, entry.wrap)
-                        menuOpen = false
-                    }
-                    MenuItem(label = stringResource(R.string.log_mono), selected = entry.mono) {
-                        entry.mono = !entry.mono
-                        LogPrefs.saveMono(context, entry.mono)
-                        menuOpen = false
+                if (menuOpen) {
+                    MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
+                        MenuItem(label = stringResource(R.string.log_wrap), selected = entry.wrap) {
+                            entry.wrap = !entry.wrap
+                            LogPrefs.saveWrap(context, entry.wrap)
+                            menuOpen = false
+                        }
+                        MenuItem(label = stringResource(R.string.log_mono), selected = entry.mono) {
+                            entry.mono = !entry.mono
+                            LogPrefs.saveMono(context, entry.mono)
+                            menuOpen = false
+                        }
                     }
                 }
             }
