@@ -56,7 +56,6 @@ import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.tool.script.ui.main.MenuItem
-import com.tool.script.ui.main.MenuPopup
 import com.tool.script.util.Util
 import com.tool.script.util.ShellText
 import com.tool.script.util.formatNumber
@@ -75,8 +74,11 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import top.yukonga.miuix.kmp.glass.GlassDropdownPopup
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorRow
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorValue
@@ -990,8 +992,15 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                 },
                 onClick = withTapHaptic { expanded = true },
             )
-            if (expanded) {
-                MenuPopup(onDismiss = { expanded = false }, minWidth = 180.dp) {
+            // Chế độ thường: popup của Miuix (OverlayListPopup): mở / đóng có hiệu ứng phóng ra từ hàng, có lớp dim nhẹ phía sau, không làm mờ trang.
+            // Đặt ngay trong Box của hàng nên popup lấy hàng làm điểm neo, căn mép phải.
+            OverlayListPopup(
+                show = expanded,
+                alignment = PopupPositionProvider.Align.End,
+                enableWindowDim = true,
+                onDismissRequest = { expanded = false },
+            ) {
+                ListPopupColumn {
                     item.options.forEach { option ->
                         MenuItem(label = option.label, selected = option.value == current) {
                             expanded = false
