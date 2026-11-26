@@ -189,7 +189,11 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: B
 /** Độ đậm nền ô đang chọn / đang bật trong hộp thoại cài đặt (0.16, bằng ô chọn nhiều mục). */
 private const val ThemeSelectedAlpha = 0.16f
 
-/** Backdrop của chính màn hình toàn màn hình (Cài đặt / Nguồn) khi bật kính; null nếu không có (tắt blur). Dùng cho thành phần glass đặt trong nội dung. */
+/**
+ * Backdrop của chính màn hình toàn màn hình (Cài đặt / Nguồn) khi bật kính; null nếu không có (tắt blur). Chỉ dành cho thanh trên (GlassTopAppBar, nằm ngoài lớp được ghi).
+ * KHÔNG dùng cho thành phần nằm trong nội dung cuộn: nội dung chính là lớp được ghi, thành phần kính lấy mờ từ lớp chứa nó sẽ tự vẽ vào chính mình
+ * và làm tiến trình render chết ngay (lỗi native ở RenderThread, không qua được bộ bắt lỗi Java nên không hiện màn hình lỗi).
+ */
 val LocalGlassScreenBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 /**
@@ -198,7 +202,8 @@ val LocalGlassScreenBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
  */
 @Composable
 internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
-    val backdrop = LocalGlassScreenBackdrop.current ?: LocalGlassBackdrop.current
+    // Chỉ dùng backdrop của trang phía sau (nằm ngoài màn hình Cài đặt). Dùng LocalGlassScreenBackdrop ở đây là vòng tự tham chiếu (xem chú thích ở trên).
+    val backdrop = LocalGlassBackdrop.current
     if (LocalGlassEnabled.current && backdrop != null) {
         GlassSegmentedTabRow(
             tabs = labels,
