@@ -75,6 +75,7 @@ import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import top.yukonga.miuix.kmp.glass.GlassDropdownPopup
@@ -994,8 +995,11 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
             )
             // Chế độ thường: popup của Miuix (OverlayListPopup): mở / đóng có hiệu ứng phóng ra từ hàng, có lớp dim nhẹ phía sau, không làm mờ trang.
             // Đặt ngay trong Box của hàng nên popup lấy hàng làm điểm neo, căn mép phải.
+            // Lề trên / dưới của popup (cách hàng neo và cách mép màn hình) = 16dp, bằng lề trái / phải của thẻ (mặc định của Miuix chỉ 8dp).
+            val popupPosition = remember { ListPopupDefaults.dropdownPositionProvider(verticalMargin = 16.dp) }
             OverlayListPopup(
                 show = expanded,
+                popupPositionProvider = popupPosition,
                 alignment = PopupPositionProvider.Align.End,
                 enableWindowDim = true,
                 onDismissRequest = { expanded = false },
