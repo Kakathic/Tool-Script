@@ -56,11 +56,10 @@ import com.tool.script.ui.main.LocalBlurRequests
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.tool.script.ui.theme.DialogButton
 import com.tool.script.ui.theme.AppTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -417,22 +416,22 @@ internal fun SelectFullScreen(
                     horizontalArrangement = Arrangement.spacedBy(SCREEN_MARGIN),
                 ) {
                     if (instant) {
-                        TextButton(
+                        DialogButton(
                             text = stringResource(R.string.action_close),
                             onClick = { close(onDismiss) },
                             modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            primary = true,
                         )
                     } else {
-                        TextButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
-                        TextButton(
+                        DialogButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
+                        DialogButton(
                             text = stringResource(R.string.action_confirm),
                             onClick = {
                                 val result = draft
                                 close { onConfirm(result) }
                             },
                             modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            primary = true,
                         )
                     }
                 }

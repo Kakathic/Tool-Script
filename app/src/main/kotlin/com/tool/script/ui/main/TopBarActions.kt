@@ -101,6 +101,8 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.glassSurface
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -220,6 +222,9 @@ internal fun MenuPopup(
         properties = PopupProperties(focusable = true),
     ) {
         val shape = RoundedCornerShape(16.dp)
+        // Giao diện kính: khung menu dùng bề mặt kính của Miuix (viền sáng, bóng, màu nền kính). Popup là cửa sổ riêng nên không lấy backdrop của trang (sẽ lệch vị trí),
+        // vì vậy chỉ có kiểu kính chứ chưa làm mờ phần phía sau.
+        val glassFrame = if (LocalGlassEnabled.current) glassSurface(null, GlassPopupDefaults.visuals(), 16.dp).invoke(shape) else null
         BoxWithConstraints {
             val maxW = (maxWidth - 32.dp).coerceAtLeast(0.dp)
             val maxH = (maxHeight - 96.dp).coerceAtLeast(0.dp)
@@ -228,8 +233,11 @@ internal fun MenuPopup(
                     .widthIn(min = minWidth.coerceAtMost(maxW), max = maxW)
                     .width(IntrinsicSize.Max)
                     .heightIn(max = maxH)
-                    .shadow(elevation = 8.dp, shape = shape)
-                    .background(MiuixTheme.colorScheme.surfaceContainer, shape)
+                    .then(
+                        glassFrame ?: Modifier
+                            .shadow(elevation = 8.dp, shape = shape)
+                            .background(MiuixTheme.colorScheme.surfaceContainer, shape),
+                    )
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 8.dp),
                 content = content,

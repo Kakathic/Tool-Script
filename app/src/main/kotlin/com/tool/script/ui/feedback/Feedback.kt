@@ -112,6 +112,8 @@ import com.tool.script.ui.main.BlurDialog
 import com.tool.script.ui.theme.DialogButton
 import com.tool.script.ui.theme.LocalGlassEnabled
 import top.yukonga.miuix.kmp.glass.GlassCardDefaults
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.glassSurface
 import com.tool.script.ui.main.LocalBlurRequests
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.cardBlur
@@ -852,8 +854,7 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
 private fun LogActionRow(entry: LogEntry, onCancel: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    // Nút kính chỉ ở hộp log nhỏ (dialog kính); log toàn màn hình giữ nút thường.
-    val glassButtons = LocalGlassEnabled.current && !entry.full
+    val glassButtons = LocalGlassEnabled.current
     Row(horizontalArrangement = Arrangement.spacedBy(LogFullMargin)) {
         DialogButton(
             glass = glassButtons,
@@ -1061,12 +1062,20 @@ fun Banner(
 ) {
     // Banner thông tin: nền trung tính (không xanh) đậm hơn nền thẻ (thẻ dùng surfaceContainer) để không trùng màu thẻ.
     val base = if (warning) MiuixTheme.colorScheme.errorContainer else MiuixTheme.colorScheme.surfaceContainerHighest
-    val content = if (warning) MiuixTheme.colorScheme.onErrorContainer else MiuixTheme.colorScheme.onSurface
+    // Giao diện kính (banner nổi có backdrop): nền kính của Miuix (glassSurface), chữ và icon cảnh báo dùng màu error cho dễ đọc trên kính.
+    val glassBanner = LocalGlassEnabled.current && backdrop != null
+    val content = when {
+        glassBanner && warning -> MiuixTheme.colorScheme.error
+        warning -> MiuixTheme.colorScheme.onErrorContainer
+        else -> MiuixTheme.colorScheme.onSurface
+    }
     // Có backdrop: nền kính mờ (làm mờ phần phía sau rồi phủ màu nền trong suốt một phần), Card để trong suốt.
     val colors = CardDefaults.defaultColors(color = if (backdrop != null) Color.Transparent else base, contentColor = content)
     val hasButtons = actionLabel != null || onDismiss != null
+    val bannerShape = RoundedCornerShape(16.dp)
+    val glassModifier = if (glassBanner) glassSurface(backdrop, GlassPopupDefaults.visuals(), 16.dp).invoke(bannerShape) else Modifier
     Card(
-        modifier = modifier.fillMaxWidth().cardBlur(backdrop, RoundedCornerShape(16.dp), base),
+        modifier = modifier.fillMaxWidth().then(if (glassBanner) glassModifier else Modifier.cardBlur(backdrop, bannerShape, base)),
         colors = colors,
         insideMargin = PaddingValues(start = 14.dp, top = 12.dp, end = if (hasButtons) 8.dp else 14.dp, bottom = 12.dp),
     ) {
