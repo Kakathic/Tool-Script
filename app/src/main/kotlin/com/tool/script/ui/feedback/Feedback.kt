@@ -141,6 +141,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -995,21 +996,14 @@ private fun LogToolbarDivider() {
     )
 }
 
-/** Nút icon tròn 32dp nằm trong thanh công cụ của hàng tiêu đề (nền chung do thanh vẽ); [icon] là vector drawable. */
+/** Nút icon tròn 32dp nằm trong thanh công cụ của hàng tiêu đề (nền chung do thanh vẽ); [icon] là vector drawable. Dùng IconButton của Miuix. */
 @Composable
 private fun LogIconButton(icon: Int, description: String, iconSize: Dp = 20.dp, onClick: () -> Unit) {
-    val content = MiuixTheme.colorScheme.onSurface
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    IconButton(onClick = onClick, minWidth = 32.dp, minHeight = 32.dp, cornerRadius = 16.dp) {
         Icon(
             imageVector = ImageVector.vectorResource(icon),
             contentDescription = description,
-            tint = content,
+            tint = MiuixTheme.colorScheme.onSurface,
             modifier = Modifier.size(iconSize),
         )
     }

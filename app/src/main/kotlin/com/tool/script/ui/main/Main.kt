@@ -136,6 +136,7 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.animation.core.animateFloatAsState
@@ -635,18 +636,9 @@ private fun AppTopBar(
     }
 }
 
-// Tiêu đề lớn kiểu Miuix TopAppBar (cùng cỡ chữ, lề 26dp, cùng hành vi thu gọn / mở rộng của MiuixScrollBehavior).
-private val BarCollapsedHeight = 56.dp
-/** Khoảng từ đỉnh thanh (dưới thanh trạng thái) tới chữ lớn; nhỏ hơn BarCollapsedHeight thì chữ lớn nằm cao hơn, đè lên hàng icon bên trái. */
-private val LargeTitleTopPadding = 20.dp
-/** Như trên nhưng khi có nút quay lại: chữ lớn bắt đầu ngay dưới hàng nút (hàng nút cao 48dp, thanh thu gọn 56dp). */
-private val LargeTitleTopPaddingWithBack = 52.dp
-private val LargeTitleHorizontalPadding = 26.dp
-private val LargeTitleBottomPadding = 4.dp
-
 /**
- * Thanh trên của trang con: lúc mở rộng hiện tiêu đề chữ lớn bên dưới hàng icon (nút quay lại [onBack] bên trái); vuốt lên thì chữ lớn
- * mờ dần rồi thu lại, tiêu đề chữ nhỏ hiện ở vị trí cũ (căn trái, cao 56dp, icon bên phải). Vuốt xuống tới đầu danh sách thì mở rộng lại.
+ * Thanh trên của trang con: tiêu đề chữ lớn thu nhỏ khi vuốt lên và mở rộng lại khi vuốt xuống tới đầu danh sách
+ * (thường: TopAppBar của Miuix; kính: GlassTopAppBar).
  * Trạng thái nằm trong [scrollBehavior]; gắn `Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)` vào vùng nội dung cuộn.
  * [backdrop] khác null: nền thanh trong suốt và làm mờ phần nội dung cuộn phía dưới (xem BarBlur.kt).
  */
@@ -681,96 +673,17 @@ private fun LargeTitleTopBar(
         )
         return
     }
-    val state = scrollBehavior.state
-    // Có nút quay lại bên trái thì chữ lớn nằm hẳn dưới hàng nút (không đè lên mũi tên); không có thì như cũ (đè lên hàng icon bên phải).
-    val largeTopPadding = if (onBack != null) LargeTitleTopPaddingWithBack else LargeTitleTopPadding
-    val density = LocalDensity.current
-    // Quãng thanh co lại khi thu gọn = đệm trên chữ lớn + chiều cao chữ + đệm dưới - chiều cao thanh thu gọn.
-    val extraPx = with(density) { (largeTopPadding + LargeTitleBottomPadding - BarCollapsedHeight).roundToPx() }
-    // Chữ nhỏ chỉ hiện khi đã thu gần hết (giống Miuix: 1/3 quãng thu gọn).
-    val smallVisible by remember(state) { derivedStateOf { state.collapsedFraction * 3f >= 1f } }
-    val smallAlpha by animateFloatAsState(
-        targetValue = if (smallVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = if (smallVisible) 220 else 120),
-        label = "smallTitleAlpha",
-    )
-    val smallShift by animateFloatAsState(
-        targetValue = if (smallVisible) 0f else 20f,
-        animationSpec = tween(durationMillis = if (smallVisible) 220 else 120),
-        label = "smallTitleShift",
-    )
-
-    Layout(
-        content = {
-            // Hàng thanh thu gọn: giữ đúng vị trí cũ (lề trái 16dp, icon bên phải).
-            Row(
-                modifier = Modifier.layoutId("bar").padding(start = if (onBack != null) 4.dp else 16.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (onBack != null) {
-                    TopBarIcon(icon = AppIcons.BarBack, description = stringResource(R.string.action_back), onClick = onBack)
-                }
-                Text(
-                    text = title,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = if (onBack != null) 4.dp else 0.dp)
-                        .graphicsLayer {
-                            alpha = smallAlpha
-                            translationY = smallShift
-                        },
-                    fontSize = TopBarTitleSize,
-                    fontWeight = FontWeight.Medium,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                actions()
-            }
-            // Chữ lớn nằm dưới hàng thanh; đọc state trong lớp vẽ / bố cục để cuộn không làm recompose.
-            Box(
-                modifier = Modifier
-                    .layoutId("large")
-                    .padding(top = largeTopPadding)
-                    .padding(horizontal = LargeTitleHorizontalPadding)
-                    .graphicsLayer { alpha = 1f - (state.collapsedFraction * 3f).coerceIn(0f, 1f) },
-            ) {
-                Text(
-                    text = title,
-                    modifier = Modifier
-                        .offset { IntOffset(0, state.heightOffset.roundToInt()) }
-                        .onSizeChanged { size ->
-                            val limit = -(size.height + extraPx).toFloat()
-                            if (state.heightOffsetLimit != limit) state.heightOffsetLimit = limit
-                        },
-                    fontSize = MiuixTheme.textStyles.title1.fontSize,
-                    fontWeight = FontWeight.Normal,
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
-            }
+    // Giao diện thường: TopAppBar của Miuix (tiêu đề lớn thu nhỏ theo scrollBehavior). Có blur thì nền trong suốt và làm mờ nội dung cuộn phía dưới.
+    TopAppBar(
+        title = title,
+        modifier = Modifier.barBlur(backdrop),
+        color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+        scrollBehavior = scrollBehavior,
+        navigationIcon = {
+            if (onBack != null) TopBarIcon(icon = AppIcons.BarBack, description = stringResource(R.string.action_back), onClick = onBack)
         },
-        modifier = Modifier
-            .fillMaxWidth()
-            .barBlur(backdrop)
-            .background(if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface)
-            .statusBarsPadding()
-            .clipToBounds(),
-    ) { measurables, constraints ->
-        val collapsedPx = BarCollapsedHeight.roundToPx()
-        val bottomPadPx = LargeTitleBottomPadding.roundToPx()
-        val bar = measurables.first { it.layoutId == "bar" }
-            .measure(constraints.copy(minHeight = collapsedPx, maxHeight = collapsedPx))
-        val large = measurables.first { it.layoutId == "large" }
-            .measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-        // Chiều cao lúc mở rộng = hộp chữ lớn (gồm đệm trên) + đệm dưới; heightOffsetLimit đúng bằng phần chênh so với lúc thu gọn nên thanh co lại 1:1 với ngón tay.
-        val expandedHeight = maxOf(collapsedPx, large.height + bottomPadPx)
-        val collapse = state.collapsedFraction.let { if (it.isNaN()) 0f else it.coerceIn(0f, 1f) }
-        val height = collapsedPx + ((expandedHeight - collapsedPx) * (1f - collapse)).roundToInt()
-        layout(constraints.maxWidth, height) {
-            large.placeRelative(0, 0)
-            bar.placeRelative(0, 0)
-        }
-    }
+        actions = actions,
+    )
 }
 
 /** Độ đục của nền sheet dialog khi full màn hình và có blur (cùng mức với log và chọn toàn màn hình): phần còn lại là trang phía sau đã làm mờ. */

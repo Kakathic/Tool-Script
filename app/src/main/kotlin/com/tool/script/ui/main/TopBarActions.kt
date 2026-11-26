@@ -94,9 +94,13 @@ import com.tool.script.util.Util
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.tool.script.ui.theme.LocalGlassEnabled
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -185,60 +189,33 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: B
 /** Độ đậm nền ô đang chọn / đang bật trong hộp thoại cài đặt (0.16, bằng ô chọn nhiều mục). */
 private const val ThemeSelectedAlpha = 0.16f
 
+/** Backdrop của chính màn hình toàn màn hình (Cài đặt / Nguồn) khi bật kính; null nếu không có (tắt blur). Dùng cho thành phần glass đặt trong nội dung. */
+val LocalGlassScreenBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+
 /**
- * Hàng chọn một xếp ngang kiểu "thanh trượt phân đoạn": các ô chia đều chiều rộng nằm trong một khay bo tròn,
- * ô đang chọn có nền màu chủ đạo nhạt, chữ màu chủ đạo, không đổi độ đậm chữ.
+ * Hàng chọn một xếp ngang (Hệ thống / Sáng / Tối): các ô chia đều chiều rộng, viên chọn trượt.
+ * Thường: [TabRowWithContour] của Miuix. Kính: [GlassSegmentedTabRow] (cần backdrop; thiếu thì dùng bản thường).
  */
 @Composable
 internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
-    val trackShape = RoundedCornerShape(14.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(trackShape)
-            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        labels.forEachIndexed { index, label ->
-            val selected = index == selectedIndex
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (selected) MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha) else Color.Transparent)
-                    .clickable { onSelect(index) }
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-/** Một dòng bật / tắt trong [SettingsToggleCard]. */
-internal class SettingToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
-
-/**
- * Một dòng bật / tắt trong thẻ riêng: chữ bên trái, ô tích tròn của Miuix bên phải.
- * Bấm cả thẻ để đổi trạng thái, hộp thoại giữ nguyên.
- */
-@Composable
-internal fun SettingsToggleCard(toggle: SettingToggle) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
-    ) {
-        SettingsToggleRow(toggle)
+    val backdrop = LocalGlassScreenBackdrop.current ?: LocalGlassBackdrop.current
+    if (LocalGlassEnabled.current && backdrop != null) {
+        GlassSegmentedTabRow(
+            tabs = labels,
+            selectedIndex = selectedIndex,
+            onSelect = onSelect,
+            backdrop = backdrop,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    } else {
+        // maxWidth lớn để các ô chia đều hết chiều rộng (mặc định Miuix giới hạn mỗi ô 84dp).
+        TabRowWithContour(
+            tabs = labels,
+            selectedTabIndex = selectedIndex,
+            onTabSelected = onSelect,
+            modifier = Modifier.fillMaxWidth(),
+            maxWidth = 600.dp,
+        )
     }
 }
 
@@ -493,16 +470,18 @@ fun ToolbarFullScreen(
                     .background(if (requests != null) base.copy(alpha = 0.6f) else base)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
-                        .verticalScroll(scrollState)
-                        .navigationBarsPadding()
-                        .padding(start = 16.dp, end = 16.dp, top = topInset + TopAppBarDefaults.CollapsedHeight + 8.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                    content = content,
-                )
+                CompositionLocalProvider(LocalGlassScreenBackdrop provides contentBackdrop) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
+                            .verticalScroll(scrollState)
+                            .navigationBarsPadding()
+                            .padding(start = 16.dp, end = 16.dp, top = topInset + TopAppBarDefaults.CollapsedHeight + 8.dp, bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                        content = content,
+                    )
+                }
                 GlassTopAppBar(
                     title = title,
                     isContentScrolled = scrolled,
