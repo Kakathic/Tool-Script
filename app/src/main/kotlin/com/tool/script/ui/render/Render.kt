@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
+import com.tool.script.config.SelectOption
 import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
 import com.tool.script.config.LockMode
@@ -62,7 +64,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
+import top.yukonga.miuix.kmp.glass.GlassDropdownPopup
+import top.yukonga.miuix.kmp.glass.GlassPopupItem
+import top.yukonga.miuix.kmp.glass.glassPopupAnchorRow
+import top.yukonga.miuix.kmp.glass.glassPopupAnchorValue
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -834,10 +851,104 @@ private fun EndIcon(icon: String) {
 @Composable
 private fun UpDownIcon() = EndIcon(AppIcons.BarUpDown)
 
+/** Bo góc menu dropdown kính (thư viện mặc định 24dp, giữ 16dp như menu phẳng). */
+private val GlassDropdownCorner = 16.dp
+
+/** Thời gian chờ hiệu ứng đóng của menu kính chạy xong trước khi gỡ popup khỏi Scaffold gốc. */
+private const val GlassDropdownExitMillis = 450L
+
+/**
+ * Hàng dropdown dạng kính: dựng bằng [GlassDropdownPopup] (không dùng GlassDropdownPreference vì thư viện cố định bo 24dp),
+ * popup vẽ ở lớp popup của Scaffold gốc, neo theo giá trị đang chọn, bo [GlassDropdownCorner].
+ */
+@Composable
+private fun GlassDropdownRow(item: Item, current: String, enabled: Boolean, backdrop: Backdrop?, onSelect: (SelectOption) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val mounted = remember { mutableStateOf(false) }
+    var rowBounds by remember { mutableStateOf(Rect.Zero) }
+    val anchor = rememberGlassPopupAnchor()
+    val haptic = LocalHapticFeedback.current
+    val actualEnabled = enabled && item.options.isNotEmpty()
+    val actionColor = if (actualEnabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+    val selectedIndex = item.options.indexOfFirst { it.value == current }
+
+    BasicComponent(
+        modifier = Modifier
+            .glassPopupAnchorRow(anchor)
+            .onGloballyPositioned { rowBounds = it.boundsInWindow() },
+        insideMargin = CardInsideMargin,
+        title = item.title,
+        summary = item.desc,
+        startAction = itemIcon(item),
+        endActions = {
+            Row(modifier = Modifier.glassPopupAnchorValue(anchor), verticalAlignment = Alignment.CenterVertically) {
+                val value = item.options.getOrNull(selectedIndex)?.label
+                if (!value.isNullOrEmpty()) {
+                    Text(
+                        text = value,
+                        modifier = Modifier.padding(end = 8.dp).weight(1f, fill = false),
+                        color = actionColor,
+                        style = MiuixTheme.textStyles.body2,
+                        textAlign = TextAlign.End,
+                    )
+                }
+                DropdownArrowEndAction(actionColor = actionColor)
+            }
+        },
+        onClick = {
+            mounted.value = true
+            expanded = true
+            haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+        },
+        role = Role.DropdownList,
+        holdDownState = mounted.value,
+        enabled = actualEnabled,
+    )
+
+    LaunchedEffect(expanded) {
+        if (!expanded && mounted.value) {
+            delay(GlassDropdownExitMillis)
+            if (!expanded) mounted.value = false
+        }
+    }
+    if (!mounted.value) return
+
+    PopupLayout(
+        visible = mounted,
+        enableWindowDim = false,
+        enableBackHandler = false,
+        enterTransition = EnterTransition.None,
+        exitTransition = ExitTransition.None,
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            GlassDropdownPopup(
+                show = expanded && actualEnabled,
+                onDismissRequest = { expanded = false },
+                anchorBounds = rowBounds,
+                backdrop = backdrop,
+                anchor = anchor,
+                cornerRadius = GlassDropdownCorner,
+            ) {
+                item.options.forEachIndexed { index, option ->
+                    GlassPopupItem(
+                        text = option.label,
+                        selected = selectedIndex == index,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                            expanded = false
+                            onSelect(option)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * Chọn một trong `options` bằng menu thả xuống ngay dưới hàng (không dùng hộp thoại):
  * bên phải hiện giá trị đang chọn kèm mũi tên lên/xuống; mục đang chọn nổi nền, có dấu tích bên phải.
- * Bật Giao diện kính thì hàng và menu là [GlassDropdownPreference] của miuix-glass.
+ * Bật Giao diện kính thì hàng và menu là bản kính ([GlassDropdownRow]).
  */
 @Composable
 private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
@@ -845,25 +956,12 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
     val current = env.store[id]
 
     if (LocalGlassEnabled.current) {
-        val backdrop = LocalGlassBackdrop.current
-        val selectedIndex = item.options.indexOfFirst { it.value == current }
         ItemSurface(modifier, inGroup) {
-            GlassDropdownPreference(
-                title = item.title,
-                summary = item.desc,
-                startAction = itemIcon(item),
-                items = item.options.map { it.label },
-                selectedIndex = selectedIndex,
-                insideMargin = CardInsideMargin,
-                enabled = enabled,
-                backdrop = backdrop,
-                onSelectedIndexChange = { index ->
-                    val option = item.options[index]
-                    env.run(item, item.run, mapOf(id to option.value)) { result ->
-                        if (result.ok) env.store[id] = option.value
-                    }
-                },
-            )
+            GlassDropdownRow(item, current, enabled, LocalGlassBackdrop.current) { option ->
+                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                    if (result.ok) env.store[id] = option.value
+                }
+            }
         }
         return
     }
