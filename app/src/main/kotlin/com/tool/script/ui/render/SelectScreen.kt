@@ -61,7 +61,7 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
+import com.tool.script.ui.theme.AppTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Chọn toàn màn hình cho `singleselect` / `multiselect` khi có từ FULLSCREEN_MIN_OPTIONS mục trở lên.
@@ -316,7 +316,7 @@ internal fun SelectFullScreen(
                         )
                     }
                 }
-                TextField(
+                AppTextField(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = SCREEN_MARGIN).height(SELECT_CONTROL_HEIGHT),

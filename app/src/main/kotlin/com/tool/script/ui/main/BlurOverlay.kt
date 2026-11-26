@@ -17,7 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.tool.script.ui.theme.LocalGlassEnabled
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 // Làm mờ nền phía sau dialog (OverlayDialog của Miuix, vẽ ở lớp popup của Scaffold gốc) bật nền mờ riêng thay cho lớp tối của Miuix.
@@ -51,11 +53,28 @@ fun BlurDialog(
     content: @Composable () -> Unit,
 ) {
     val requests = LocalBlurRequests.current
-    if (requests != null) {
+    // Giao diện kính: dialog nhỏ là GlassDialog của Miuix (nền kính tự làm mờ trang phía sau, có lớp tối riêng), nên không đăng ký nền mờ của [DialogBlurScrim].
+    // Dialog full màn hình giữ bản cũ (nội dung tự vẽ, xem SubPageScreen / SheetGlassAlpha).
+    val glass = LocalGlassEnabled.current && !fullScreen
+    if (requests != null && !glass) {
         DisposableEffect(show) {
             if (show) requests.dialogs++
             onDispose { if (show) requests.dialogs-- }
         }
+    }
+    if (glass) {
+        GlassDialog(
+            show = show,
+            title = title,
+            summary = summary,
+            // onDismissRequest = null nghĩa là không cho đóng bằng chạm ngoài / Back (log đang chạy): GlassDialog bắt buộc có callback nên truyền hàm rỗng.
+            onDismissRequest = onDismissRequest ?: {},
+            backdrop = LocalGlassBackdrop.current,
+            largeScreen = if (centered) true else null,
+            outsideMargin = DpSize(16.dp, 16.dp),
+            content = content,
+        )
+        return
     }
     OverlayDialog(
         show = show,

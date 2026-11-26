@@ -75,12 +75,12 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
+import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import top.yukonga.miuix.kmp.glass.GlassDropdownPopup
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorRow
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorValue
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -92,13 +92,13 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.SwitchDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import com.tool.script.ui.main.BlurDialog
 import com.tool.script.ui.main.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.tool.script.ui.theme.AppTextField
+import com.tool.script.ui.theme.DialogButton
 import com.tool.script.ui.theme.LocalGlassEnabled
 import com.tool.script.ui.theme.LocalMonetEnabled
 import kotlin.math.roundToInt
@@ -501,7 +501,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 Text(it, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
             }
             Spacer(Modifier.height(12.dp))
-            TextField(
+            AppTextField(
                 value = env.store[id],
                 onValueChange = { env.store[id] = it },
                 modifier = Modifier.fillMaxWidth(),
@@ -622,11 +622,11 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             }
             if (!env.varsOnly) Spacer(Modifier.height(8.dp))
             if (!env.varsOnly) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
-                TextButton(
+                DialogButton(text = stringResource(R.string.action_cancel), onClick = { showDialog = false }, modifier = Modifier.weight(1f))
+                DialogButton(
                     text = stringResource(R.string.action_confirm),
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    primary = true,
                     onClick = {
                         showDialog = false
                         val newValue = item.options.filter { it.value in draft }.joinToString(item.separator) { it.value }
@@ -658,6 +658,8 @@ private fun ChoiceCard(
 ) {
     val shape = RoundedCornerShape(12.dp)
     val primary = MiuixTheme.colorScheme.primary
+    // Giao diện kính: mục chưa chọn dùng nền thẻ kính của Miuix (GlassCardDefaults), mục đã chọn vẫn pha màu chủ đạo.
+    val unselected = if (LocalGlassEnabled.current) GlassCardDefaults.color() else MiuixTheme.colorScheme.onSurface.copy(alpha = UNSELECTED_ALPHA)
     Row(
         modifier = modifier
             .clip(shape)
@@ -665,7 +667,7 @@ private fun ChoiceCard(
                 when {
                     !framed -> Color.Transparent
                     checked -> primary.copy(alpha = SELECTED_ALPHA)
-                    else -> MiuixTheme.colorScheme.onSurface.copy(alpha = UNSELECTED_ALPHA)
+                    else -> unselected
                 },
             )
             .clickable(onClick = onClick)

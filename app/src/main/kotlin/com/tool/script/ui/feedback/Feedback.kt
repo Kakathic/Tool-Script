@@ -109,6 +109,9 @@ import coil3.compose.AsyncImage
 import com.tool.script.config.Item
 import com.tool.script.config.ShellMode
 import com.tool.script.ui.main.BlurDialog
+import com.tool.script.ui.theme.DialogButton
+import com.tool.script.ui.theme.LocalGlassEnabled
+import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import com.tool.script.ui.main.LocalBlurRequests
 import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.cardBlur
@@ -849,8 +852,11 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
 private fun LogActionRow(entry: LogEntry, onCancel: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // Nút kính chỉ ở hộp log nhỏ (dialog kính); log toàn màn hình giữ nút thường.
+    val glassButtons = LocalGlassEnabled.current && !entry.full
     Row(horizontalArrangement = Arrangement.spacedBy(LogFullMargin)) {
-        TextButton(
+        DialogButton(
+            glass = glassButtons,
             text = stringResource(R.string.action_share),
             onClick = {
                 scope.launch {
@@ -874,7 +880,8 @@ private fun LogActionRow(entry: LogEntry, onCancel: () -> Unit, onDismiss: () ->
                 textColor = MiuixTheme.colorScheme.onErrorContainer,
             )
         }
-        TextButton(
+        DialogButton(
+            glass = glassButtons,
             text = label,
             onClick = if (entry.running) onCancel else onDismiss,
             modifier = Modifier.weight(1f),
@@ -899,13 +906,22 @@ private fun LogSelectableCard(entry: LogEntry, output: String, modifier: Modifie
     val darkUi = MiuixTheme.colorScheme.background.luminance() < 0.5f
     val glassText = if (darkUi) Color(0xFFE6EDF3) else Color(0xFF1F2328)
     val glassBack = if (darkUi) Color(0xFF161B22) else Color.White
+    // Hộp log nhỏ trong dialog kính: thẻ kính của Miuix (GlassCardDefaults) thay cho thẻ trong suốt.
+    val glassSmall = !full && LocalGlassEnabled.current
     val cardColors = if (glass) {
         CardDefaults.defaultColors(color = if (darkUi) Color.Black.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.55f), contentColor = glassText)
+    } else if (glassSmall) {
+        GlassCardDefaults.colors()
     } else {
         // Bảng log nhỏ: thẻ trong suốt, không có khung đục riêng (chế độ màu động pha màu thẻ khác nền dialog nên hiện khung).
         CardDefaults.defaultColors(color = Color.Transparent)
     }
-    Card(modifier = modifier.fillMaxWidth(), colors = cardColors, insideMargin = PaddingValues(0.dp)) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = cardColors,
+        cornerRadius = if (glassSmall) GlassCardDefaults.CornerRadius else CardDefaults.CornerRadius,
+        insideMargin = PaddingValues(0.dp),
+    ) {
         val primary = MiuixTheme.colorScheme.primary
         CompositionLocalProvider(
             LocalTextSelectionColors provides TextSelectionColors(
@@ -1017,12 +1033,12 @@ fun ConfirmDialog(message: String?, onConfirm: () -> Unit, onDismiss: () -> Unit
         onDismissRequest = onDismiss,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TextButton(text = stringResource(R.string.action_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
-            TextButton(
+            DialogButton(text = stringResource(R.string.action_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
+            DialogButton(
                 text = stringResource(R.string.action_run),
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
+                primary = true,
             )
         }
     }
