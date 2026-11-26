@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import top.yukonga.miuix.kmp.basic.ButtonColors
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TextButtonColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -30,12 +31,13 @@ fun DialogButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
-    colors: ButtonColors? = null,
+    colors: TextButtonColors? = null,
     glass: Boolean = LocalGlassEnabled.current,
 ) {
     if (glass) {
         val role = if (primary) GlassDialogButtonRole.Primary else GlassDialogButtonRole.Normal
-        val resolved = colors ?: GlassDialogButtonDefaults.buttonColors(role)
+        val resolved = colors?.let { ButtonColors(it.color, it.disabledColor, it.textColor, it.disabledTextColor) }
+            ?: GlassDialogButtonDefaults.buttonColors(role)
         GlassDialogButton(onClick = onClick, modifier = modifier, role = role, colors = resolved) {
             GlassButtonLabel(text, resolved.contentColor)
         }
