@@ -576,6 +576,8 @@ private fun AppTopBar(
             title = title,
             isContentScrolled = scrolled,
             expandable = false,
+            // Miuix mặc định căn giữa tiêu đề; đặt mốc vật cản rất xa để tiêu đề căn sát trái, ngay sau nút bên trái như thanh cũ.
+            centerObstructionStart = 10_000.dp,
             backdrop = backdrop,
             progressiveBlur = backdrop != null,
             navigationIcon = {
@@ -591,8 +593,10 @@ private fun AppTopBar(
                 }
             },
             actions = {
-                val rowScope = this
-                CompositionLocalProvider(LocalInGlassBar provides true) { rowScope.actions() }
+                // Các nút kính bên phải cách nhau 8dp (mặc định Miuix xếp sát nhau).
+                CompositionLocalProvider(LocalInGlassBar provides true) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { actions() }
+                }
             },
         )
         return
@@ -669,8 +673,10 @@ private fun LargeTitleTopBar(
                 }
             },
             actions = {
-                val rowScope = this
-                CompositionLocalProvider(LocalInGlassBar provides true) { rowScope.actions() }
+                // Các nút kính bên phải cách nhau 8dp (mặc định Miuix xếp sát nhau).
+                CompositionLocalProvider(LocalInGlassBar provides true) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { actions() }
+                }
             },
         )
         return
