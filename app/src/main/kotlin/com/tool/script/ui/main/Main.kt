@@ -363,6 +363,10 @@ fun MainScreen(
                                 SubPageScreen(subPage, env, feedback, onBack = { closeIfTop(file.orEmpty(), false) }, onConfirm = { closeIfTop(file.orEmpty(), true) }, blur = blurEnabled)
                             } else {
                                 val backdrop = rememberBarBackdrop(blurEnabled)
+                                // Giao diện kính: thanh tab là viên thuốc kính nổi ở đáy (FloatingTabBar), nội dung cuộn tràn xuống dưới nó.
+                                val floatingBar = glassEnabled && isBlurSupported() && pages.size >= 2
+                                var floatingBarHeight by remember { mutableStateOf(0.dp) }
+                                val density = LocalDensity.current
                                 Scaffold(
                                     topBar = {
                                         // Màn hình chính: tên app cố định (không phóng to / thu nhỏ), icon 3 gạch bên trái mở cửa sổ menu.
@@ -380,7 +384,7 @@ fun MainScreen(
                                     },
                                     snackbarHost = { SnackbarHost(feedback.snackbarState) },
                                     bottomBar = {
-                                        if (pages.size >= 2) {
+                                        if (pages.size >= 2 && !floatingBar) {
                                             NavigationBar(
                                                 modifier = Modifier.barBlur(backdrop),
                                                 color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
@@ -418,36 +422,51 @@ fun MainScreen(
                                     // Có blur: nội dung kéo xuống dưới thanh trên (thẻ cuộn qua thanh thì bị làm mờ), chừa chỗ bằng padding của danh sách.
                                     val barTop = inner.calculateTopPadding()
                                     val bannerShown = warningText.isNotEmpty() && !warningDismissed
-                                    Column(
-                                        Modifier
-                                            .fillMaxSize()
-                                            .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
-                                    ) {
-                                        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
-                                            val page = pages[pageIndex]
-                                            PageList(
-                                                list = page.items.filter { isShown(it, env.store) },
-                                                error = page.error,
-                                                file = page.ref.file,
-                                                warnings = page.warnings,
-                                                env = env,
-                                                bottomInset = inner.calculateBottomPadding(),
-                                                topInset = if (backdrop != null) barTop else 0.dp,
-                                                appBanner = if (bannerShown) {
-                                                    {
-                                                        Banner(
-                                                            message = warningText,
-                                                            warning = true,
-                                                            actionLabel = viewLabel,
-                                                            onAction = { onShowDetails(context.getString(R.string.warn_startup_title), buildDetails(context, result)) },
-                                                            onDismiss = { warningDismissed = true },
-                                                        )
-                                                    }
-                                                } else null,
+                                    Box(Modifier.fillMaxSize()) {
+                                        Column(
+                                            Modifier
+                                                .fillMaxSize()
+                                                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
+                                        ) {
+                                            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
+                                                val page = pages[pageIndex]
+                                                PageList(
+                                                    list = page.items.filter { isShown(it, env.store) },
+                                                    error = page.error,
+                                                    file = page.ref.file,
+                                                    warnings = page.warnings,
+                                                    env = env,
+                                                    bottomInset = if (floatingBar) floatingBarHeight else inner.calculateBottomPadding(),
+                                                    topInset = if (backdrop != null) barTop else 0.dp,
+                                                    appBanner = if (bannerShown) {
+                                                        {
+                                                            Banner(
+                                                                message = warningText,
+                                                                warning = true,
+                                                                actionLabel = viewLabel,
+                                                                onAction = { onShowDetails(context.getString(R.string.warn_startup_title), buildDetails(context, result)) },
+                                                                onDismiss = { warningDismissed = true },
+                                                            )
+                                                        }
+                                                    } else null,
+                                                )
+                                            }
+                                            FeedbackDialogs(feedback, env)
+                                            MenuDialog(show = showMenu, onDismiss = { showMenu = false })
+                                        }
+                                        if (floatingBar) {
+                                            FloatingTabBar(
+                                                pages = pages.map { it.ref },
+                                                selectedIndex = pagerState.currentPage,
+                                                onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+                                                visibleTabs = visibleTabs,
+                                                windowStart = windowStart,
+                                                backdrop = backdrop,
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .onSizeChanged { floatingBarHeight = with(density) { it.height.toDp() } },
                                             )
                                         }
-                                        FeedbackDialogs(feedback, env)
-                                        MenuDialog(show = showMenu, onDismiss = { showMenu = false })
                                     }
                                 }
                             }

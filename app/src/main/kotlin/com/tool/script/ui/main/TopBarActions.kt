@@ -91,7 +91,16 @@ import coil3.compose.AsyncImage
 import com.tool.script.ui.theme.CompactRipple
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.derivedStateOf
+import com.tool.script.ui.theme.LocalGlassEnabled
 import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -533,6 +542,7 @@ private fun SettingsLinksCard() {
 
 /**
  * Màn hình toàn màn hình của Cài đặt / Nguồn: thanh trên có X ở góc trái (đóng) và tiêu đề ở giữa, nội dung cuộn bên dưới.
+ * Bật Giao diện kính ([LocalGlassEnabled]) thì thanh trên là GlassTopAppBar của Miuix (nút X dạng kính, nền mờ dần khi cuộn).
  * Vẽ thẳng trong cây giao diện, đặt ở gốc Main (trên DialogBlurScrim): có blur thì trang phía sau mờ và tối nhẹ, nền màn hình trong suốt một phần;
  * không có blur thì nền đặc. Back và X đều đóng.
  */
@@ -557,38 +567,83 @@ fun ToolbarFullScreen(
         exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180)),
     ) {
         val base = MiuixTheme.colorScheme.background
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (requests != null) base.copy(alpha = 0.6f) else base)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-        ) {
-            Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 10.dp)) {
-                Text(
-                    text = title,
-                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        val glass = LocalGlassEnabled.current
+        val scrollState = rememberScrollState()
+        if (glass) {
+            // Giao diện kính: thanh trên là GlassTopAppBar của Miuix (nút X dạng viên kính, nền mờ dần khi nội dung cuộn qua phía dưới),
+            // nội dung cuộn tràn lên dưới thanh để có gì đó cho kính làm mờ.
+            val contentBackdrop = rememberBarBackdrop(true)
+            val scrolled by remember(scrollState) { derivedStateOf { scrollState.value > 0 } }
+            val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(if (requests != null) base.copy(alpha = 0.6f) else base)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
+                        .verticalScroll(scrollState)
+                        .navigationBarsPadding()
+                        .padding(start = 16.dp, end = 16.dp, top = topInset + TopAppBarDefaults.CollapsedHeight + 8.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    content = content,
                 )
-                Box(Modifier.align(Alignment.CenterStart)) {
-                    TopBarIcon(icon = AppIcons.BarClose, description = stringResource(R.string.action_cancel), onClick = onDismiss, circle = true)
-                }
+                GlassTopAppBar(
+                    title = title,
+                    isContentScrolled = scrolled,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    expandable = false,
+                    backdrop = contentBackdrop,
+                    progressiveBlur = contentBackdrop != null,
+                    navigationIcon = {
+                        GlassIconButton(onClick = onDismiss) {
+                            AsyncImage(
+                                model = Util.iconModel(AppIcons.BarClose),
+                                contentDescription = stringResource(R.string.action_cancel),
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                            )
+                        }
+                    },
+                )
             }
+        } else {
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-                content = content,
-            )
+                    .fillMaxSize()
+                    .background(if (requests != null) base.copy(alpha = 0.6f) else base)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
+            ) {
+                Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 10.dp)) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Box(Modifier.align(Alignment.CenterStart)) {
+                        TopBarIcon(icon = AppIcons.BarClose, description = stringResource(R.string.action_cancel), onClick = onDismiss, circle = true)
+                    }
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    content = content,
+                )
+            }
         }
     }
 }
