@@ -6,7 +6,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +58,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +72,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -157,6 +163,9 @@ fun TopBarIcon(icon: String, description: String, onClick: () -> Unit, circle: B
 
 /** Đặt menu ngay dưới anchor, căn mép phải với anchor và giữ trong màn hình; thiếu chỗ phía dưới thì lật lên trên. */
 private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPositionProvider {
+    /** true khi menu bị lật lên phía trên anchor: dùng để chọn góc neo cho hiệu ứng phóng to. */
+    var above = false
+
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
@@ -171,20 +180,20 @@ private class BelowAnchorPositionProvider(private val marginPx: Int) : PopupPosi
             anchorBounds.top - popupContentSize.height >= marginPx -> anchorBounds.top - popupContentSize.height
             else -> (windowSize.height - popupContentSize.height - marginPx).coerceAtLeast(marginPx)
         }
+        above = y < anchorBounds.bottom
         return IntOffset(x, y)
     }
 }
 
 /**
  * Làm tối cửa sổ phía sau Popup mà không thay đổi kích thước hay vùng nhận chạm.
- * Độ tối lấy từ màu nền mờ của chủ đề Miuix (`windowDimming`), cùng nguồn với hộp thoại nên hai bên luôn đồng nhất
- * (tự đổi theo sáng / tối).
+ * Độ tối tối đa lấy từ `windowDimming` của chủ đề Miuix (cùng nguồn với hộp thoại), nhân với [progress] (0..1) để tối dần khi mở và sáng dần khi đóng.
  */
 @Composable
-private fun DimMenuBackground() {
+private fun DimMenuBackground(progress: () -> Float) {
     val view = LocalView.current
     val dimAmount = MiuixTheme.colorScheme.windowDimming.alpha
-    DisposableEffect(view, dimAmount) {
+    DisposableEffect(view) {
         val popupView = view.rootView
         val params = popupView.layoutParams as? WindowManager.LayoutParams
         val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -192,7 +201,7 @@ private fun DimMenuBackground() {
         val originalDimAmount = params?.dimAmount
         if (params != null) {
             params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND
-            params.dimAmount = dimAmount
+            params.dimAmount = 0f
             windowManager.updateViewLayout(popupView, params)
         }
         onDispose {
@@ -205,35 +214,70 @@ private fun DimMenuBackground() {
             }
         }
     }
+    LaunchedEffect(view, dimAmount) {
+        val popupView = view.rootView
+        val params = popupView.layoutParams as? WindowManager.LayoutParams ?: return@LaunchedEffect
+        val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        snapshotFlow { progress() }.collect { p ->
+            if (popupView.isAttachedToWindow) {
+                params.dimAmount = dimAmount * p.coerceIn(0f, 1f)
+                windowManager.updateViewLayout(popupView, params)
+            }
+        }
+    }
 }
 
 /**
- * Popup menu thả xuống dùng chung (menu thanh trên và item `dropdown`): nằm ngay dưới vị trí đặt nó
- * (lật lên trên nếu thiếu chỗ), làm tối nền, bo góc, khung menu làm mờ phần phía sau khi bật blur, cuộn được khi danh sách dài.
- * Chạm ra ngoài hoặc bấm Back thì gọi [onDismiss].
+ * Popup menu thả xuống dùng chung (item `dropdown` và menu của log): nằm ngay dưới vị trí đặt nó (lật lên trên nếu thiếu chỗ),
+ * bo góc, cuộn được khi danh sách dài, khung menu làm mờ phần phía sau khi bật blur.
+ * Hiệu ứng kiểu Miuix: mở thì phóng to từ góc neo (spring) kèm mờ dần và nền tối dần; đóng thì thu lại rồi mới gỡ cửa sổ.
+ * [show] = false thì chạy hiệu ứng đóng; chạm ra ngoài hoặc bấm Back thì gọi [onDismiss].
  */
 @Composable
 internal fun MenuPopup(
+    show: Boolean,
     onDismiss: () -> Unit,
     minWidth: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    // Có backdrop: khung menu là kính mờ (làm mờ phần phía sau khung); không có thì nền đặc như cũ.
+    val progress = remember { Animatable(0f) }
+    var rendered by remember { mutableStateOf(false) }
+    LaunchedEffect(show) {
+        if (show) {
+            rendered = true
+            progress.animateTo(1f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 700f))
+        } else if (rendered) {
+            progress.animateTo(0f, tween(durationMillis = 140, easing = FastOutSlowInEasing))
+            rendered = false
+        }
+    }
+    if (!rendered) return
+
     val backdrop = LocalMenuBackdrop.current
+    val density = LocalDensity.current
+    val positionProvider = remember(density) {
+        BelowAnchorPositionProvider(marginPx = with(density) { 16.dp.roundToPx() })
+    }
     Popup(
-        popupPositionProvider = BelowAnchorPositionProvider(
-            marginPx = with(LocalDensity.current) { 16.dp.roundToPx() },
-        ),
+        popupPositionProvider = positionProvider,
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true),
     ) {
-        DimMenuBackground()
+        DimMenuBackground { progress.value }
         val shape = RoundedCornerShape(16.dp)
         BoxWithConstraints {
             val maxW = (maxWidth - 32.dp).coerceAtLeast(0.dp)
             val maxH = (maxHeight - 96.dp).coerceAtLeast(0.dp)
             Column(
                 modifier = Modifier
+                    .graphicsLayer {
+                        val p = progress.value
+                        val scale = MenuStartScale + (1f - MenuStartScale) * p
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = (p * 2f).coerceIn(0f, 1f)
+                        transformOrigin = TransformOrigin(1f, if (positionProvider.above) 1f else 0f)
+                    }
                     .widthIn(min = minWidth.coerceAtMost(maxW), max = maxW)
                     .width(IntrinsicSize.Max)
                     .heightIn(max = maxH)
@@ -249,6 +293,9 @@ internal fun MenuPopup(
         }
     }
 }
+
+/** Tỉ lệ ban đầu của menu khi bắt đầu mở (0..1), cùng mức với popup của Miuix. */
+private const val MenuStartScale = 0.15f
 
 /** Độ đậm nền của mục đang chọn trong menu (0..1). Tăng để đậm hơn, giảm để nhạt hơn. */
 private const val MenuSelectedAlpha = 0.24f
