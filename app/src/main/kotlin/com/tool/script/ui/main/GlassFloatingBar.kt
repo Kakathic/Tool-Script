@@ -313,8 +313,10 @@ fun FloatingGlassTabBar(
                                 // Freeze hit regions until release; only the indicator previews selection.
                                 val selectionSlotWidth = (selectionWidth - contentStart - contentInset) / slots
                                 fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) size.width - x else x
+                                // Kẹp trong các ô đang hiện: kéo quá ô cuối rồi thả vẫn chọn ô cuối, không nhảy sang tab ẩn phía sau.
                                 fun indexAt(x: Float): Int = ((x - contentStart) / selectionSlotWidth)
                                     .toInt()
+                                    .coerceIn(0, slots - 1)
                                     .plus(windowStart)
                                     .coerceIn(0, items.lastIndex)
 
