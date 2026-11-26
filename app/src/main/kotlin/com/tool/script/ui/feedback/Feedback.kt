@@ -115,10 +115,8 @@ import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.glassSurface
 import com.tool.script.ui.main.LocalBlurRequests
-import com.tool.script.ui.main.MenuItem
 import com.tool.script.ui.main.cardBlur
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import com.tool.script.ui.main.MenuPopup
 import com.tool.script.executor.ExecResult
 import com.tool.script.util.AnsiTerminal
 import com.tool.script.util.CopyResult
@@ -146,6 +144,10 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -763,7 +765,7 @@ fun LogFullScreen(entry: LogEntry?, onDismiss: () -> Unit, onCancel: () -> Unit,
 
 /**
  * Hàng tiêu đề dùng chung: tên lệnh bên trái, bên phải là một thanh công cụ dạng viên thuốc gom các icon Ẩn (chỉ khi đang chạy),
- * Toàn màn hình / Thu nhỏ và menu (ba chấm). Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng [MenuItem].
+ * Toàn màn hình / Thu nhỏ và menu (ba chấm). Menu thả xuống ngay dưới icon; các tính năng của log thêm vào đây bằng DropdownImpl của Miuix.
  */
 @Composable
 private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
@@ -830,18 +832,35 @@ private fun LogHeader(entry: LogEntry, onHide: () -> Unit) {
             LogToolbarDivider()
             Box {
                 LogIconButton(R.drawable.ic_more_vert, stringResource(R.string.log_menu)) { menuOpen = true }
-                if (menuOpen) {
-                    MenuPopup(onDismiss = { menuOpen = false }, minWidth = 160.dp) {
-                        MenuItem(label = stringResource(R.string.log_wrap), selected = entry.wrap) {
-                            entry.wrap = !entry.wrap
-                            LogPrefs.saveWrap(context, entry.wrap)
-                            menuOpen = false
-                        }
-                        MenuItem(label = stringResource(R.string.log_mono), selected = entry.mono) {
-                            entry.mono = !entry.mono
-                            LogPrefs.saveMono(context, entry.mono)
-                            menuOpen = false
-                        }
+                // Menu của Miuix (OverlayListPopup + DropdownImpl): neo theo icon ba chấm, căn mép phải; mục đang bật có nền chọn và dấu tích.
+                OverlayListPopup(
+                    show = menuOpen,
+                    alignment = PopupPositionProvider.Align.End,
+                    onDismissRequest = { menuOpen = false },
+                ) {
+                    ListPopupColumn {
+                        DropdownImpl(
+                            text = stringResource(R.string.log_wrap),
+                            optionSize = 2,
+                            isSelected = entry.wrap,
+                            index = 0,
+                            onSelectedIndexChange = {
+                                entry.wrap = !entry.wrap
+                                LogPrefs.saveWrap(context, entry.wrap)
+                                menuOpen = false
+                            },
+                        )
+                        DropdownImpl(
+                            text = stringResource(R.string.log_mono),
+                            optionSize = 2,
+                            isSelected = entry.mono,
+                            index = 1,
+                            onSelectedIndexChange = {
+                                entry.mono = !entry.mono
+                                LogPrefs.saveMono(context, entry.mono)
+                                menuOpen = false
+                            },
+                        )
                     }
                 }
             }
