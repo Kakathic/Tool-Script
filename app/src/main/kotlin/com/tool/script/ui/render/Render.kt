@@ -75,7 +75,6 @@ import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.glass.GlassCardDefaults
 import top.yukonga.miuix.kmp.glass.GlassDropdownPopup
@@ -972,51 +971,52 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
     }
 
     var expanded by remember { mutableStateOf(false) }
+    var holdDown by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val label = item.options.firstOrNull { it.value == current }?.label ?: current
 
     ItemSurface(modifier, inGroup) {
-        // Popup lấy cả hàng làm điểm neo: menu căn mép phải với hàng, nằm ngay dưới (lật lên nếu thiếu chỗ).
-        Box(Modifier.fillMaxWidth()) {
-            BasicComponent(
-                insideMargin = CardInsideMargin,
-                title = item.title,
-                summary = item.desc,
-                startAction = itemIcon(item),
-                enabled = enabled,
-                endActions = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
-                        Spacer(Modifier.width(4.dp))
-                        UpDownIcon()
-                    }
-                },
-                onClick = withTapHaptic { expanded = true },
-            )
-            // Chế độ thường: popup của Miuix (OverlayListPopup): mở / đóng có hiệu ứng phóng ra từ hàng, có lớp dim nhẹ phía sau, không làm mờ trang.
-            // Đặt ngay trong Box của hàng nên popup lấy hàng làm điểm neo, căn mép phải.
-            // Lề trên / dưới của popup (cách hàng neo và cách mép màn hình) = 16dp, bằng lề trái / phải của thẻ (mặc định của Miuix chỉ 8dp).
-            val popupPosition = remember { ListPopupDefaults.dropdownPositionProvider(verticalMargin = 16.dp) }
-            OverlayListPopup(
-                show = expanded,
-                popupPositionProvider = popupPosition,
-                alignment = PopupPositionProvider.Align.End,
-                enableWindowDim = true,
-                onDismissRequest = { expanded = false },
-            ) {
-                ListPopupColumn {
-                    item.options.forEach { option ->
-                        MenuItem(label = option.label, selected = option.value == current) {
-                            expanded = false
-                            if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            env.run(item, item.run, mapOf(id to option.value)) { result ->
-                                if (result.ok) env.store[id] = option.value
+        BasicComponent(
+            insideMargin = CardInsideMargin,
+            title = item.title,
+            summary = item.desc,
+            startAction = itemIcon(item),
+            enabled = enabled,
+            endActions = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
+                    Spacer(Modifier.width(4.dp))
+                    UpDownIcon()
+                }
+                // Chế độ thường: popup của Miuix (OverlayListPopup): mở / đóng có hiệu ứng phóng ra, có lớp dim nhẹ phía sau, không làm mờ trang.
+                // Đặt trong endActions (sau cụm giá trị + mũi tên) như OverlayDropdownPreference của Miuix: popup lấy cụm đó làm điểm neo,
+                // mép phải menu thẳng với mũi tên thay vì với mép thẻ (neo cả hàng thì menu bị lệch ra ngoài 1 khoảng bằng lề trong của hàng).
+                OverlayListPopup(
+                    show = expanded,
+                    alignment = PopupPositionProvider.Align.End,
+                    enableWindowDim = true,
+                    onDismissRequest = { expanded = false },
+                    onDismissFinished = { holdDown = false },
+                ) {
+                    ListPopupColumn {
+                        item.options.forEach { option ->
+                            MenuItem(label = option.label, selected = option.value == current) {
+                                expanded = false
+                                if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                    if (result.ok) env.store[id] = option.value
+                                }
                             }
                         }
                     }
                 }
-            }
-        }
+            },
+            onClick = withTapHaptic {
+                holdDown = true
+                expanded = true
+            },
+            holdDownState = holdDown,
+        )
     }
 }
 
