@@ -209,7 +209,7 @@ private fun DimMenuBackground() {
 
 /**
  * Popup menu thả xuống dùng chung (menu thanh trên và item `dropdown`): nằm ngay dưới vị trí đặt nó
- * (lật lên trên nếu thiếu chỗ), làm tối nền (và làm mờ trang phía sau khi bật blur), bo góc, cuộn được khi danh sách dài.
+ * (lật lên trên nếu thiếu chỗ), làm tối nền, bo góc, khung menu làm mờ phần phía sau khi bật blur, cuộn được khi danh sách dài.
  * Chạm ra ngoài hoặc bấm Back thì gọi [onDismiss].
  */
 @Composable
@@ -218,8 +218,8 @@ internal fun MenuPopup(
     minWidth: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    // Menu là cửa sổ riêng nên không làm mờ nền được từ trong menu: báo để MainScreen làm mờ trang phía sau.
-    MenuBlurRequest()
+    // Có backdrop: khung menu là kính mờ (làm mờ phần phía sau khung); không có thì nền đặc như cũ.
+    val backdrop = LocalMenuBackdrop.current
     Popup(
         popupPositionProvider = BelowAnchorPositionProvider(
             marginPx = with(LocalDensity.current) { 16.dp.roundToPx() },
@@ -238,7 +238,10 @@ internal fun MenuPopup(
                     .width(IntrinsicSize.Max)
                     .heightIn(max = maxH)
                     .shadow(elevation = 8.dp, shape = shape)
-                    .background(MiuixTheme.colorScheme.surfaceContainer, shape)
+                    .then(
+                        if (backdrop != null) Modifier.cardBlur(backdrop, shape, MiuixTheme.colorScheme.surfaceContainer)
+                        else Modifier.background(MiuixTheme.colorScheme.surfaceContainer, shape),
+                    )
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 8.dp),
                 content = content,

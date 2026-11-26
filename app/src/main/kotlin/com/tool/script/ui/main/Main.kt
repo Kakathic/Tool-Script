@@ -319,12 +319,13 @@ fun MainScreen(
         LocalPageWarnings provides pageWarningHost,
         LocalPageScroll provides scrollStates,
         LocalBlurRequests provides (if (fullBackdrop != null) blurRequests else null),
+        LocalMenuBackdrop provides fullBackdrop,
         LocalSelectHost provides selectHost,
     ) {
         // Scaffold gốc: mọi OverlayDialog của Miuix vẽ ở lớp popup của Scaffold ngoài cùng, nằm trên cả thanh trên / thanh tab.
         Scaffold { _ ->
             Box(Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxSize().blurIfPositive(menuBlurRadius(blurRequests))) {
+                Box(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().then(if (fullBackdrop != null) Modifier.layerBackdrop(fullBackdrop) else Modifier)) {
                         AnimatedContent(
                             targetState = top,

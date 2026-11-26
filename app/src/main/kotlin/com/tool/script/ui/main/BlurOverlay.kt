@@ -1,7 +1,5 @@
 package com.tool.script.ui.main
 
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -16,30 +14,26 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
-// Làm mờ nền phía sau mọi lớp phủ làm tối nền. Dialog (OverlayDialog của Miuix, vẽ ở lớp popup của Scaffold gốc) bật nền mờ riêng
-// thay cho lớp tối của Miuix; menu thả xuống là cửa sổ riêng nên làm mờ chính trang phía sau. Cả hai đăng ký qua [BlurRequests],
-// chỉ có khi MainScreen bật blur ([LocalBlurRequests] = null thì mọi thứ chạy như cũ).
+// Làm mờ nền phía sau dialog (OverlayDialog của Miuix, vẽ ở lớp popup của Scaffold gốc) bật nền mờ riêng thay cho lớp tối của Miuix.
+// Đăng ký qua [BlurRequests], chỉ có khi MainScreen bật blur ([LocalBlurRequests] = null thì mọi thứ chạy như cũ).
+// Menu thả xuống không làm mờ trang mà làm mờ ngay trong khung menu bằng [LocalMenuBackdrop].
 
 /** Số lớp phủ đang yêu cầu làm mờ nền. */
 @Stable
 class BlurRequests {
     var dialogs by mutableIntStateOf(0)
-    var menus by mutableIntStateOf(0)
 }
 
 val LocalBlurRequests = staticCompositionLocalOf<BlurRequests?> { null }
 
-private const val MenuBlurRadiusDp = 12
-private const val MenuBlurOpenMillis = 110
-private const val MenuBlurCloseMillis = 180
+/** Backdrop để khung menu thả xuống làm mờ phần phía sau; null khi tắt blur hoặc máy không hỗ trợ (khung menu nền đặc). */
+val LocalMenuBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 /**
  * Thay cho OverlayDialog: có blur thì tắt lớp tối của Miuix và đăng ký để [DialogBlurScrim] vẽ nền mờ,
@@ -85,28 +79,3 @@ fun DialogBlurScrim(requests: BlurRequests, backdrop: LayerBackdrop) {
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress }.scrimBlur(backdrop))
     }
 }
-
-/** Bán kính làm mờ trang khi có menu đang mở: mở nhanh (đà đầu mạnh để thấy mờ ngay), đóng chậm hơn một chút cho êm. */
-@Composable
-fun menuBlurRadius(requests: BlurRequests): Dp {
-    val open = requests.menus > 0
-    val radius by animateDpAsState(
-        targetValue = if (open) MenuBlurRadiusDp.dp else 0.dp,
-        animationSpec = tween(durationMillis = if (open) MenuBlurOpenMillis else MenuBlurCloseMillis, easing = LinearOutSlowInEasing),
-        label = "menuBlur",
-    )
-    return radius
-}
-
-/** Gọi trong menu thả xuống: trong lúc menu còn mở, trang phía sau được làm mờ. */
-@Composable
-internal fun MenuBlurRequest() {
-    val requests = LocalBlurRequests.current ?: return
-    DisposableEffect(Unit) {
-        requests.menus++
-        onDispose { requests.menus-- }
-    }
-}
-
-/** Làm mờ chính nội dung mang modifier này; bán kính 0 thì không thêm hiệu ứng nào. */
-fun Modifier.blurIfPositive(radius: Dp): Modifier = if (radius > 0.dp) blur(radius) else this
