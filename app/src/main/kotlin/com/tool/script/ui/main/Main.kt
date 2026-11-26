@@ -463,15 +463,16 @@ fun MainScreen(
                                             MenuDialog(show = showMenu, onDismiss = { showMenu = false })
                                         }
                                         if (floatingBar) {
-                                            FloatingTabBar(
-                                                pages = pages.map { it.ref },
-                                                selectedIndex = pagerState.currentPage,
-                                                onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+                                            FloatingGlassTabBar(
+                                                items = pages.map { it.ref },
                                                 visibleTabs = visibleTabs,
                                                 windowStart = windowStart,
+                                                selectedIndex = pagerState.currentPage,
+                                                onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                                                 backdrop = backdrop,
                                                 modifier = Modifier
                                                     .align(Alignment.BottomCenter)
+                                                    .padding(horizontal = 24.dp)
                                                     .onSizeChanged { floatingBarHeight = with(density) { it.height.toDp() } },
                                             )
                                         }
