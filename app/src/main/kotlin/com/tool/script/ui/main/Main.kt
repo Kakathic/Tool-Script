@@ -124,6 +124,7 @@ import com.tool.script.ui.render.RenderEnv
 import com.tool.script.ui.render.SelectFullScreenHost
 import com.tool.script.ui.render.SelectHost
 import com.tool.script.ui.render.isShown
+import com.tool.script.ui.theme.DialogButton
 import com.tool.script.ui.theme.LocalGlassEnabled
 import com.tool.script.ui.theme.ThemeMode
 import com.tool.script.util.Util
@@ -927,7 +928,7 @@ private fun dialogItemCount(items: List<Item>, env: RenderEnv): Int =
 private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: () -> Unit, onConfirm: () -> Unit) {
     val pageEnv = remember(env) { env.asVarsOnly() }
     val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
-    BlurDialog(show = show, onDismissRequest = onBack, title = page.title, centered = true, fullScreen = true) {
+    BlurDialog(show = show, onDismissRequest = onBack, title = page.title, centered = true, fullScreen = true, glassStyle = true) {
         // Màn hình chọn của singleselect / multiselect: không dùng host ở gốc (bị popup này che), mở bằng cửa sổ riêng nằm trên dialog.
         CompositionLocalProvider(LocalSelectHost provides null) {
         val contentScroll = rememberScrollState()
@@ -944,12 +945,12 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(text = stringResource(R.string.action_cancel), onClick = onBack, modifier = Modifier.weight(1f))
-                TextButton(
+                DialogButton(text = stringResource(R.string.action_cancel), onClick = onBack, modifier = Modifier.weight(1f))
+                DialogButton(
                     text = stringResource(R.string.action_confirm),
                     onClick = onConfirm,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    primary = true,
                 )
             }
         }

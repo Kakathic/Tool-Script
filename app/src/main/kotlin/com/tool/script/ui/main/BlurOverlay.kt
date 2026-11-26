@@ -50,12 +50,14 @@ fun BlurDialog(
     summary: String? = null,
     centered: Boolean = false,
     fullScreen: Boolean = false,
+    // Cho phép dùng GlassDialog khi bật Giao diện kính. Mặc định chỉ dialog nhỏ; CompactDialog đặt fullScreen = true (để vẽ ở Scaffold gốc) nhưng vẫn là dialog nhỏ nên bật tay.
+    glassStyle: Boolean = !fullScreen,
     content: @Composable () -> Unit,
 ) {
     val requests = LocalBlurRequests.current
     // Giao diện kính: dialog nhỏ là GlassDialog của Miuix (nền kính tự làm mờ trang phía sau, có lớp tối riêng), nên không đăng ký nền mờ của [DialogBlurScrim].
     // Dialog full màn hình giữ bản cũ (nội dung tự vẽ, xem SubPageScreen / SheetGlassAlpha).
-    val glass = LocalGlassEnabled.current && !fullScreen
+    val glass = LocalGlassEnabled.current && glassStyle
     if (requests != null && !glass) {
         DisposableEffect(show) {
             if (show) requests.dialogs++
