@@ -6,7 +6,11 @@ plugins {
 
 android {
     namespace = "com.tool.script"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.tool.script"
