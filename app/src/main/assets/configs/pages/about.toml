@@ -44,7 +44,7 @@ title = "Công nghệ"
 [[group.item]]
 type    = "text"
 title   = "Giao diện"
-content = "Kotlin, Jetpack Compose và thư viện Miuix 0.9.4."
+content = "Kotlin, Jetpack Compose và thư viện Miuix 0.9.5-rc01."
 
 [[group.item]]
 type    = "text"
