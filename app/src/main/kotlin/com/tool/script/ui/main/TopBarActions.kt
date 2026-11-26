@@ -588,7 +588,8 @@ fun ToolbarFullScreen(
         if (glass) {
             // Giao diện kính: thanh trên là GlassTopAppBar của Miuix (nút X dạng viên kính, nền mờ dần khi nội dung cuộn qua phía dưới),
             // nội dung cuộn tràn lên dưới thanh để có gì đó cho kính làm mờ.
-            val contentBackdrop = rememberBarBackdrop(true)
+            // Tắt "Làm mờ nền" (requests = null) thì vẫn là thanh kính nhưng không blur.
+            val contentBackdrop = rememberBarBackdrop(requests != null)
             val scrolled by remember(scrollState) { derivedStateOf { scrollState.value > 0 } }
             val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             Box(

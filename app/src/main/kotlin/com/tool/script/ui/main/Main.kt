@@ -365,7 +365,8 @@ fun MainScreen(
                             } else {
                                 val backdrop = rememberBarBackdrop(blurEnabled)
                                 // Giao diện kính: thanh tab là viên thuốc kính nổi ở đáy (FloatingTabBar), nội dung cuộn tràn xuống dưới nó.
-                                val floatingBar = glassEnabled && isBlurSupported() && pages.size >= 2
+                                val glassBar = glassEnabled && isBlurSupported()
+                                val floatingBar = glassBar && pages.size >= 2
                                 var floatingBarHeight by remember { mutableStateOf(0.dp) }
                                 val density = LocalDensity.current
                                 // Thanh trên kính chỉ hiện chất liệu khi trang hiện tại đã cuộn khỏi đầu.
@@ -431,7 +432,9 @@ fun MainScreen(
                                         Column(
                                             Modifier
                                                 .fillMaxSize()
-                                                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = barTop)),
+                                                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
+                                                // Thanh kính (kể cả khi tắt blur) vẫn để nội dung cuộn tràn lên dưới thanh, như Miuix.
+                                                .then(if (backdrop == null && !glassBar) Modifier.padding(top = barTop) else Modifier),
                                         ) {
                                             HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
                                                 val page = pages[pageIndex]
@@ -442,7 +445,7 @@ fun MainScreen(
                                                     warnings = page.warnings,
                                                     env = env,
                                                     bottomInset = if (floatingBar) floatingBarHeight else inner.calculateBottomPadding(),
-                                                    topInset = if (backdrop != null) barTop else 0.dp,
+                                                    topInset = if (backdrop != null || glassBar) barTop else 0.dp,
                                                     appBanner = if (bannerShown) {
                                                         {
                                                             Banner(
@@ -812,6 +815,8 @@ private fun SubPageScreen(
     // Dialog chỉ truyền biến: item không chạy lệnh, nút Xác nhận mới chạy lệnh của link.
     val pageEnv = remember(env, page.dialog) { if (page.dialog) env.asVarsOnly() else env }
     val backdrop = rememberBarBackdrop(blur && !page.dialog)
+    // Thanh trên kính (kể cả khi tắt blur) để nội dung cuộn tràn lên dưới thanh.
+    val glassBar = LocalGlassEnabled.current && !page.dialog
     // Trang con thường: tiêu đề lớn thu nhỏ khi cuộn (mỗi trang một trạng thái riêng).
     val titleScroll = MiuixScrollBehavior()
     Scaffold(
@@ -834,7 +839,12 @@ private fun SubPageScreen(
             Modifier
                 .fillMaxSize()
                 .then(if (page.dialog) Modifier else Modifier.nestedScroll(titleScroll.nestedScrollConnection))
-                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier.padding(top = inner.calculateTopPadding(), bottom = sheetBottom))
+                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
+                .then(
+                    if (backdrop != null) Modifier
+                    else if (glassBar) Modifier.padding(bottom = sheetBottom)
+                    else Modifier.padding(top = inner.calculateTopPadding(), bottom = sheetBottom),
+                )
                 .then(contentModifier),
         ) {
             Box(Modifier.weight(1f)) {
@@ -845,7 +855,7 @@ private fun SubPageScreen(
                     warnings = page.warnings,
                     env = pageEnv,
                     bottomInset = if (page.dialog && sheetFull) 0.dp else inner.calculateBottomPadding(),
-                    topInset = if (backdrop != null) inner.calculateTopPadding() else 0.dp,
+                    topInset = if (backdrop != null || glassBar) inner.calculateTopPadding() else 0.dp,
                     fadeEdges = page.dialog,
                     // Dialog full màn hình: thanh nút đáy đã nâng theo bàn phím và Scaffold dồn danh sách lên theo, nên danh sách không thêm imePadding nữa (tránh cộng đôi).
                     imePadding = !(page.dialog && sheetFull),
