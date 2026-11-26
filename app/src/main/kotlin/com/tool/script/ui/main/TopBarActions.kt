@@ -219,6 +219,25 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
     }
 }
 
+/** Một dòng bật / tắt trong [SettingsToggleCard]. */
+internal class SettingToggle(val label: String, val checked: Boolean, val onChange: (Boolean) -> Unit)
+
+/**
+ * Một dòng bật / tắt trong thẻ riêng: chữ bên trái, ô tích tròn của Miuix bên phải.
+ * Bấm cả thẻ để đổi trạng thái, hộp thoại giữ nguyên.
+ */
+@Composable
+internal fun SettingsToggleCard(toggle: SettingToggle) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
+    ) {
+        SettingsToggleRow(toggle)
+    }
+}
+
 @Composable
 private fun SettingsToggleRow(toggle: SettingToggle) {
     val on = toggle.checked
