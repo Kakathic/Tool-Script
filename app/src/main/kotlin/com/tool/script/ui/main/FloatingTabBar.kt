@@ -97,7 +97,7 @@ fun FloatingTabBar(
     if (pages.isEmpty() || visibleTabs <= 0) return
     val shape = remember { GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50)) }
     val surface = MiuixTheme.colorScheme.surfaceContainer
-    val horizontalInsets = remember { WindowInsets.displayCutout.union(WindowInsets.navigationBars).only(WindowInsetsSides.Horizontal) }
+    val horizontalInsets = WindowInsets.displayCutout.union(WindowInsets.navigationBars).only(WindowInsetsSides.Horizontal)
     val slideSpec = spring<Float>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
     val slide by animateFloatAsState(windowStart.toFloat(), slideSpec, label = "floatingTabSlide")
     val indicator by animateFloatAsState(selectedIndex.toFloat(), slideSpec, label = "floatingTabIndicator")
