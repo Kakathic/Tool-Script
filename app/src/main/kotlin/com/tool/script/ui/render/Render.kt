@@ -55,7 +55,6 @@ import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.tool.script.ui.main.MenuItem
 import com.tool.script.util.Util
 import com.tool.script.util.ShellText
 import com.tool.script.util.formatNumber
@@ -72,6 +71,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -973,48 +973,64 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
     var expanded by remember { mutableStateOf(false) }
     var holdDown by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val label = item.options.firstOrNull { it.value == current }?.label ?: current
+    val selectedIndex = item.options.indexOfFirst { it.value == current }
+    val label = item.options.getOrNull(selectedIndex)?.label ?: current
+    val actualEnabled = enabled && item.options.isNotEmpty()
+    val actionColor = if (actualEnabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
 
+    // Dựng giống OverlayDropdownPreference của Miuix: cụm giá trị + mũi tên ở cuối hàng, menu là DropdownImpl trong ListPopupColumn.
     ItemSurface(modifier, inGroup) {
         BasicComponent(
             insideMargin = CardInsideMargin,
             title = item.title,
             summary = item.desc,
             startAction = itemIcon(item),
-            enabled = enabled,
+            enabled = actualEnabled,
             endActions = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, color = MiuixTheme.colorScheme.onSurfaceVariantActions, style = MiuixTheme.textStyles.body2)
-                    Spacer(Modifier.width(4.dp))
-                    UpDownIcon()
+                if (label.isNotEmpty()) {
+                    Text(
+                        text = label,
+                        modifier = Modifier.padding(end = 8.dp).align(Alignment.CenterVertically).weight(1f, fill = false),
+                        fontSize = MiuixTheme.textStyles.body2.fontSize,
+                        color = actionColor,
+                        textAlign = TextAlign.End,
+                    )
                 }
-                // Chế độ thường: popup của Miuix (OverlayListPopup): mở / đóng có hiệu ứng phóng ra, có lớp dim nhẹ phía sau, không làm mờ trang.
-                // Đặt trong endActions (sau cụm giá trị + mũi tên) như OverlayDropdownPreference của Miuix: popup lấy cụm đó làm điểm neo,
-                // mép phải menu thẳng với mũi tên thay vì với mép thẻ (neo cả hàng thì menu bị lệch ra ngoài 1 khoảng bằng lề trong của hàng).
+                DropdownArrowEndAction(actionColor = actionColor)
+                // Popup đặt trong endActions (sau cụm giá trị + mũi tên) như Miuix: lấy cụm đó làm điểm neo, mép phải menu thẳng với mũi tên.
                 OverlayListPopup(
                     show = expanded,
                     alignment = PopupPositionProvider.Align.End,
-                    enableWindowDim = true,
                     onDismissRequest = { expanded = false },
                     onDismissFinished = { holdDown = false },
                 ) {
                     ListPopupColumn {
-                        item.options.forEach { option ->
-                            MenuItem(label = option.label, selected = option.value == current) {
-                                expanded = false
-                                if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                env.run(item, item.run, mapOf(id to option.value)) { result ->
-                                    if (result.ok) env.store[id] = option.value
-                                }
-                            }
+                        item.options.forEachIndexed { index, option ->
+                            DropdownImpl(
+                                text = option.label,
+                                optionSize = item.options.size,
+                                isSelected = index == selectedIndex,
+                                index = index,
+                                onSelectedIndexChange = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                    expanded = false
+                                    env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                        if (result.ok) env.store[id] = option.value
+                                    }
+                                },
+                            )
                         }
                     }
                 }
             },
-            onClick = withTapHaptic {
-                holdDown = true
-                expanded = true
+            onClick = {
+                if (actualEnabled) {
+                    holdDown = true
+                    expanded = !expanded
+                    if (expanded) haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                }
             },
+            role = Role.DropdownList,
             holdDownState = holdDown,
         )
     }
