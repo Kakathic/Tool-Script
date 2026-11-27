@@ -540,6 +540,9 @@ fun MainScreen(
                     onBlurChange = onBlurChange,
                     glass = glassEnabled,
                     onGlassChange = onGlassChange,
+                    logs = feedback.history,
+                    onOpenLog = { feedback.openLog(it) },
+                    onClearLogs = { feedback.clearFinishedLogs() },
                 )
                 // Log toàn màn hình nằm ngoài lớp bị menu làm mờ, để menu ba chấm của chính log không làm mờ log.
                 LogFullScreen(

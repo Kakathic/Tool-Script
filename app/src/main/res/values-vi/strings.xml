@@ -78,6 +78,14 @@
     <string name="option_blur">Làm mờ nền</string>
     <string name="option_glass">Giao diện kính</string>
     <string name="menu_section_links">Liên kết</string>
+    <string name="menu_section_log">Nhật ký</string>
+    <string name="log_history_empty">Chưa có log nào</string>
+    <string name="log_history_clear">Xóa log đã xong</string>
+    <string name="log_state_running">Đang chạy</string>
+    <string name="log_state_done">Xong</string>
+    <string name="log_state_failed">Lỗi %1$s</string>
+    <string name="log_state_timeout">Hết giờ</string>
+    <string name="log_state_cancelled">Đã hủy</string>
     <string name="about_version">Phiên bản %1$s</string>
     <string name="about_intro">Dựng giao diện từ file TOML, chạy script và công cụ ngay trong ứng dụng.</string>
     <string name="about_author">Tác giả</string>

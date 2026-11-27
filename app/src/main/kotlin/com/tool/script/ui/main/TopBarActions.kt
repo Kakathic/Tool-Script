@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.tool.script.R
+import com.tool.script.ui.feedback.LogEntry
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppAbout
@@ -431,7 +432,8 @@ fun ToolbarFullScreen(
  * mờ dần khi cuộn, nút kiểm tra phiên bản mới nổi ở đáy. X ở góc trái hoặc Back để đóng; đổi xong áp dụng ngay. Ba nhóm thẻ, từ trên xuống:
  * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
  * - Tùy chọn: một thẻ chung, mỗi tùy chọn một dòng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền và Giao diện kính (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
- * - Liên kết: tác giả, GitHub và liên kết khác.
+ * - Liên kết: GitHub và liên kết khác.
+ * - Nhật ký (đáy): 6 log mới nhất của phiên này, bấm để mở lại toàn màn hình; "Xóa log đã xong" dọn danh sách.
  * Ngôn ngữ không còn ở đây: đổi bằng item `app_language` trong TOML.
  */
 @Composable
@@ -446,6 +448,9 @@ fun SettingsDialog(
     onBlurChange: (Boolean) -> Unit,
     glass: Boolean,
     onGlassChange: (Boolean) -> Unit,
+    logs: List<LogEntry>,
+    onOpenLog: (LogEntry) -> Unit,
+    onClearLogs: () -> Unit,
 ) {
     SettingsScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
         SettingsGroup(stringResource(R.string.menu_section_appearance)) {
@@ -469,12 +474,24 @@ fun SettingsDialog(
             SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
         }
         SettingsGroup(stringResource(R.string.menu_section_links)) {
-            SettingsInfoRow(stringResource(R.string.about_author), AppAbout.Author)
-            SettingsRowDivider()
             SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
             if (AppAbout.OtherUrl.isNotBlank()) {
                 SettingsRowDivider()
                 SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
+            }
+        }
+        SettingsGroup(stringResource(R.string.menu_section_log)) {
+            if (logs.isEmpty()) {
+                SettingsCenterRow(stringResource(R.string.log_history_empty), accent = false)
+            } else {
+                logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
+                    if (index > 0) SettingsRowDivider()
+                    SettingsLogItem(entry) { onOpenLog(entry) }
+                }
+                if (logs.any { !it.running }) {
+                    SettingsRowDivider()
+                    SettingsCenterRow(stringResource(R.string.log_history_clear), accent = true, onClick = onClearLogs)
+                }
             }
         }
     }
@@ -495,6 +512,9 @@ fun MenuDialog(show: Boolean, onDismiss: () -> Unit) {
 }
 
 private val BASE_THEME_MODES = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
+
+/** Số log mới nhất hiện trong nhóm Nhật ký của Cài đặt. */
+private const val SETTINGS_LOG_SHOWN = 6
 
 /**
  * Các kiểu tắt / khởi động lại máy trong menu Nguồn, theo menu của Magisk. Chạy bằng root: [command] thử `svc power` trước,

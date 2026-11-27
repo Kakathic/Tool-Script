@@ -156,6 +156,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 enum class LogStatus { Running, Done, Failed, TimedOut, Cancelled }
 
+/** Số log tối đa giữ trong [FeedbackHost.history]. */
+private const val MAX_HISTORY = 20
+
 class LogEntry(
     val title: String,
     val command: String,
@@ -391,6 +394,26 @@ private fun spanOf(style: AnsiTerminal.Style, errorColor: Color, textColor: Colo
 
 class FeedbackHost(private val context: Context) {
     var log by mutableStateOf<LogEntry?>(null)
+
+    /**
+     * Các log đã chạy trong phiên này (cũ → mới), tối đa [MAX_HISTORY]: Cài đặt liệt kê để mở lại hoặc xóa.
+     * Chỉ nằm trong bộ nhớ nên mất khi ứng dụng khởi động lại; quá số lượng thì bỏ log đã xong cũ nhất (log đang chạy không bị bỏ).
+     */
+    val history = mutableStateListOf<LogEntry>()
+
+    /** Mở log [entry] toàn màn hình (từ danh sách trong Cài đặt): log đang ẩn chạy nền thì lấy lại, log đang xem khác còn chạy thì ẩn đi. */
+    fun openLog(entry: LogEntry) {
+        if (!showHiddenLog(entry.id)) {
+            log?.takeIf { it !== entry && it.running }?.let { LogCenter.hide(it) }
+            log = entry
+        }
+        entry.full = true
+    }
+
+    /** Bỏ các log đã xong khỏi danh sách (log đang chạy giữ lại). */
+    fun clearFinishedLogs() {
+        history.removeAll { !it.running }
+    }
     /** Danh sách banner đang hiện, xếp chồng từ trên xuống (mỗi lượt chạy `banner` là một banner riêng). */
     val banners = mutableStateListOf<BannerEntry>()
     private var lastRun = 0
@@ -481,7 +504,15 @@ class FeedbackHost(private val context: Context) {
             title, command, startFull = full, desc = desc,
             initialWrap = LogPrefs.loadWrap(context),
             initialMono = LogPrefs.loadMono(context),
-        ).also { log = it }
+        ).also {
+            log = it
+            history.add(it)
+            while (history.size > MAX_HISTORY) {
+                val index = history.indexOfFirst { e -> !e.running }
+                if (index < 0) break
+                history.removeAt(index)
+            }
+        }
 
     /**
      * Ẩn log đang xem: đóng màn hình log, lệnh vẫn chạy nền để làm việc khác; mọi dòng log gửi lên thông báo Android

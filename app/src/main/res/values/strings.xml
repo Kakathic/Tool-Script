@@ -83,6 +83,14 @@
     <string name="option_blur">Background blur</string>
     <string name="option_glass">Glass style</string>
     <string name="menu_section_links">Links</string>
+    <string name="menu_section_log">Logs</string>
+    <string name="log_history_empty">No logs yet</string>
+    <string name="log_history_clear">Clear finished logs</string>
+    <string name="log_state_running">Running</string>
+    <string name="log_state_done">Done</string>
+    <string name="log_state_failed">Error %1$s</string>
+    <string name="log_state_timeout">Timed out</string>
+    <string name="log_state_cancelled">Cancelled</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_intro">Builds its interface from TOML files and runs scripts and tools right inside the app.</string>
     <string name="about_author">Author</string>

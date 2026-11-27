@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -62,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.tool.script.R
+import com.tool.script.ui.feedback.LogEntry
+import com.tool.script.ui.feedback.LogStatus
 import com.tool.script.ui.theme.BgEffectBackground
 import com.tool.script.ui.theme.LocalGlassEnabled
 import com.tool.script.ui.theme.isDarkSurface
@@ -228,7 +231,7 @@ private fun SettingsScreenBody(
                 fontSize = 35.sp,
             )
             Text(
-                text = stringResource(R.string.about_version, version.display),
+                text = "${AppAbout.Author} | ${version.display}",
                 modifier = Modifier.graphicsLayer {
                     val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
                     alpha = 1 - p
@@ -474,4 +477,51 @@ internal fun SettingsLinkItem(icon: String, label: String, url: String) {
             colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
         )
     }
+}
+
+/** Dòng log trong nhóm Nhật ký: chấm màu theo trạng thái, tên tính năng, trạng thái bên phải. Bấm để mở log toàn màn hình. */
+@Composable
+internal fun SettingsLogItem(entry: LogEntry, onClick: () -> Unit) {
+    val status = entry.status
+    val dot = when (status) {
+        LogStatus.Running -> MiuixTheme.colorScheme.primary
+        LogStatus.Done -> Color(0xFF34C759)
+        LogStatus.Failed -> Color(0xFFFF3B30)
+        LogStatus.TimedOut, LogStatus.Cancelled -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+    }
+    val state = when (status) {
+        LogStatus.Running -> stringResource(R.string.log_state_running)
+        LogStatus.Done -> stringResource(R.string.log_state_done)
+        LogStatus.Failed -> stringResource(R.string.log_state_failed, entry.exitCode?.toString().orEmpty())
+        LogStatus.TimedOut -> stringResource(R.string.log_state_timeout)
+        LogStatus.Cancelled -> stringResource(R.string.log_state_cancelled)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
+        Spacer(Modifier.width(12.dp))
+        Text(text = entry.title, fontSize = 16.sp, color = MiuixTheme.colorScheme.onSurface, maxLines = 1, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(12.dp))
+        Text(text = state, fontSize = 14.sp, color = MiuixTheme.colorScheme.onSurfaceVariantActions, maxLines = 1)
+    }
+}
+
+/** Dòng chữ giữa thẻ (trạng thái rỗng hoặc hành động nhẹ như Xóa log); [onClick] = null thì không bấm được. */
+@Composable
+internal fun SettingsCenterRow(text: String, accent: Boolean, onClick: (() -> Unit)? = null) {
+    Text(
+        text = text,
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        color = if (accent) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    )
 }
