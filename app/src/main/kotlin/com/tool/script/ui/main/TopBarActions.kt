@@ -244,7 +244,7 @@ internal fun SettingsToggleCard(toggle: SettingToggle) {
 }
 
 @Composable
-private fun SettingsToggleRow(toggle: SettingToggle) {
+internal fun SettingsToggleRow(toggle: SettingToggle) {
     val on = toggle.checked
     Row(
         modifier = Modifier
@@ -313,143 +313,6 @@ private fun SettingsCardDivider(startInset: Dp = 0.dp, endInset: Dp = 0.dp) {
             .height(1.dp)
             .background(MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.2f)),
     )
-}
-
-/**
- * Thẻ giới thiệu đầu hộp thoại Cài đặt: logo, tên app, phiên bản, dòng giới thiệu, tác giả và nút kiểm tra phiên bản mới.
- * Nút đổi nhãn theo kết quả ([UpdateState]): có bản mới thì bấm để mở trang tải.
- */
-@Composable
-private fun SettingsAboutCard() {
-    val context = LocalContext.current
-    val version = remember { AppVersion.of(context) }
-    val scope = rememberCoroutineScope()
-    var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-            .padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(R.drawable.ic_logo),
-                contentDescription = null,
-                modifier = Modifier.size(46.dp),
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(text = stringResource(R.string.app_name), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
-                Text(
-                    text = stringResource(R.string.about_version, version.display),
-                    fontSize = 13.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
-        Text(
-            text = stringResource(R.string.about_intro),
-            fontSize = 13.sp,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(top = 10.dp),
-        )
-        Spacer(Modifier.height(12.dp))
-        SettingsCardDivider()
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.about_author),
-                fontSize = 15.sp,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.weight(1f),
-            )
-            Text(text = AppAbout.Author, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
-        }
-        val labelRes = when (update) {
-            UpdateState.Idle -> R.string.update_check
-            UpdateState.Checking -> R.string.update_checking
-            UpdateState.UpToDate -> R.string.update_latest
-            UpdateState.Failed -> R.string.update_failed
-            is UpdateState.Available -> R.string.update_available
-        }
-        val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.primary.copy(alpha = ThemeSelectedAlpha))
-                .clickable {
-                    when (val state = update) {
-                        UpdateState.Checking -> Unit
-                        is UpdateState.Available -> openUrl(context, state.url)
-                        else -> {
-                            update = UpdateState.Checking
-                            scope.launch { update = UpdateChecker.check(version) }
-                        }
-                    }
-                }
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AsyncImage(
-                model = Util.iconModel(AppIcons.BarRestart),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(text = label, fontSize = 15.sp, color = MiuixTheme.colorScheme.primary, maxLines = 1)
-        }
-    }
-}
-
-/** Một dòng liên kết: icon bên trái, nhãn, icon mở ra ngoài bên phải. Bấm để mở [url]. */
-@Composable
-private fun SettingsLinkRow(icon: String, label: String, url: String) {
-    val context = LocalContext.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { openUrl(context, url) }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AsyncImage(
-            model = Util.iconModel(icon),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-        )
-        Spacer(Modifier.width(12.dp))
-        Text(text = label, fontSize = 16.sp, color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        AsyncImage(
-            model = Util.iconModel(AppIcons.BarExternal),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-        )
-    }
-}
-
-/** Thẻ liên kết: GitHub và liên kết khác (ẩn dòng sau nếu [AppAbout.OtherUrl] để trống). */
-@Composable
-private fun SettingsLinksCard() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
-    ) {
-        SettingsLinkRow(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
-        if (AppAbout.OtherUrl.isNotBlank()) {
-            SettingsCardDivider(RowDividerStart, RowDividerEnd)
-            SettingsLinkRow(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
-        }
-    }
 }
 
 /**
@@ -564,11 +427,11 @@ fun ToolbarFullScreen(
 }
 
 /**
- * Màn hình Cài đặt toàn màn hình (X ở góc trái hoặc Back để đóng); đổi xong áp dụng ngay; nội dung dài thì cuộn. Bốn phần, từ trên xuống:
- * - Thẻ giới thiệu ([SettingsAboutCard]): logo, tên app, phiên bản, giới thiệu, tác giả, kiểm tra phiên bản mới.
+ * Màn hình Cài đặt toàn màn hình kiểu trang "Giới thiệu" HyperOS 3 của Miuix ([SettingsScreen]): nền động OS3, logo / tên app / phiên bản / giới thiệu ở đầu
+ * mờ dần khi cuộn, nút kiểm tra phiên bản mới nổi ở đáy. X ở góc trái hoặc Back để đóng; đổi xong áp dụng ngay. Ba nhóm thẻ, từ trên xuống:
  * - Giao diện: khay phân đoạn Hệ thống / Sáng / Tối.
- * - Tùy chọn: mỗi tùy chọn một thẻ riêng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền và Giao diện kính (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
- * - Liên kết ([SettingsLinksCard]): GitHub và liên kết khác.
+ * - Tùy chọn: một thẻ chung, mỗi tùy chọn một dòng có ô tích: Màu động (áp lên mục đang chọn), Làm mờ nền và Giao diện kính (chỉ hiện khi máy hỗ trợ), Rung khi chạm.
+ * - Liên kết: tác giả, GitHub và liên kết khác.
  * Ngôn ngữ không còn ở đây: đổi bằng item `app_language` trong TOML.
  */
 @Composable
@@ -584,23 +447,35 @@ fun SettingsDialog(
     glass: Boolean,
     onGlassChange: (Boolean) -> Unit,
 ) {
-    ToolbarFullScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
-        SettingsAboutCard()
-        SettingsSection(stringResource(R.string.menu_section_appearance)) {
-            SettingsSegmentedRow(
-                labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-            )
+    SettingsScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
+        SettingsGroup(stringResource(R.string.menu_section_appearance)) {
+            Box(Modifier.padding(12.dp)) {
+                SettingsSegmentedRow(
+                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                )
+            }
         }
-        SettingsSection(stringResource(R.string.menu_section_options)) {
-            SettingsToggleCard(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-            if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-            if (isBlurSupported()) SettingsToggleCard(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
-            SettingsToggleCard(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+        SettingsGroup(stringResource(R.string.menu_section_options)) {
+            SettingsToggleRow(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+            if (isBlurSupported()) {
+                SettingsRowDivider()
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                SettingsRowDivider()
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
+            }
+            SettingsRowDivider()
+            SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
         }
-        SettingsSection(stringResource(R.string.menu_section_links)) {
-            SettingsLinksCard()
+        SettingsGroup(stringResource(R.string.menu_section_links)) {
+            SettingsInfoRow(stringResource(R.string.about_author), AppAbout.Author)
+            SettingsRowDivider()
+            SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
+            if (AppAbout.OtherUrl.isNotBlank()) {
+                SettingsRowDivider()
+                SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
+            }
         }
     }
 }
