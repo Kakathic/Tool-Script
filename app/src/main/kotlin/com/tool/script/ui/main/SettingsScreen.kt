@@ -149,7 +149,6 @@ private fun SettingsScreenBody(
     }
     val collapsed by remember { derivedStateOf { progress >= 1f } }
     val showTitle by remember { derivedStateOf { progress >= 0.45f } }
-    val scrolled by remember { derivedStateOf { scrollState.value > 0 } }
 
     val isDark = isDarkSurface()
     val logoBlend = remember(isDark) {
@@ -296,7 +295,10 @@ private fun SettingsScreenBody(
         if (glass) {
             GlassTopAppBar(
                 title = if (showTitle) title else "",
-                isContentScrolled = scrolled,
+                // Dải kính chỉ bật khi đã cuộn hết phần đầu (giống trang Giới thiệu của Miuix): lúc đó nền shader đã mờ hết.
+                // Bật sớm hơn thì dải làm mờ lấy từ lớp nội dung (chỉ có màu nền surface, không có nền shader / phần đầu nằm ở lớp khác)
+                // nên phủ một mảng màu nền đặc, tối đen ở giao diện tối, lên phần đầu còn đang hiện.
+                isContentScrolled = collapsed,
                 modifier = Modifier.align(Alignment.TopCenter),
                 expandable = false,
                 backdrop = contentBackdrop,
