@@ -96,8 +96,8 @@ import androidx.compose.ui.graphics.BlendMode as ComposeBlendMode
 // [bgBackdrop] ghi riêng lớp nền shader (chữ tên app và hàng chọn giao diện lấy từ đây), [contentBackdrop] ghi cột cuộn (chỉ thanh trên lấy từ đây).
 
 private val TopBarHeight = 56.dp
-private val HeaderTopGap = 36.dp
-private val HeaderBottomGap = 48.dp
+private val HeaderTopGap = 56.dp
+private val HeaderBottomGap = 72.dp
 private val UpdateButtonHeight = 52.dp
 private val ScreenEdge = 12.dp
 
@@ -143,11 +143,10 @@ private fun SettingsScreenBody(
     var headerPx by remember { mutableIntStateOf(0) }
     var viewportPx by remember { mutableIntStateOf(0) }
     val gapPx = with(density) { HeaderBottomGap.roundToPx() }
-    val barPx = with(density) { (topInset + TopBarHeight).roundToPx() }
-    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = thẻ đầu đã chạm đáy thanh trên (không cuộn quá nữa).
+    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn hết khoảng trống phía trên các thẻ.
     val progress by remember {
         derivedStateOf {
-            val total = headerPx + gapPx - barPx
+            val total = headerPx + gapPx
             if (total <= 0) 0f else (scrollState.value.toFloat() / total).coerceIn(0f, 1f)
         }
     }
@@ -271,7 +270,7 @@ private fun SettingsScreenBody(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = with(density) { (viewportPx - barPx).coerceAtLeast(0).toDp() })
+                        .heightIn(min = with(density) { viewportPx.toDp() })
                         .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     content = content,
@@ -366,7 +365,6 @@ private fun SettingsUpdateButton(version: AppVersion, modifier: Modifier = Modif
         UpdateState.UpToDate -> R.string.update_latest
         UpdateState.Failed -> R.string.update_failed
         is UpdateState.Available -> R.string.update_available
-        else -> R.string.update_check
     }
     val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
     val onPrimary = MiuixTheme.colorScheme.onPrimary
