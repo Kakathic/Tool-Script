@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -148,6 +149,7 @@ private fun SettingsScreenBody(
 
     val scrollState = rememberScrollState()
     var headerPx by remember { mutableIntStateOf(0) }
+    var viewportPx by remember { mutableIntStateOf(0) }
     val gapPx = with(density) { HeaderBottomGap.roundToPx() }
     // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn hết khoảng trống phía trên các thẻ.
     val progress by remember {
@@ -186,6 +188,7 @@ private fun SettingsScreenBody(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { viewportPx = it.height }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
         // Cảnh nền chung (lớp 1 đến 3: nền động, phần đầu, cột thẻ) được ghi vào [contentBackdrop]. Thanh trên nằm NGOÀI hộp này nên lấy mờ từ
@@ -276,7 +279,8 @@ private fun SettingsScreenBody(
             }
 
             // Lớp 3: cột cuộn. Khoảng trống đầu cột bằng chiều cao phần đầu để các thẻ bắt đầu bên dưới;
-            // cột thẻ cao theo nội dung: ít thẻ (vừa màn hình) thì không cuộn, nhiều thẻ thì cuộn qua thanh trên như bình thường.
+            // cột thẻ cao ít nhất bằng màn hình trừ thanh trên: ít thẻ thì chỉ cuộn đến khi thẻ đầu chạm mép dưới thanh trên rồi dừng,
+            // nhiều thẻ thì cuộn qua thanh trên như bình thường.
             // Hàng chọn giao diện dạng kính lấy backdrop của lớp nền shader (nằm ngoài cột này), không lấy backdrop của chính cột.
             CompositionLocalProvider(LocalGlassBackdrop provides bgBackdrop) {
                 Column(
@@ -289,6 +293,7 @@ private fun SettingsScreenBody(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(min = with(density) { (viewportPx - barPx).coerceAtLeast(0).toDp() })
                             .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         content = content,
