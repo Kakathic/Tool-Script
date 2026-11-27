@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,12 +42,17 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -55,10 +61,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -73,10 +75,12 @@ import com.tool.script.ui.theme.isDarkSurface
 import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
 import com.tool.script.util.AppVersion
+import com.tool.script.util.ChangelogEntry
+import com.tool.script.util.UpdateController
 import com.tool.script.util.UpdateState
-import com.tool.script.util.rememberUpdateController
 import com.tool.script.util.Util
 import com.tool.script.util.openUrl
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
@@ -94,13 +98,14 @@ import androidx.compose.ui.graphics.BlendMode as ComposeBlendMode
 // - Các thẻ nằm trong cột cuộn, trượt lên che phần đầu.
 // - Nút kiểm tra phiên bản mới nổi ở đáy màn hình, không nằm trong danh sách cuộn.
 // Chú ý backdrop: mỗi backdrop chỉ được lấy mờ bởi thành phần nằm NGOÀI lớp nó ghi (xem chú thích ở [LocalGlassScreenBackdrop]).
-// [bgBackdrop] ghi riêng lớp nền shader (chữ tên app và hàng chọn giao diện lấy từ đây), [contentBackdrop] ghi cột cuộn (chỉ thanh trên lấy từ đây).
+// [bgBackdrop] ghi riêng lớp nền shader (chữ tên app và hàng chọn giao diện lấy từ đây), [contentBackdrop] ghi cả cảnh (nền động + phần đầu + cột cuộn; chỉ thanh trên lấy từ đây).
 
 private val TopBarHeight = 56.dp
-private val HeaderTopGap = 56.dp
-private val HeaderBottomGap = 72.dp
+private val HeaderTopGap = 66.dp
+private val HeaderBottomGap = 78.dp
 private val UpdateButtonHeight = 52.dp
 private val ScreenEdge = 12.dp
+private val CutoffFade = 20.dp
 
 /**
  * Khung màn hình Cài đặt toàn màn hình. [content] là các nhóm ([SettingsGroup]) xếp dọc trong cột cuộn, cách nhau 12dp.
@@ -110,6 +115,7 @@ private val ScreenEdge = 12.dp
 internal fun SettingsScreen(
     show: Boolean,
     title: String,
+    update: UpdateController,
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -119,19 +125,20 @@ internal fun SettingsScreen(
         enter = slideInVertically(tween(260, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(160)),
         exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180)),
     ) {
-        SettingsScreenBody(title = title, onDismiss = onDismiss, content = content)
+        SettingsScreenBody(title = title, update = update, onDismiss = onDismiss, content = content)
     }
 }
 
 @Composable
 private fun SettingsScreenBody(
     title: String,
+    update: UpdateController,
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
     val context = LocalContext.current
-    val version = remember { AppVersion.of(context) }
+    val version = update.version
     val surface = MiuixTheme.colorScheme.surface
     val blurOn = LocalBlurRequests.current != null
     val bgBackdrop = rememberBarBackdrop(blurOn)
@@ -144,28 +151,21 @@ private fun SettingsScreenBody(
     var headerPx by remember { mutableIntStateOf(0) }
     var viewportPx by remember { mutableIntStateOf(0) }
     val gapPx = with(density) { HeaderBottomGap.roundToPx() }
-    // Mức cuộn tối đa: dừng đúng lúc mép trên của thẻ đầu tiên chạm mép dưới thanh trên (thẻ không cuộn quá thanh trên).
-    val barBottomPx = with(density) { (topInset + TopBarHeight).roundToPx() }
-    val maxScrollPx = (headerPx + gapPx - barBottomPx).coerceAtLeast(0)
-    val scrollLimit = remember(maxScrollPx, scrollState) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val dy = available.y
-                if (dy >= 0f) return Offset.Zero
-                val room = (maxScrollPx - scrollState.value).coerceAtLeast(0)
-                // Phần vượt quá chỗ còn lại thì nuốt luôn, cột cuộn chỉ nhận phần trong giới hạn.
-                val allowed = maxOf(dy, -room.toFloat())
-                return Offset(0f, dy - allowed)
-            }
-        }
-    }
-    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn tới mức tối đa (thẻ đầu chạm thanh trên).
+    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn hết khoảng trống phía trên các thẻ.
     val progress by remember {
         derivedStateOf {
-            if (maxScrollPx <= 0) 0f else (scrollState.value.toFloat() / maxScrollPx).coerceIn(0f, 1f)
+            val total = headerPx + gapPx
+            if (total <= 0) 0f else (scrollState.value.toFloat() / total).coerceIn(0f, 1f)
         }
     }
-    val collapsed by remember { derivedStateOf { progress >= 1f } }
+    // Thanh trên hiện nền ngay khi mép trên của thẻ đầu tiên chạm đáy thanh (thẻ bắt đầu trượt vào dưới thanh), không đợi cuộn hết phần đầu.
+    val barPx = with(density) { (topInset + TopBarHeight).roundToPx() }
+    val collapsed by remember {
+        derivedStateOf {
+            val touchAt = (headerPx + gapPx - barPx).coerceAtLeast(1)
+            headerPx > 0 && scrollState.value >= touchAt
+        }
+    }
     val showTitle by remember { derivedStateOf { progress >= 0.45f } }
 
     val isDark = isDarkSurface()
@@ -191,106 +191,113 @@ private fun SettingsScreenBody(
             .onSizeChanged { viewportPx = it.height }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
-        // Lớp 1: nền động OS3, mờ dần khi cuộn.
-        BgEffectBackground(
-            modifier = Modifier.fillMaxSize(),
-            bgModifier = if (bgBackdrop != null) Modifier.layerBackdrop(bgBackdrop) else Modifier,
-            alpha = { 1f - progress },
-        )
-
-        // Lớp 2: logo, tên app, phiên bản, giới thiệu (cố định, mờ và thu nhỏ dần từng dòng khi cuộn).
-        Column(
+        // Cảnh nền chung (lớp 1 đến 3: nền động, phần đầu, cột thẻ) được ghi vào [contentBackdrop]. Thanh trên nằm NGOÀI hộp này nên lấy mờ từ
+        // cả nền động lẫn thẻ, không còn chỉ thấy mảng màu surface (đen ở giao diện tối) như khi chỉ ghi cột thẻ.
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged { headerPx = it.height }
-                .padding(top = topInset + TopBarHeight + HeaderTopGap, start = 24.dp, end = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxSize()
+                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier),
         ) {
-            Image(
-                painter = painterResource(R.drawable.ic_logo),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(88.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.35f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                        scaleX = 1 - p * 0.05f
-                        scaleY = 1 - p * 0.05f
-                    },
+            // Lớp 1: nền động OS3, mờ dần khi cuộn.
+            BgEffectBackground(
+                modifier = Modifier.fillMaxSize(),
+                bgModifier = if (bgBackdrop != null) Modifier.layerBackdrop(bgBackdrop) else Modifier,
+                alpha = { 1f - progress },
             )
-            Text(
-                text = stringResource(R.string.app_name),
-                modifier = Modifier
-                    .padding(top = 12.dp, bottom = 5.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.20f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                        scaleX = 1 - p * 0.05f
-                        scaleY = 1 - p * 0.05f
-                    }
-                    .then(
-                        if (bgBackdrop != null) {
-                            Modifier.textureBlur(
-                                backdrop = bgBackdrop,
-                                shape = RoundedCornerShape(16.dp),
-                                blurRadius = 100f,
-                                colors = BlurDefaults.blurColors(blendColors = logoBlend),
-                                contentBlendMode = ComposeBlendMode.DstIn,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp,
-            )
-            Text(
-                text = "${AppAbout.Author} | ${version.display}",
-                modifier = Modifier.graphicsLayer {
-                    val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                    alpha = 1 - p
-                    scaleX = 1 - p * 0.05f
-                    scaleY = 1 - p * 0.05f
-                },
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(R.string.about_intro),
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                    },
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
 
-        // Lớp 3: cột cuộn. Khoảng trống đầu cột bằng chiều cao phần đầu để các thẻ bắt đầu bên dưới;
-        // cột thẻ cao ít nhất bằng màn hình để luôn cuộn được hết phần đầu.
-        // Hàng chọn giao diện dạng kính lấy backdrop của lớp nền shader (nằm ngoài cột này), không lấy backdrop của chính cột.
-        CompositionLocalProvider(LocalGlassBackdrop provides bgBackdrop) {
+            // Lớp 2: logo, tên app, phiên bản, giới thiệu (cố định, mờ và thu nhỏ dần từng dòng khi cuộn).
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
-                    .nestedScroll(scrollLimit)
-                    .verticalScroll(scrollState),
+                    .fillMaxWidth()
+                    .onSizeChanged { headerPx = it.height }
+                    .padding(top = topInset + TopBarHeight + HeaderTopGap, start = 24.dp, end = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
+                Image(
+                    painter = painterResource(R.drawable.ic_logo),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(88.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.35f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - p * 0.05f
+                            scaleY = 1 - p * 0.05f
+                        },
+                )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .padding(top = 12.dp, bottom = 5.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.20f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - p * 0.05f
+                            scaleY = 1 - p * 0.05f
+                        }
+                        .then(
+                            if (bgBackdrop != null) {
+                                Modifier.textureBlur(
+                                    backdrop = bgBackdrop,
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 100f,
+                                    colors = BlurDefaults.blurColors(blendColors = logoBlend),
+                                    contentBlendMode = ComposeBlendMode.DstIn,
+                                )
+                            } else {
+                                Modifier
+                            },
+                        ),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 35.sp,
+                )
+                Text(
+                    text = "${AppAbout.Author} | ${version.display}",
+                    modifier = Modifier.graphicsLayer {
+                        val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                        alpha = 1 - p
+                        scaleX = 1 - p * 0.05f
+                        scaleY = 1 - p * 0.05f
+                    },
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.about_intro),
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                        },
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            // Lớp 3: cột cuộn. Khoảng trống đầu cột bằng chiều cao phần đầu để các thẻ bắt đầu bên dưới;
+            // cột thẻ cao ít nhất bằng màn hình để luôn cuộn được hết phần đầu.
+            // Hàng chọn giao diện dạng kính lấy backdrop của lớp nền shader (nằm ngoài cột này), không lấy backdrop của chính cột.
+            CompositionLocalProvider(LocalGlassBackdrop provides bgBackdrop) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = with(density) { viewportPx.toDp() })
-                        .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content,
-                )
+                        .fillMaxSize()
+                        .topCutoff(cutoffPx = barPx.toFloat(), fadePx = with(density) { CutoffFade.toPx() })
+                        .verticalScroll(scrollState),
+                ) {
+                    Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = with(density) { viewportPx.toDp() })
+                            .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        content = content,
+                    )
+                }
             }
         }
 
@@ -303,6 +310,7 @@ private fun SettingsScreenBody(
                 .background(Brush.verticalGradient(listOf(Color.Transparent, surface))),
         )
         SettingsUpdateButton(
+            update = update,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -313,9 +321,8 @@ private fun SettingsScreenBody(
         if (glass) {
             GlassTopAppBar(
                 title = if (showTitle) title else "",
-                // Dải kính chỉ bật khi đã cuộn hết phần đầu (giống trang Giới thiệu của Miuix): lúc đó nền shader đã mờ hết.
-                // Bật sớm hơn thì dải làm mờ lấy từ lớp nội dung (chỉ có màu nền surface, không có nền shader / phần đầu nằm ở lớp khác)
-                // nên phủ một mảng màu nền đặc, tối đen ở giao diện tối, lên phần đầu còn đang hiện.
+                // Dải kính bật ngay khi thẻ đầu tiên chạm tới thanh (collapsed). Lúc đó phần đầu (logo, tên, phiên bản) đã mờ hết nên dải làm mờ
+                // lấy từ lớp nội dung không phủ lên chữ nào còn đang hiện.
                 isContentScrolled = collapsed,
                 modifier = Modifier.align(Alignment.TopCenter),
                 expandable = false,
@@ -368,11 +375,13 @@ private fun SettingsScreenBody(
     }
 }
 
-/** Nút kiểm tra phiên bản mới nổi ở đáy: đổi nhãn và việc khi bấm theo [UpdateState] (kiểm tra, tải, cài). */
+/**
+ * Nút cập nhật nổi ở đáy, đổi nhãn và việc bấm theo [UpdateController.state]: kiểm tra, có bản mới thì tải và cài ngay trong app
+ * (đang tải thì nền nút chạy thanh tiến độ), tải xong thì bấm Cài đặt để mở lại trình cài đặt nếu lỡ đóng.
+ */
 @Composable
-private fun SettingsUpdateButton(modifier: Modifier = Modifier) {
-    val controller = rememberUpdateController()
-    val state = controller.state
+private fun SettingsUpdateButton(update: UpdateController, modifier: Modifier = Modifier) {
+    val state = update.state
     val label = when (state) {
         UpdateState.Idle -> stringResource(R.string.update_check)
         UpdateState.Checking -> stringResource(R.string.update_checking)
@@ -383,33 +392,60 @@ private fun SettingsUpdateButton(modifier: Modifier = Modifier) {
         is UpdateState.Downloaded -> stringResource(R.string.update_install)
         is UpdateState.DownloadFailed -> stringResource(R.string.update_download_failed)
     }
+    val primary = MiuixTheme.colorScheme.primary
     val onPrimary = MiuixTheme.colorScheme.onPrimary
-    Row(
+    val downloading = state as? UpdateState.Downloading
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(UpdateButtonHeight)
             .clip(RoundedCornerShape(UpdateButtonHeight / 2))
-            .background(MiuixTheme.colorScheme.primary)
+            .background(if (downloading != null) primary.copy(alpha = 0.45f) else primary)
             .clickable {
                 when (state) {
                     UpdateState.Checking, is UpdateState.Downloading -> Unit
-                    is UpdateState.Available, is UpdateState.DownloadFailed -> controller.download()
-                    is UpdateState.Downloaded -> controller.install()
-                    UpdateState.Idle, UpdateState.UpToDate, UpdateState.Failed -> controller.check()
+                    is UpdateState.Available, is UpdateState.DownloadFailed -> update.download()
+                    is UpdateState.Downloaded -> update.install()
+                    else -> update.check()
                 }
-            }
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+            },
     ) {
-        AsyncImage(
-            model = Util.iconModel(AppIcons.BarRestart),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            colorFilter = ColorFilter.tint(onPrimary),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = onPrimary, maxLines = 1)
+        if (downloading != null) {
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(downloading.progress.coerceIn(0f, 1f))
+                    .background(primary),
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = Util.iconModel(AppIcons.BarRestart),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                colorFilter = ColorFilter.tint(onPrimary),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = onPrimary, maxLines = 1)
+        }
+    }
+}
+
+/** Một mục nhật ký thay đổi: tiêu đề (phiên bản · ngày) đậm, các thay đổi bên dưới mỗi dòng một dấu chấm đầu dòng. */
+@Composable
+internal fun SettingsChangelogItem(entry: ChangelogEntry) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(text = entry.title, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
+        entry.items.forEach { item ->
+            Text(text = "\u2022  $item", fontSize = 14.sp, color = MiuixTheme.colorScheme.onSurfaceVariantActions)
+        }
     }
 }
 
@@ -428,15 +464,19 @@ internal fun SettingsGroup(title: String, content: @Composable ColumnScope.() ->
     }
 }
 
-/** Thẻ bo tròn chứa các dòng. Thường: nền surfaceContainer của Miuix; kính: nền trong suốt nhạt để thấy nền phía sau. */
+/** Màu nền thẻ Cài đặt: trong suốt nhẹ (onSurface mờ) ở cả chế độ thường lẫn kính, thấy nhẹ nền phía sau; tối đậm hơn sáng một chút để vẫn nhìn rõ thẻ. */
+@Composable
+internal fun settingsCardColor(): Color =
+    MiuixTheme.colorScheme.onSurface.copy(alpha = if (isDarkSurface()) 0.10f else 0.06f)
+
+/** Thẻ bo tròn chứa các dòng. Cả chế độ thường và kính đều dùng nền trong suốt nhẹ ([settingsCardColor]). */
 @Composable
 internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    val color = if (LocalGlassEnabled.current) MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f) else MiuixTheme.colorScheme.surfaceContainer
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(color),
+            .background(settingsCardColor()),
         content = content,
     )
 }
@@ -539,3 +579,26 @@ internal fun SettingsCenterRow(text: String, accent: Boolean, onClick: (() -> Un
             .padding(horizontal = 16.dp, vertical = 14.dp),
     )
 }
+
+/**
+ * Nội dung cuộn không đi quá mép dưới của thanh trên: phần nằm phía trên [cutoffPx] bị ẩn, đoạn [fadePx] ngay trên mép mờ dần vào.
+ * Nhờ vậy thẻ (Giao diện, Tùy chọn...) không còn lấp ló phía sau thanh trên mờ khi cuộn. Đặt trước verticalScroll để lớp che đứng yên theo khung nhìn,
+ * không trôi theo nội dung.
+ */
+private fun Modifier.topCutoff(cutoffPx: Float, fadePx: Float): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val bottom = cutoffPx.coerceAtMost(size.height)
+        if (bottom <= 0f) return@drawWithContent
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                1f to Color.Black,
+                startY = (bottom - fadePx).coerceAtLeast(0f),
+                endY = bottom,
+            ),
+            size = Size(size.width, bottom),
+            blendMode = ComposeBlendMode.DstIn,
+        )
+    }
