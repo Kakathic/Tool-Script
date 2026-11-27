@@ -49,7 +49,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -102,6 +105,7 @@ private val HeaderTopGap = 36.dp
 private val HeaderBottomGap = 48.dp
 private val UpdateButtonHeight = 52.dp
 private val ScreenEdge = 12.dp
+private val CutoffFade = 20.dp
 
 /**
  * Khung màn hình Cài đặt toàn màn hình. [content] là các nhóm ([SettingsGroup]) xếp dọc trong cột cuộn, cách nhau 12dp.
@@ -281,6 +285,7 @@ private fun SettingsScreenBody(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .topCutoff(cutoffPx = barPx.toFloat(), fadePx = with(density) { CutoffFade.toPx() })
                         .verticalScroll(scrollState),
                 ) {
                     Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
@@ -574,3 +579,26 @@ internal fun SettingsCenterRow(text: String, accent: Boolean, onClick: (() -> Un
             .padding(horizontal = 16.dp, vertical = 14.dp),
     )
 }
+
+/**
+ * Nội dung cuộn không đi quá mép dưới của thanh trên: phần nằm phía trên [cutoffPx] bị ẩn, đoạn [fadePx] ngay trên mép mờ dần vào.
+ * Nhờ vậy thẻ (Giao diện, Tùy chọn...) không còn lấp ló phía sau thanh trên mờ khi cuộn. Đặt trước verticalScroll để lớp che đứng yên theo khung nhìn,
+ * không trôi theo nội dung.
+ */
+private fun Modifier.topCutoff(cutoffPx: Float, fadePx: Float): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val bottom = cutoffPx.coerceAtMost(size.height)
+        if (bottom <= 0f) return@drawWithContent
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                1f to Color.Black,
+                startY = (bottom - fadePx).coerceAtLeast(0f),
+                endY = bottom,
+            ),
+            size = Size(size.width, bottom),
+            blendMode = ComposeBlendMode.DstIn,
+        )
+    }
