@@ -93,7 +93,7 @@ import androidx.compose.ui.graphics.BlendMode as ComposeBlendMode
 // - Các thẻ nằm trong cột cuộn, trượt lên che phần đầu.
 // - Nút kiểm tra phiên bản mới nổi ở đáy màn hình, không nằm trong danh sách cuộn.
 // Chú ý backdrop: mỗi backdrop chỉ được lấy mờ bởi thành phần nằm NGOÀI lớp nó ghi (xem chú thích ở [LocalGlassScreenBackdrop]).
-// [bgBackdrop] ghi riêng lớp nền shader (chữ tên app và hàng chọn giao diện lấy từ đây), [contentBackdrop] ghi cột cuộn (chỉ thanh trên lấy từ đây).
+// [bgBackdrop] ghi riêng lớp nền shader (chữ tên app và hàng chọn giao diện lấy từ đây), [contentBackdrop] ghi cả cảnh (nền động + phần đầu + cột cuộn; chỉ thanh trên lấy từ đây).
 
 private val TopBarHeight = 56.dp
 private val HeaderTopGap = 36.dp
@@ -183,105 +183,112 @@ private fun SettingsScreenBody(
             .onSizeChanged { viewportPx = it.height }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
-        // Lớp 1: nền động OS3, mờ dần khi cuộn.
-        BgEffectBackground(
-            modifier = Modifier.fillMaxSize(),
-            bgModifier = if (bgBackdrop != null) Modifier.layerBackdrop(bgBackdrop) else Modifier,
-            alpha = { 1f - progress },
-        )
-
-        // Lớp 2: logo, tên app, phiên bản, giới thiệu (cố định, mờ và thu nhỏ dần từng dòng khi cuộn).
-        Column(
+        // Cảnh nền chung (lớp 1 đến 3: nền động, phần đầu, cột thẻ) được ghi vào [contentBackdrop]. Thanh trên nằm NGOÀI hộp này nên lấy mờ từ
+        // cả nền động lẫn thẻ, không còn chỉ thấy mảng màu surface (đen ở giao diện tối) như khi chỉ ghi cột thẻ.
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged { headerPx = it.height }
-                .padding(top = topInset + TopBarHeight + HeaderTopGap, start = 24.dp, end = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxSize()
+                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier),
         ) {
-            Image(
-                painter = painterResource(R.drawable.ic_logo),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(88.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.35f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                        scaleX = 1 - p * 0.05f
-                        scaleY = 1 - p * 0.05f
-                    },
+            // Lớp 1: nền động OS3, mờ dần khi cuộn.
+            BgEffectBackground(
+                modifier = Modifier.fillMaxSize(),
+                bgModifier = if (bgBackdrop != null) Modifier.layerBackdrop(bgBackdrop) else Modifier,
+                alpha = { 1f - progress },
             )
-            Text(
-                text = stringResource(R.string.app_name),
-                modifier = Modifier
-                    .padding(top = 12.dp, bottom = 5.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.20f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                        scaleX = 1 - p * 0.05f
-                        scaleY = 1 - p * 0.05f
-                    }
-                    .then(
-                        if (bgBackdrop != null) {
-                            Modifier.textureBlur(
-                                backdrop = bgBackdrop,
-                                shape = RoundedCornerShape(16.dp),
-                                blurRadius = 100f,
-                                colors = BlurDefaults.blurColors(blendColors = logoBlend),
-                                contentBlendMode = ComposeBlendMode.DstIn,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp,
-            )
-            Text(
-                text = "${AppAbout.Author} | ${version.display}",
-                modifier = Modifier.graphicsLayer {
-                    val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                    alpha = 1 - p
-                    scaleX = 1 - p * 0.05f
-                    scaleY = 1 - p * 0.05f
-                },
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(R.string.about_intro),
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .graphicsLayer {
-                        val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                        alpha = 1 - p
-                    },
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
 
-        // Lớp 3: cột cuộn. Khoảng trống đầu cột bằng chiều cao phần đầu để các thẻ bắt đầu bên dưới;
-        // cột thẻ cao ít nhất bằng màn hình để luôn cuộn được hết phần đầu.
-        // Hàng chọn giao diện dạng kính lấy backdrop của lớp nền shader (nằm ngoài cột này), không lấy backdrop của chính cột.
-        CompositionLocalProvider(LocalGlassBackdrop provides bgBackdrop) {
+            // Lớp 2: logo, tên app, phiên bản, giới thiệu (cố định, mờ và thu nhỏ dần từng dòng khi cuộn).
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
-                    .verticalScroll(scrollState),
+                    .fillMaxWidth()
+                    .onSizeChanged { headerPx = it.height }
+                    .padding(top = topInset + TopBarHeight + HeaderTopGap, start = 24.dp, end = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
+                Image(
+                    painter = painterResource(R.drawable.ic_logo),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(88.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.35f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - p * 0.05f
+                            scaleY = 1 - p * 0.05f
+                        },
+                )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .padding(top = 12.dp, bottom = 5.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.20f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - p * 0.05f
+                            scaleY = 1 - p * 0.05f
+                        }
+                        .then(
+                            if (bgBackdrop != null) {
+                                Modifier.textureBlur(
+                                    backdrop = bgBackdrop,
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = 100f,
+                                    colors = BlurDefaults.blurColors(blendColors = logoBlend),
+                                    contentBlendMode = ComposeBlendMode.DstIn,
+                                )
+                            } else {
+                                Modifier
+                            },
+                        ),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 35.sp,
+                )
+                Text(
+                    text = "${AppAbout.Author} | ${version.display}",
+                    modifier = Modifier.graphicsLayer {
+                        val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                        alpha = 1 - p
+                        scaleX = 1 - p * 0.05f
+                        scaleY = 1 - p * 0.05f
+                    },
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.about_intro),
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .graphicsLayer {
+                            val p = ((progress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                        },
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            // Lớp 3: cột cuộn. Khoảng trống đầu cột bằng chiều cao phần đầu để các thẻ bắt đầu bên dưới;
+            // cột thẻ cao ít nhất bằng màn hình để luôn cuộn được hết phần đầu.
+            // Hàng chọn giao diện dạng kính lấy backdrop của lớp nền shader (nằm ngoài cột này), không lấy backdrop của chính cột.
+            CompositionLocalProvider(LocalGlassBackdrop provides bgBackdrop) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = with(density) { viewportPx.toDp() })
-                        .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content,
-                )
+                        .fillMaxSize()
+                        .verticalScroll(scrollState),
+                ) {
+                    Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = with(density) { viewportPx.toDp() })
+                            .padding(start = ScreenEdge, end = ScreenEdge, bottom = bottomInset + UpdateButtonHeight + 40.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        content = content,
+                    )
+                }
             }
         }
 

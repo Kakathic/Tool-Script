@@ -3,6 +3,7 @@ package com.tool.script.ui.theme
 import com.tool.script.R
 import androidx.annotation.StringRes
 import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -77,9 +78,12 @@ object ThemePrefs {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_BLUR, enabled).apply()
     }
 
-    /** Giao diện kính (miuix-glass); mặc định tắt (chỉ có tác dụng trên Android 13+). */
+    /**
+     * Giao diện kính (miuix-glass); mặc định bật từ Android 13 (API 33) trở lên, nơi hỗ trợ shader làm mờ, và tắt ở máy thấp hơn.
+     * Chỉ là giá trị mặc định khi người dùng chưa tự chọn; đã bật / tắt trong Cài đặt thì giữ lựa chọn đó.
+     */
     fun loadGlass(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_GLASS, false)
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_GLASS, Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
 
     fun saveGlass(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_GLASS, enabled).apply()

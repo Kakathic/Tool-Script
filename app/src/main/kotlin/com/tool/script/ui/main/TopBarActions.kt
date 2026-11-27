@@ -217,16 +217,15 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
             modifier = Modifier.fillMaxWidth(),
         )
     } else {
-        // Khay không dùng màu đen (surface của giao diện tối gần như đen): tô khay bằng màu chủ đạo nhạt, pha sẵn lên nền thẻ surfaceContainer
-        // thành màu đặc (không dùng màu trong suốt để khay không phụ thuộc vào lớp phía sau). Viên chọn đậm hơn khay một bậc:
-        // giao diện sáng dùng nền trắng (surface), giao diện tối dùng màu chủ đạo đậm hơn.
+        // Khay không dùng màu đen (surface của giao diện tối gần như đen) và cũng không dùng màu chủ đạo: tô khay xám nhạt (onSurface mờ),
+        // pha sẵn lên nền thẻ thực tế thành màu đặc để khay không phụ thuộc lớp phía sau. Viên chọn sáng hơn khay một bậc:
+        // giao diện sáng dùng nền trắng (surface), giao diện tối dùng xám sáng hơn khay.
         val dark = isDarkSurface()
-        // Thẻ chứa khay giờ trong suốt nhẹ, nên pha khay lên nền thẻ thực tế (màu thẻ phủ lên surface).
+        val onSurface = MiuixTheme.colorScheme.onSurface
         val card = settingsCardColor().compositeOver(MiuixTheme.colorScheme.surface)
-        val primary = MiuixTheme.colorScheme.primary
         val colors = TabRowDefaults.tabRowColors(
-            backgroundColor = primary.copy(alpha = if (dark) 0.16f else 0.10f).compositeOver(card),
-            selectedBackgroundColor = if (dark) primary.copy(alpha = 0.38f).compositeOver(card) else MiuixTheme.colorScheme.surface,
+            backgroundColor = onSurface.copy(alpha = if (dark) 0.08f else 0.07f).compositeOver(card),
+            selectedBackgroundColor = if (dark) onSurface.copy(alpha = 0.22f).compositeOver(card) else MiuixTheme.colorScheme.surface,
         )
         // maxWidth lớn để các ô chia đều hết chiều rộng (mặc định Miuix giới hạn mỗi ô 84dp).
         TabRowWithContour(
