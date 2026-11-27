@@ -512,10 +512,9 @@ fun SettingsDialog(
                     SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
                 }
             }
-            SettingsGroup(stringResource(R.string.menu_section_log)) {
-                if (logs.isEmpty()) {
-                    SettingsCenterRow(stringResource(R.string.log_history_empty), accent = false)
-                } else {
+            // Chưa có nhật ký thì ẩn cả nhóm (không hiện thẻ trống).
+            if (logs.isNotEmpty()) {
+                SettingsGroup(stringResource(R.string.menu_section_log)) {
                     logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
                         if (index > 0) SettingsRowDivider()
                         SettingsLogItem(entry) { onOpenLog(entry) }
