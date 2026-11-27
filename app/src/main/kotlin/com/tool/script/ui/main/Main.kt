@@ -82,6 +82,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -151,6 +152,9 @@ import kotlin.math.max
 
 // Màn hình chính: tiêu đề = tên app (chữ lớn kiểu Miuix, vuốt lên thì thu thành chữ nhỏ căn trái), HorizontalPager + thanh tab dưới.
 // Thanh tab là cửa sổ trượt rộng 4 ô (tối thiểu 2); chỉ 1 tab thì ẩn thanh tab. Logic cửa sổ: TabWindow.kt.
+
+/** Phần dải nền phía sau đảo kính nhô lên trên đỉnh đảo (dp). */
+private val FloatingBarBandExtra = 28.dp
 
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
@@ -463,6 +467,15 @@ fun MainScreen(
                                             MenuDialog(show = showMenu, onDismiss = { showMenu = false })
                                         }
                                         if (floatingBar) {
+                                            // Dải mờ dần từ trong suốt sang màu nền (giống dải sau nút cập nhật ở Cài đặt) phía sau đảo kính, để đảo nổi lên khỏi
+                                            // thẻ cuộn bên dưới. Nằm NGOÀI lớp backdrop nên đảo không làm mờ chính dải này; không nhận chạm nên thẻ phía dưới vẫn cuộn được.
+                                            Box(
+                                                Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .fillMaxWidth()
+                                                    .height(floatingBarHeight + FloatingBarBandExtra)
+                                                    .background(Brush.verticalGradient(listOf(Color.Transparent, MiuixTheme.colorScheme.surface))),
+                                            )
                                             FloatingGlassTabBar(
                                                 items = pages.map { it.ref },
                                                 visibleTabs = visibleTabs,
