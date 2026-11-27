@@ -366,6 +366,7 @@ private fun SettingsUpdateButton(version: AppVersion, modifier: Modifier = Modif
         UpdateState.UpToDate -> R.string.update_latest
         UpdateState.Failed -> R.string.update_failed
         is UpdateState.Available -> R.string.update_available
+        else -> R.string.update_check
     }
     val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
     val onPrimary = MiuixTheme.colorScheme.onPrimary
