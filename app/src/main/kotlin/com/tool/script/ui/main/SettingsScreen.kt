@@ -105,7 +105,7 @@ private val HeaderTopGap = 36.dp
 private val HeaderBottomGap = 48.dp
 private val UpdateButtonHeight = 52.dp
 private val ScreenEdge = 12.dp
-private val CutoffFade = 28.dp
+private val CutoffFade = 20.dp
 
 /**
  * Khung màn hình Cài đặt toàn màn hình. [content] là các nhóm ([SettingsGroup]) xếp dọc trong cột cuộn, cách nhau 12dp.
@@ -581,22 +581,21 @@ internal fun SettingsCenterRow(text: String, accent: Boolean, onClick: (() -> Un
 }
 
 /**
- * Nội dung cuộn dừng ở mép dưới thanh trên: phần nằm trên [cutoffPx] (mép dưới thanh) bị ẩn hẳn, đoạn [fadePx] NGAY DƯỚI mép mờ dần ra,
- * nên thẻ tan dần khi tới gần thanh thay vì bị cắt gắt (giao diện tối: thanh cùng màu nền nên mép cắt gắt trông như thẻ chui qua thanh).
- * Đặt trước verticalScroll để lớp che đứng yên theo khung nhìn, không trôi theo nội dung.
+ * Nội dung cuộn không đi quá mép dưới của thanh trên: phần nằm phía trên [cutoffPx] bị ẩn, đoạn [fadePx] ngay trên mép mờ dần vào.
+ * Nhờ vậy thẻ (Giao diện, Tùy chọn...) không còn lấp ló phía sau thanh trên mờ khi cuộn. Đặt trước verticalScroll để lớp che đứng yên theo khung nhìn,
+ * không trôi theo nội dung.
  */
 private fun Modifier.topCutoff(cutoffPx: Float, fadePx: Float): Modifier = this
     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
     .drawWithContent {
         drawContent()
-        val top = cutoffPx.coerceAtMost(size.height)
-        if (top <= 0f) return@drawWithContent
-        val bottom = (top + fadePx).coerceAtMost(size.height)
+        val bottom = cutoffPx.coerceAtMost(size.height)
+        if (bottom <= 0f) return@drawWithContent
         drawRect(
             brush = Brush.verticalGradient(
                 0f to Color.Transparent,
                 1f to Color.Black,
-                startY = top,
+                startY = (bottom - fadePx).coerceAtLeast(0f),
                 endY = bottom,
             ),
             size = Size(size.width, bottom),
