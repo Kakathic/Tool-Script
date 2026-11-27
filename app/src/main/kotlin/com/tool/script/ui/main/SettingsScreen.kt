@@ -150,7 +150,14 @@ private fun SettingsScreenBody(
             if (total <= 0) 0f else (scrollState.value.toFloat() / total).coerceIn(0f, 1f)
         }
     }
-    val collapsed by remember { derivedStateOf { progress >= 1f } }
+    // Thanh trên hiện nền ngay khi mép trên của thẻ đầu tiên chạm đáy thanh (thẻ bắt đầu trượt vào dưới thanh), không đợi cuộn hết phần đầu.
+    val barPx = with(density) { (topInset + TopBarHeight).roundToPx() }
+    val collapsed by remember {
+        derivedStateOf {
+            val touchAt = (headerPx + gapPx - barPx).coerceAtLeast(1)
+            headerPx > 0 && scrollState.value >= touchAt
+        }
+    }
     val showTitle by remember { derivedStateOf { progress >= 0.45f } }
 
     val isDark = isDarkSurface()
@@ -298,9 +305,8 @@ private fun SettingsScreenBody(
         if (glass) {
             GlassTopAppBar(
                 title = if (showTitle) title else "",
-                // Dải kính chỉ bật khi đã cuộn hết phần đầu (giống trang Giới thiệu của Miuix): lúc đó nền shader đã mờ hết.
-                // Bật sớm hơn thì dải làm mờ lấy từ lớp nội dung (chỉ có màu nền surface, không có nền shader / phần đầu nằm ở lớp khác)
-                // nên phủ một mảng màu nền đặc, tối đen ở giao diện tối, lên phần đầu còn đang hiện.
+                // Dải kính bật ngay khi thẻ đầu tiên chạm tới thanh (collapsed). Lúc đó phần đầu (logo, tên, phiên bản) đã mờ hết nên dải làm mờ
+                // lấy từ lớp nội dung không phủ lên chữ nào còn đang hiện.
                 isContentScrolled = collapsed,
                 modifier = Modifier.align(Alignment.TopCenter),
                 expandable = false,

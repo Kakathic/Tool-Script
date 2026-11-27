@@ -68,6 +68,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -99,7 +100,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.tool.script.ui.theme.LocalGlassEnabled
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
+import com.tool.script.ui.theme.isDarkSurface
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -214,12 +217,23 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
             modifier = Modifier.fillMaxWidth(),
         )
     } else {
+        // Khay không dùng màu đen (surface của giao diện tối gần như đen): tô khay bằng màu chủ đạo nhạt, pha sẵn lên nền thẻ surfaceContainer
+        // thành màu đặc (không dùng màu trong suốt để khay không phụ thuộc vào lớp phía sau). Viên chọn đậm hơn khay một bậc:
+        // giao diện sáng dùng nền trắng (surface), giao diện tối dùng màu chủ đạo đậm hơn.
+        val dark = isDarkSurface()
+        val card = MiuixTheme.colorScheme.surfaceContainer
+        val primary = MiuixTheme.colorScheme.primary
+        val colors = TabRowDefaults.tabRowColors(
+            backgroundColor = primary.copy(alpha = if (dark) 0.16f else 0.10f).compositeOver(card),
+            selectedBackgroundColor = if (dark) primary.copy(alpha = 0.38f).compositeOver(card) else MiuixTheme.colorScheme.surface,
+        )
         // maxWidth lớn để các ô chia đều hết chiều rộng (mặc định Miuix giới hạn mỗi ô 84dp).
         TabRowWithContour(
             tabs = labels,
             selectedTabIndex = selectedIndex,
             onTabSelected = onSelect,
             modifier = Modifier.fillMaxWidth(),
+            colors = colors,
             maxWidth = 600.dp,
         )
     }
