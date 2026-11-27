@@ -18,8 +18,6 @@ import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
 import com.tool.script.util.AppVersion
-import com.tool.script.util.rememberUpdateController
-import com.tool.script.util.pending
 import com.tool.script.util.UpdateChecker
 import com.tool.script.util.UpdateState
 import com.tool.script.util.openUrl
@@ -57,7 +55,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +68,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -220,14 +216,13 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
             modifier = Modifier.fillMaxWidth(),
         )
     } else {
-        // Khay xám nhạt TRONG SUỐT (onSurface mờ), không pha thành màu đặc: thẻ chứa khay cũng trong suốt nên để lộ nền động phía sau,
-        // khay đặc sẽ lệch màu so với thẻ (xám đục trên nền xanh tím). Màu mờ cùng gốc với thẻ ([settingsCardColor]) nên luôn ăn khớp.
-        // Viên chọn sáng hơn khay một bậc: giao diện sáng dùng nền trắng (surface), giao diện tối dùng onSurface mờ đậm hơn khay.
+        // Màu mặc định của Miuix lấy nền khay = surface và viên chọn = surfaceContainer: đặt trong thẻ surfaceContainer thì khay đen sì
+        // (giao diện tối) và viên chọn trùng màu thẻ. Đổi sang nền khay nhạt phủ lên thẻ; viên chọn trắng (sáng) hoặc xám sáng hơn khay (tối).
         val dark = isDarkSurface()
         val onSurface = MiuixTheme.colorScheme.onSurface
         val colors = TabRowDefaults.tabRowColors(
             backgroundColor = onSurface.copy(alpha = if (dark) 0.08f else 0.06f),
-            selectedBackgroundColor = if (dark) onSurface.copy(alpha = 0.18f) else MiuixTheme.colorScheme.surface,
+            selectedBackgroundColor = if (dark) onSurface.copy(alpha = 0.2f) else MiuixTheme.colorScheme.surface,
         )
         // maxWidth lớn để các ô chia đều hết chiều rộng (mặc định Miuix giới hạn mỗi ô 84dp).
         TabRowWithContour(
@@ -468,62 +463,43 @@ fun SettingsDialog(
     onOpenLog: (LogEntry) -> Unit,
     onClearLogs: () -> Unit,
 ) {
-    val update = rememberUpdateController()
-    LaunchedEffect(show) { if (show) update.checkOnce() }
-    val pending = update.state.pending
-    SettingsScreen(show = show, title = stringResource(R.string.settings_title), update = update, onDismiss = onDismiss) {
-        if (pending != null) {
-            // Có bản mới: ẩn các nhóm tùy chọn (giao diện, tùy chọn, liên kết), chỉ hiện Nhật ký với các thay đổi của bản mới; nút ở đáy tải và cài ngay.
-            SettingsGroup(stringResource(R.string.menu_section_log)) {
-                if (pending.notes.isEmpty()) {
-                    SettingsCenterRow(stringResource(R.string.update_no_notes), accent = false)
-                } else {
-                    pending.notes.forEachIndexed { index, entry ->
-                        if (index > 0) SettingsRowDivider()
-                        SettingsChangelogItem(entry)
-                    }
-                }
+    SettingsScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
+        SettingsGroup(stringResource(R.string.menu_section_appearance)) {
+            Box(Modifier.padding(12.dp)) {
+                SettingsSegmentedRow(
+                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                )
             }
-        } else {
-            SettingsGroup(stringResource(R.string.menu_section_appearance)) {
-                Box(Modifier.padding(12.dp)) {
-                    SettingsSegmentedRow(
-                        labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                        selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                        onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-                    )
-                }
-            }
-            SettingsGroup(stringResource(R.string.menu_section_options)) {
-                SettingsToggleRow(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-                if (isBlurSupported()) {
-                    SettingsRowDivider()
-                    SettingsToggleRow(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-                    SettingsRowDivider()
-                    SettingsToggleRow(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
-                }
+        }
+        SettingsGroup(stringResource(R.string.menu_section_options)) {
+            SettingsToggleRow(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+            if (isBlurSupported()) {
                 SettingsRowDivider()
-                SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                SettingsRowDivider()
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
             }
-            SettingsGroup(stringResource(R.string.menu_section_links)) {
-                SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
-                if (AppAbout.OtherUrl.isNotBlank()) {
-                    SettingsRowDivider()
-                    SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
-                }
+            SettingsRowDivider()
+            SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+        }
+        SettingsGroup(stringResource(R.string.menu_section_links)) {
+            SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
+            if (AppAbout.OtherUrl.isNotBlank()) {
+                SettingsRowDivider()
+                SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
             }
+        }
+        if (logs.isNotEmpty()) {
             SettingsGroup(stringResource(R.string.menu_section_log)) {
-                if (logs.isEmpty()) {
-                    SettingsCenterRow(stringResource(R.string.log_history_empty), accent = false)
-                } else {
-                    logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
-                        if (index > 0) SettingsRowDivider()
-                        SettingsLogItem(entry) { onOpenLog(entry) }
-                    }
-                    if (logs.any { !it.running }) {
-                        SettingsRowDivider()
-                        SettingsCenterRow(stringResource(R.string.log_history_clear), accent = true, onClick = onClearLogs)
-                    }
+                logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
+                    if (index > 0) SettingsRowDivider()
+                    SettingsLogItem(entry) { onOpenLog(entry) }
+                }
+                if (logs.any { !it.running }) {
+                    SettingsRowDivider()
+                    SettingsCenterRow(stringResource(R.string.log_history_clear), accent = true, onClick = onClearLogs)
                 }
             }
         }
