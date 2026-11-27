@@ -41,9 +41,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,11 +69,10 @@ import com.tool.script.ui.theme.isDarkSurface
 import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
 import com.tool.script.util.AppVersion
-import com.tool.script.util.UpdateChecker
 import com.tool.script.util.UpdateState
+import com.tool.script.util.rememberUpdateController
 import com.tool.script.util.Util
 import com.tool.script.util.openUrl
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
@@ -287,7 +284,6 @@ private fun SettingsScreenBody(
                 .background(Brush.verticalGradient(listOf(Color.Transparent, surface))),
         )
         SettingsUpdateButton(
-            version = version,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -353,20 +349,21 @@ private fun SettingsScreenBody(
     }
 }
 
-/** Nút kiểm tra phiên bản mới nổi ở đáy: đổi nhãn theo [UpdateState]; có bản mới thì bấm để mở trang tải. */
+/** Nút kiểm tra phiên bản mới nổi ở đáy: đổi nhãn và việc khi bấm theo [UpdateState] (kiểm tra, tải, cài). */
 @Composable
-private fun SettingsUpdateButton(version: AppVersion, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
-    val labelRes = when (update) {
-        UpdateState.Idle -> R.string.update_check
-        UpdateState.Checking -> R.string.update_checking
-        UpdateState.UpToDate -> R.string.update_latest
-        UpdateState.Failed -> R.string.update_failed
-        is UpdateState.Available -> R.string.update_available
+private fun SettingsUpdateButton(modifier: Modifier = Modifier) {
+    val controller = rememberUpdateController()
+    val state = controller.state
+    val label = when (state) {
+        UpdateState.Idle -> stringResource(R.string.update_check)
+        UpdateState.Checking -> stringResource(R.string.update_checking)
+        UpdateState.UpToDate -> stringResource(R.string.update_latest)
+        UpdateState.Failed -> stringResource(R.string.update_failed)
+        is UpdateState.Available -> stringResource(R.string.update_available, state.code)
+        is UpdateState.Downloading -> stringResource(R.string.update_downloading, (state.progress * 100).toInt())
+        is UpdateState.Downloaded -> stringResource(R.string.update_install)
+        is UpdateState.DownloadFailed -> stringResource(R.string.update_download_failed)
     }
-    val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
     val onPrimary = MiuixTheme.colorScheme.onPrimary
     Row(
         modifier = modifier
@@ -375,13 +372,11 @@ private fun SettingsUpdateButton(version: AppVersion, modifier: Modifier = Modif
             .clip(RoundedCornerShape(UpdateButtonHeight / 2))
             .background(MiuixTheme.colorScheme.primary)
             .clickable {
-                when (val state = update) {
-                    UpdateState.Checking -> Unit
-                    is UpdateState.Available -> openUrl(context, state.url)
-                    else -> {
-                        update = UpdateState.Checking
-                        scope.launch { update = UpdateChecker.check(version) }
-                    }
+                when (state) {
+                    UpdateState.Checking, is UpdateState.Downloading -> Unit
+                    is UpdateState.Available, is UpdateState.DownloadFailed -> controller.download()
+                    is UpdateState.Downloaded -> controller.install()
+                    UpdateState.Idle, UpdateState.UpToDate, UpdateState.Failed -> controller.check()
                 }
             }
             .padding(horizontal = 16.dp),
