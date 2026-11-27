@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,7 +72,8 @@ import com.tool.script.ui.theme.isDarkSurface
 import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
 import com.tool.script.util.AppVersion
-import com.tool.script.util.UpdateChecker
+import com.tool.script.util.ChangelogEntry
+import com.tool.script.util.UpdateController
 import com.tool.script.util.UpdateState
 import com.tool.script.util.Util
 import com.tool.script.util.openUrl
@@ -109,6 +111,7 @@ private val ScreenEdge = 12.dp
 internal fun SettingsScreen(
     show: Boolean,
     title: String,
+    update: UpdateController,
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -118,19 +121,20 @@ internal fun SettingsScreen(
         enter = slideInVertically(tween(260, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(160)),
         exit = slideOutVertically(tween(220)) { it } + fadeOut(tween(180)),
     ) {
-        SettingsScreenBody(title = title, onDismiss = onDismiss, content = content)
+        SettingsScreenBody(title = title, update = update, onDismiss = onDismiss, content = content)
     }
 }
 
 @Composable
 private fun SettingsScreenBody(
     title: String,
+    update: UpdateController,
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
     val context = LocalContext.current
-    val version = remember { AppVersion.of(context) }
+    val version = update.version
     val surface = MiuixTheme.colorScheme.surface
     val blurOn = LocalBlurRequests.current != null
     val bgBackdrop = rememberBarBackdrop(blurOn)
@@ -301,7 +305,7 @@ private fun SettingsScreenBody(
                 .background(Brush.verticalGradient(listOf(Color.Transparent, surface))),
         )
         SettingsUpdateButton(
-            version = version,
+            update = update,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -366,49 +370,77 @@ private fun SettingsScreenBody(
     }
 }
 
-/** Nút kiểm tra phiên bản mới nổi ở đáy: đổi nhãn theo [UpdateState]; có bản mới thì bấm để mở trang tải. */
+/**
+ * Nút cập nhật nổi ở đáy, đổi nhãn và việc bấm theo [UpdateController.state]: kiểm tra, có bản mới thì tải và cài ngay trong app
+ * (đang tải thì nền nút chạy thanh tiến độ), tải xong thì bấm Cài đặt để mở lại trình cài đặt nếu lỡ đóng.
+ */
 @Composable
-private fun SettingsUpdateButton(version: AppVersion, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var update by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
-    val labelRes = when (update) {
-        UpdateState.Idle -> R.string.update_check
-        UpdateState.Checking -> R.string.update_checking
-        UpdateState.UpToDate -> R.string.update_latest
-        UpdateState.Failed -> R.string.update_failed
-        is UpdateState.Available -> R.string.update_available
+private fun SettingsUpdateButton(update: UpdateController, modifier: Modifier = Modifier) {
+    val state = update.state
+    val label = when (state) {
+        UpdateState.Idle -> stringResource(R.string.update_check)
+        UpdateState.Checking -> stringResource(R.string.update_checking)
+        UpdateState.UpToDate -> stringResource(R.string.update_latest)
+        UpdateState.Failed -> stringResource(R.string.update_failed)
+        is UpdateState.Available -> stringResource(R.string.update_available, state.code)
+        is UpdateState.Downloading -> stringResource(R.string.update_downloading, (state.progress * 100).toInt())
+        is UpdateState.Downloaded -> stringResource(R.string.update_install)
+        is UpdateState.DownloadFailed -> stringResource(R.string.update_download_failed)
     }
-    val label = (update as? UpdateState.Available)?.let { stringResource(labelRes, it.code) } ?: stringResource(labelRes)
+    val primary = MiuixTheme.colorScheme.primary
     val onPrimary = MiuixTheme.colorScheme.onPrimary
-    Row(
+    val downloading = state as? UpdateState.Downloading
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(UpdateButtonHeight)
             .clip(RoundedCornerShape(UpdateButtonHeight / 2))
-            .background(MiuixTheme.colorScheme.primary)
+            .background(if (downloading != null) primary.copy(alpha = 0.45f) else primary)
             .clickable {
-                when (val state = update) {
-                    UpdateState.Checking -> Unit
-                    is UpdateState.Available -> openUrl(context, state.url)
-                    else -> {
-                        update = UpdateState.Checking
-                        scope.launch { update = UpdateChecker.check(version) }
-                    }
+                when (state) {
+                    UpdateState.Checking, is UpdateState.Downloading -> Unit
+                    is UpdateState.Available, is UpdateState.DownloadFailed -> update.download()
+                    is UpdateState.Downloaded -> update.install()
+                    else -> update.check()
                 }
-            }
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+            },
     ) {
-        AsyncImage(
-            model = Util.iconModel(AppIcons.BarRestart),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            colorFilter = ColorFilter.tint(onPrimary),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = onPrimary, maxLines = 1)
+        if (downloading != null) {
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(downloading.progress.coerceIn(0f, 1f))
+                    .background(primary),
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = Util.iconModel(AppIcons.BarRestart),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                colorFilter = ColorFilter.tint(onPrimary),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = onPrimary, maxLines = 1)
+        }
+    }
+}
+
+/** Một mục nhật ký thay đổi: tiêu đề (phiên bản · ngày) đậm, các thay đổi bên dưới mỗi dòng một dấu chấm đầu dòng. */
+@Composable
+internal fun SettingsChangelogItem(entry: ChangelogEntry) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(text = entry.title, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MiuixTheme.colorScheme.onSurface)
+        entry.items.forEach { item ->
+            Text(text = "\u2022  $item", fontSize = 14.sp, color = MiuixTheme.colorScheme.onSurfaceVariantActions)
+        }
     }
 }
 

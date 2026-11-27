@@ -21,6 +21,9 @@
     <!-- Thông báo hệ thống (shell = "notice"): chỉ xin khi dùng tới, Android 13+ (máy thấp hơn không cần xin) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Cài bản cập nhật tải ngay trong app (mở trình cài đặt của hệ thống cho APK đã tải) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- Backend adb kết nối về chính máy qua localhost -->
     <uses-permission android:name="android.permission.INTERNET" />
 

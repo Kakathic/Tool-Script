@@ -9,6 +9,7 @@ import com.tool.script.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -39,21 +40,43 @@ class AppVersion(val name: String, val code: Long) {
     }
 }
 
-/** Kết quả kiểm tra phiên bản mới. */
+/** Trạng thái kiểm tra / tải / cài phiên bản mới. */
 sealed interface UpdateState {
     data object Idle : UpdateState
     data object Checking : UpdateState
     data object UpToDate : UpdateState
-    data class Available(val code: Long, val url: String) : UpdateState
     data object Failed : UpdateState
+
+    /** Có bản mới: [url] là trang release, [apkUrl] là liên kết tải APK (null nếu release không có APK), [notes] là các mục nhật ký thay đổi mới nhất. */
+    data class Available(val code: Long, val url: String, val apkUrl: String?, val notes: List<ChangelogEntry>) : UpdateState
+
+    /** Đang tải APK: [progress] từ 0 đến 1. */
+    data class Downloading(val update: Available, val progress: Float) : UpdateState
+
+    /** Đã tải xong, chờ cài ([file] nằm trong cache/updates). */
+    data class Downloaded(val update: Available, val file: File) : UpdateState
+
+    /** Tải lỗi (mất mạng, APK hỏng hoặc không đúng ứng dụng). */
+    data class DownloadFailed(val update: Available) : UpdateState
 }
+
+/** Thông tin bản mới nếu đang có (kể cả khi đang tải, đã tải hoặc tải lỗi), ngược lại null. */
+val UpdateState.pending: UpdateState.Available?
+    get() = when (this) {
+        is UpdateState.Available -> this
+        is UpdateState.Downloading -> update
+        is UpdateState.Downloaded -> update
+        is UpdateState.DownloadFailed -> update
+        else -> null
+    }
 
 object UpdateChecker {
     private val CodeRegex = Regex("""versionCode\s*=\s*(\d+)""")
 
     /**
      * Đọc release [AppAbout.ReleaseTag] trên GitHub, lấy `versionCode=N` trong phần mô tả (workflow ghi vào)
-     * rồi so với [current]. Lỗi mạng, hoặc release không có dòng đó thì trả [UpdateState.Failed].
+     * rồi so với [current]. Phần mô tả còn chứa CHANGELOG.md (workflow ghép vào) để hiện nhật ký thay đổi. Lỗi mạng,
+     * hoặc release không có dòng versionCode thì trả [UpdateState.Failed].
      */
     suspend fun check(current: AppVersion): UpdateState = withContext(Dispatchers.IO) {
         runCatching {
@@ -65,10 +88,27 @@ object UpdateChecker {
                 conn.setRequestProperty("Accept", "application/vnd.github+json")
                 if (conn.responseCode != 200) return@runCatching UpdateState.Failed
                 val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-                val latest = CodeRegex.find(json.optString("body"))?.groupValues?.get(1)?.toLongOrNull()
+                val body = json.optString("body")
+                val latest = CodeRegex.find(body)?.groupValues?.get(1)?.toLongOrNull()
                     ?: return@runCatching UpdateState.Failed
-                if (latest > current.code) UpdateState.Available(latest, json.optString("html_url", AppAbout.GithubUrl))
-                else UpdateState.UpToDate
+                if (latest <= current.code) return@runCatching UpdateState.UpToDate
+                var apk: String? = null
+                val assets = json.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(i)
+                        if (asset.optString("name").endsWith(".apk", ignoreCase = true)) {
+                            apk = asset.optString("browser_download_url").ifBlank { null }
+                            break
+                        }
+                    }
+                }
+                UpdateState.Available(
+                    code = latest,
+                    url = json.optString("html_url", AppAbout.GithubUrl),
+                    apkUrl = apk,
+                    notes = Changelog.parse(body).take(Changelog.MaxShown),
+                )
             } finally {
                 conn.disconnect()
             }

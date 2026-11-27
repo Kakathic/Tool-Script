@@ -92,7 +92,13 @@
     <string name="update_check">Kiểm tra phiên bản mới</string>
     <string name="update_checking">Đang kiểm tra…</string>
     <string name="update_latest">Đang là bản mới nhất</string>
-    <string name="update_available">Có bản mới (bản dựng %1$d)</string>
+    <string name="update_available">Tải và cài đặt (bản dựng %1$d)</string>
+    <string name="update_downloading">Đang tải… %1$d%%</string>
+    <string name="update_install">Cài đặt</string>
+    <string name="update_download_failed">Tải thất bại. Bấm để thử lại</string>
+    <string name="update_install_permission">Cho phép cài ứng dụng từ nguồn này, rồi quay lại bấm Cài đặt</string>
+    <string name="update_install_failed">Không mở được trình cài đặt</string>
+    <string name="update_no_notes">Chưa có ghi chú cho bản này</string>
     <string name="update_failed">Không kiểm tra được. Bấm để thử lại</string>
     <string name="link_github">GitHub</string>
     <string name="link_other">Liên kết khác</string>

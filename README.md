@@ -38,6 +38,7 @@ Khi có khóa thật, thay thông tin trong `signingConfigs` (hoặc thêm một
 ## Tài liệu
 
 - `docs/schema.md`: schema TOML (bản v0.6), nguồn sự thật cho parser và renderer.
+- `CHANGELOG.md`: nhật ký phiên bản. Mỗi cập nhật hoặc sửa lỗi ghi vào mục trên cùng; workflow ghép vào mô tả release và app hiện trong phần Nhật ký khi có bản mới.
 
 ## Cấu trúc
 

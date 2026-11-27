@@ -18,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import com.tool.script.util.AppAbout
 import com.tool.script.util.AppIcons
 import com.tool.script.util.AppVersion
+import com.tool.script.util.rememberUpdateController
+import com.tool.script.util.pending
 import com.tool.script.util.UpdateChecker
 import com.tool.script.util.UpdateState
 import com.tool.script.util.openUrl
@@ -55,6 +57,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -466,45 +469,62 @@ fun SettingsDialog(
     onOpenLog: (LogEntry) -> Unit,
     onClearLogs: () -> Unit,
 ) {
-    SettingsScreen(show = show, title = stringResource(R.string.settings_title), onDismiss = onDismiss) {
-        SettingsGroup(stringResource(R.string.menu_section_appearance)) {
-            Box(Modifier.padding(12.dp)) {
-                SettingsSegmentedRow(
-                    labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
-                    selectedIndex = BASE_THEME_MODES.indexOf(current.base),
-                    onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
-                )
-            }
-        }
-        SettingsGroup(stringResource(R.string.menu_section_options)) {
-            SettingsToggleRow(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
-            if (isBlurSupported()) {
-                SettingsRowDivider()
-                SettingsToggleRow(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
-                SettingsRowDivider()
-                SettingsToggleRow(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
-            }
-            SettingsRowDivider()
-            SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
-        }
-        SettingsGroup(stringResource(R.string.menu_section_links)) {
-            SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
-            if (AppAbout.OtherUrl.isNotBlank()) {
-                SettingsRowDivider()
-                SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
-            }
-        }
-        SettingsGroup(stringResource(R.string.menu_section_log)) {
-            if (logs.isEmpty()) {
-                SettingsCenterRow(stringResource(R.string.log_history_empty), accent = false)
-            } else {
-                logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
-                    if (index > 0) SettingsRowDivider()
-                    SettingsLogItem(entry) { onOpenLog(entry) }
+    val update = rememberUpdateController()
+    LaunchedEffect(show) { if (show) update.checkOnce() }
+    val pending = update.state.pending
+    SettingsScreen(show = show, title = stringResource(R.string.settings_title), update = update, onDismiss = onDismiss) {
+        if (pending != null) {
+            // Có bản mới: ẩn các nhóm tùy chọn (giao diện, tùy chọn, liên kết), chỉ hiện Nhật ký với các thay đổi của bản mới; nút ở đáy tải và cài ngay.
+            SettingsGroup(stringResource(R.string.menu_section_log)) {
+                if (pending.notes.isEmpty()) {
+                    SettingsCenterRow(stringResource(R.string.update_no_notes), accent = false)
+                } else {
+                    pending.notes.forEachIndexed { index, entry ->
+                        if (index > 0) SettingsRowDivider()
+                        SettingsChangelogItem(entry)
+                    }
                 }
-                if (logs.any { !it.running }) {
+            }
+        } else {
+            SettingsGroup(stringResource(R.string.menu_section_appearance)) {
+                Box(Modifier.padding(12.dp)) {
+                    SettingsSegmentedRow(
+                        labels = BASE_THEME_MODES.map { stringResource(it.labelRes) },
+                        selectedIndex = BASE_THEME_MODES.indexOf(current.base),
+                        onSelect = { index -> onSelect(BASE_THEME_MODES[index].withMonet(current.monet)) },
+                    )
+                }
+            }
+            SettingsGroup(stringResource(R.string.menu_section_options)) {
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_dynamic_color), current.monet) { onSelect(current.withMonet(it)) })
+                if (isBlurSupported()) {
                     SettingsRowDivider()
-                    SettingsCenterRow(stringResource(R.string.log_history_clear), accent = true, onClick = onClearLogs)
+                    SettingsToggleRow(SettingToggle(stringResource(R.string.option_blur), blur, onBlurChange))
+                    SettingsRowDivider()
+                    SettingsToggleRow(SettingToggle(stringResource(R.string.option_glass), glass, onGlassChange))
+                }
+                SettingsRowDivider()
+                SettingsToggleRow(SettingToggle(stringResource(R.string.option_haptic), haptic, onHapticChange))
+            }
+            SettingsGroup(stringResource(R.string.menu_section_links)) {
+                SettingsLinkItem(AppIcons.BarGithub, stringResource(R.string.link_github), AppAbout.GithubUrl)
+                if (AppAbout.OtherUrl.isNotBlank()) {
+                    SettingsRowDivider()
+                    SettingsLinkItem(AppIcons.BarLink, stringResource(R.string.link_other), AppAbout.OtherUrl)
+                }
+            }
+            SettingsGroup(stringResource(R.string.menu_section_log)) {
+                if (logs.isEmpty()) {
+                    SettingsCenterRow(stringResource(R.string.log_history_empty), accent = false)
+                } else {
+                    logs.asReversed().take(SETTINGS_LOG_SHOWN).forEachIndexed { index, entry ->
+                        if (index > 0) SettingsRowDivider()
+                        SettingsLogItem(entry) { onOpenLog(entry) }
+                    }
+                    if (logs.any { !it.running }) {
+                        SettingsRowDivider()
+                        SettingsCenterRow(stringResource(R.string.log_history_clear), accent = true, onClick = onClearLogs)
+                    }
                 }
             }
         }

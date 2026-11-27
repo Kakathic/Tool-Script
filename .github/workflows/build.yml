@@ -39,11 +39,21 @@ jobs:
           gradle :app:assembleRelease --stacktrace --warning-mode none -PversionCode="$GITHUB_RUN_NUMBER"
           cp app/build/outputs/apk/release/*.apk ToolScript-release.apk
 
+      # Mô tả release = dòng versionCode (app so phiên bản) + CHANGELOG.md (app hiện trong phần Nhật ký khi có bản mới).
+      - name: Release notes
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "versionCode=$GITHUB_RUN_NUMBER"
+            echo
+            cat CHANGELOG.md
+          } > release-notes.md
+
       - name: Release APK
         if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           name: "Tool Script (bản mới nhất)"
           tag_name: "V1"
-          body: "versionCode=${{ github.run_number }}"
+          body_path: "release-notes.md"
           files: "ToolScript-release.apk"

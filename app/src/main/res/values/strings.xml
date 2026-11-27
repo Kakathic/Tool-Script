@@ -97,7 +97,13 @@
     <string name="update_check">Check for updates</string>
     <string name="update_checking">Checking…</string>
     <string name="update_latest">You\'re on the latest version</string>
-    <string name="update_available">New version available (build %1$d)</string>
+    <string name="update_available">Download and install (build %1$d)</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_install">Install</string>
+    <string name="update_download_failed">Download failed. Tap to retry</string>
+    <string name="update_install_permission">Allow installing apps from this source, then come back and tap Install</string>
+    <string name="update_install_failed">Couldn\'t open the installer</string>
+    <string name="update_no_notes">No notes for this version</string>
     <string name="update_failed">Couldn\'t check for updates. Tap to retry</string>
     <string name="link_github">GitHub</string>
     <string name="link_other">More links</string>
