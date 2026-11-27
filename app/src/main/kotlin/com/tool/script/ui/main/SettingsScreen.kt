@@ -55,6 +55,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -140,11 +144,25 @@ private fun SettingsScreenBody(
     var headerPx by remember { mutableIntStateOf(0) }
     var viewportPx by remember { mutableIntStateOf(0) }
     val gapPx = with(density) { HeaderBottomGap.roundToPx() }
-    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn hết khoảng trống phía trên các thẻ.
+    // Mức cuộn tối đa: dừng đúng lúc mép trên của thẻ đầu tiên chạm mép dưới thanh trên (thẻ không cuộn quá thanh trên).
+    val barBottomPx = with(density) { (topInset + TopBarHeight).roundToPx() }
+    val maxScrollPx = (headerPx + gapPx - barBottomPx).coerceAtLeast(0)
+    val scrollLimit = remember(maxScrollPx, scrollState) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val dy = available.y
+                if (dy >= 0f) return Offset.Zero
+                val room = (maxScrollPx - scrollState.value).coerceAtLeast(0)
+                // Phần vượt quá chỗ còn lại thì nuốt luôn, cột cuộn chỉ nhận phần trong giới hạn.
+                val allowed = maxOf(dy, -room.toFloat())
+                return Offset(0f, dy - allowed)
+            }
+        }
+    }
+    // Tiến độ cuộn qua phần đầu: 0 = chưa cuộn, 1 = đã cuộn tới mức tối đa (thẻ đầu chạm thanh trên).
     val progress by remember {
         derivedStateOf {
-            val total = headerPx + gapPx
-            if (total <= 0) 0f else (scrollState.value.toFloat() / total).coerceIn(0f, 1f)
+            if (maxScrollPx <= 0) 0f else (scrollState.value.toFloat() / maxScrollPx).coerceIn(0f, 1f)
         }
     }
     val collapsed by remember { derivedStateOf { progress >= 1f } }
@@ -261,6 +279,7 @@ private fun SettingsScreenBody(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
+                    .nestedScroll(scrollLimit)
                     .verticalScroll(scrollState),
             ) {
                 Spacer(Modifier.height(with(density) { (headerPx + gapPx).toDp() }))
