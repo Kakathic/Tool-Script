@@ -221,7 +221,8 @@ internal fun SettingsSegmentedRow(labels: List<String>, selectedIndex: Int, onSe
         // thành màu đặc (không dùng màu trong suốt để khay không phụ thuộc vào lớp phía sau). Viên chọn đậm hơn khay một bậc:
         // giao diện sáng dùng nền trắng (surface), giao diện tối dùng màu chủ đạo đậm hơn.
         val dark = isDarkSurface()
-        val card = MiuixTheme.colorScheme.surfaceContainer
+        // Thẻ chứa khay giờ trong suốt nhẹ, nên pha khay lên nền thẻ thực tế (màu thẻ phủ lên surface).
+        val card = settingsCardColor().compositeOver(MiuixTheme.colorScheme.surface)
         val primary = MiuixTheme.colorScheme.primary
         val colors = TabRowDefaults.tabRowColors(
             backgroundColor = primary.copy(alpha = if (dark) 0.16f else 0.10f).compositeOver(card),

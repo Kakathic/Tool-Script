@@ -420,15 +420,19 @@ internal fun SettingsGroup(title: String, content: @Composable ColumnScope.() ->
     }
 }
 
-/** Thẻ bo tròn chứa các dòng. Thường: nền surfaceContainer của Miuix; kính: nền trong suốt nhạt để thấy nền phía sau. */
+/** Màu nền thẻ Cài đặt: trong suốt nhẹ (onSurface mờ) ở cả chế độ thường lẫn kính, thấy nhẹ nền phía sau; tối đậm hơn sáng một chút để vẫn nhìn rõ thẻ. */
+@Composable
+internal fun settingsCardColor(): Color =
+    MiuixTheme.colorScheme.onSurface.copy(alpha = if (isDarkSurface()) 0.10f else 0.06f)
+
+/** Thẻ bo tròn chứa các dòng. Cả chế độ thường và kính đều dùng nền trong suốt nhẹ ([settingsCardColor]). */
 @Composable
 internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    val color = if (LocalGlassEnabled.current) MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f) else MiuixTheme.colorScheme.surfaceContainer
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(color),
+            .background(settingsCardColor()),
         content = content,
     )
 }
