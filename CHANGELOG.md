@@ -11,6 +11,6 @@ Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu 
 - Đổi: thẻ trong Cài đặt dùng nền trong suốt nhẹ ở cả chế độ thường và kính.
 - Sửa: khay chọn Hệ thống / Sáng / Tối ở chế độ không kính dùng xám nhạt trong suốt (thay vì đen, rồi xám đặc lệch màu so với thẻ).
 - Thêm: màn hình chính ở chế độ kính có dải nền mờ dần phía sau đảo (thanh tab nổi) giống dải sau nút cập nhật, để đảo nổi lên khỏi thẻ cuộn.
-- Sửa: khi cuộn, các thẻ (Giao diện, Tùy chọn...) không còn đi quá mép dưới thanh trên: phần nằm trên mép bị ẩn, mờ dần vào.
+- Sửa: khi cuộn, các thẻ (Giao diện, Tùy chọn...) dừng ở mép dưới thanh trên và mờ dần khi tới gần, không còn bị cắt gắt như chui qua thanh.
 - Sửa: thanh trên của Cài đặt hiện nền ngay khi thẻ chạm vào, không đợi cuộn hết phần đầu.
 - Sửa: chế độ kính không còn khung đen nhẹ ở thanh trên khi cuộn (dải mờ lấy màu từ nền động và thẻ).
