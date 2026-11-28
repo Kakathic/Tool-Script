@@ -23,7 +23,7 @@ private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
 
 /**
- * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp; giảm 2dp (30dp) để thẻ chạm mép thanh bớt bị mờ / phủ nền một chút.
+ * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp; đặt 20dp để thẻ chạm mép thanh bớt bị mờ / phủ nền.
  * Muốn mờ sớm hơn thì tăng, muốn thẻ chỉ mờ khi đã chui vào dưới thanh thì giảm về 0dp.
  */
 val GlassBarBandOverhang = 20.dp
