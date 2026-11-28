@@ -29,6 +29,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -84,6 +85,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
@@ -1062,11 +1064,16 @@ private fun buildPageDetails(context: Context, file: String, warnings: List<Stri
 
 @Composable
 private fun RowScope.TabItem(ref: PageRef, selected: Boolean, onClick: () -> Unit) {
-    val color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantActions
+    // Bỏ hiệu ứng nhấn mặc định (ô vuông): khi nhấn chỉ làm icon + chữ sáng nhẹ về phía màu đang chọn.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val glow by animateFloatAsState(if (pressed && !selected) 0.55f else 0f, tween(90), label = "tabPress")
+    val base = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantActions
+    val color = lerp(base, MiuixTheme.colorScheme.primary, glow)
     Column(
         modifier = Modifier
             .weight(1f)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
