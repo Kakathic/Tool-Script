@@ -1,5 +1,5 @@
 # Demo đủ các loại item dùng được trong dialog: text, group, switch, checkbox, input, slider, radio, dropdown, singleselect, multiselect, progress.
-# Nhiều hơn 4 mục nên mở full màn hình. Item trong dialog chỉ đổi biến, không chạy lệnh; bấm Xác nhận mới chạy run của link.
+# Nhiều hơn 4 mục nên mở full màn hình. Item trong dialog chỉ đổi biến, không chạy lệnh; bấm Xác nhận mới chạy script của link.
 # Không dùng được: button và link (đã có Hủy / Xác nhận).
 
 [[item]]

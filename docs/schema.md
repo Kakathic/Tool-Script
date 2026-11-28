@@ -11,8 +11,8 @@ Thứ tự ưu tiên khi app chọn backend:
 | 3 | adb (Wireless Debugging) | `adb` |
 | 4 | Không root | `any` |
 
-Backend hiện tại có sẵn dưới dạng biến `ROOT_MODE`, dùng trong `lock` và
-`visible_if` (xem mục 8, 9).
+Backend hiện tại có sẵn dưới dạng biến `ROOT_MODE`, dùng trong `visible`, `readonly` và
+`lock` (xem mục 8, 9).
 
 **Tiến trình nền:** lệnh `cmd &` không chuyển hướng đầu ra thì tiến trình nền vẫn giữ đường ống đọc kết quả. App chỉ chờ đọc nốt khoảng 1 giây sau khi lệnh chính thoát rồi coi là xong; đầu ra đến muộn vẫn hiện trong log nhưng không nằm trong kết quả cuối. Nên viết `cmd > /dev/null 2>&1 &` (hoặc ghi vào tệp) để tiến trình nền không in vào log. Nút Hủy giết cả cây tiến trình, kể cả tiến trình nền.
 
@@ -43,7 +43,7 @@ file  = "pages/switches.toml"
   - App chỉ đọc được nơi nó có quyền: thư mục riêng của app, hoặc nơi đã cấp quyền bộ nhớ. File không tồn tại hoặc không đọc được thì trang hiện lỗi "không đọc được file" (riêng `main.toml` luôn đọc từ assets).
   - `main.toml` vẫn nằm trong assets, nên chỉ trang con và tab mới trỏ ra ngoài được. Chưa có reload nóng.
 
-- `[app] env` (tùy chọn): đoạn shell chạy **đầu tiên** trước mọi lệnh của app: `run`, `on`, `off`, `get`, lệnh của link dialog và lệnh khởi động lại máy. Dùng để đặt `PATH`, nạp hàm dùng chung, v.v.
+- `[app] env` (tùy chọn): đoạn shell chạy **đầu tiên** trước mọi lệnh của app: `script`, `get`, lệnh của link dialog và lệnh khởi động lại máy. Dùng để đặt `PATH`, nạp hàm dùng chung, v.v.
   - Được ghép vào đầu mỗi lệnh (cách bằng xuống dòng), trước cả các biến `export` của item, nên không dùng được `$id` của item trong `env`.
   - Biến dựng sẵn (`SDK`, `ABI`, `ARCH`, `ROOT_MODE`) cũng chưa có khi `env` chạy.
   - Script khởi động `assets/scripts/init.sh` chạy trước khi nạp TOML nên không áp dụng `env` (nhưng có áp dụng `env.sh`, xem bên dưới).
@@ -78,8 +78,8 @@ load-string-sh = "echo wifi_desc=Bật hoặc tắt"   # lệnh shell nhập th�
 - **Cách thay:** ở bất cứ chuỗi nào, nếu có `@khóa` mà **khóa đó có trong bảng** thì thay; không có thì giữ nguyên (nên `user@host`, `@progress` không bị đụng).
   - `@` không được đứng ngay sau chữ, số, gạch dưới hay `@` khác; `@khóa` nhận trọn một định danh ("Xin chào @ten." giữ dấu chấm). Cần viết liền chữ phía sau thì dùng `@{khóa}`.
   - Không thay lồng nhau: văn bản vừa thay vào không bị quét lại.
-  - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `divider`, `shell`, `columns`, `lock_mode`, `input_type`, `style`, `tab`, `page`, `file`, `visible_if`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
-  - Các khóa còn lại thay được, kể cả lệnh `run`, `on`, `off`, `get` và `[app] env`; bản dịch nằm trong lệnh shell nên tránh ký tự `'`, `"`, `$`, `` ` ``, `\` nếu lệnh đặt nó trong dấu nháy.
+  - **Không thay** ở các khóa kỹ thuật: `id`, `type`, `icon`, `icon_size`, `icon_tint`, `divider`, `shell`, `columns`, `input_type`, `style`, `tab`, `page`, `file`, `visible`, `readonly`, `lock`, `timeout`, `min`, `max`, `step`, `default`, `separator`. Trong `options` chỉ phần **nhãn** được thay, giá trị (sau `|`) giữ nguyên.
+  - Các khóa còn lại thay được, kể cả lệnh `script`, `get` và `[app] env`; bản dịch nằm trong lệnh shell nên tránh ký tự `'`, `"`, `$`, `` ` ``, `\` nếu lệnh đặt nó trong dấu nháy.
 - **Đổi ngôn ngữ:** bảng chuỗi chỉ nạp lúc mở app (cùng lúc nạp TOML). Đổi `app_language` thì app đổi ngay, còn chuỗi `@khóa` chọn theo `$LANGAPP` (`lang-sh`, `load-string-sh`) chỉ đổi theo từ lần mở app sau.
 - **Demo:** `main.toml` khai báo `lang-sh = "lang/lang.sh"`; script chọn chuỗi `vi` / `en` theo `$LANGAPP`. Xem nhóm "Trang đa ngôn ngữ" ở tab Tính năng mới (`pages/news.toml`): `@demo_lang_title`, `@demo_lang_body`, `@demo_lang_button`, `@demo_lang_echo`.
 - Output của lệnh, nội dung log và biến không đi qua bước thay này.
@@ -87,7 +87,7 @@ load-string-sh = "echo wifi_desc=Bật hoặc tắt"   # lệnh shell nhập th�
 
 ### env.sh (biến dùng chung cho mọi lệnh)
 
-`assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra `no_backup/scripts/env.sh` (cùng thư mục với `init.sh`, nằm cạnh `$HOME`); **mọi lệnh shell chạy qua app đều nạp file này trước** (`run`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
+`assets/scripts/env.sh` (tùy chọn) chứa các biến dùng chung. Mỗi lần mở app, các key dạng `@KEY@` được thay bằng đường dẫn thật rồi ghi ra `no_backup/scripts/env.sh` (cùng thư mục với `init.sh`, nằm cạnh `$HOME`); **mọi lệnh shell chạy qua app đều nạp file này trước** (`script`, `on`, `off`, `get`, lệnh dialog, khởi động lại máy, và cả `init.sh`).
 
 | Key | Giá trị |
 |---|---|
@@ -155,12 +155,10 @@ type  = "switch"
 id    = "game_mode"
 title = "Chế độ game"
 desc  = "Tăng xung CPU/GPU"
-on    = "echo 1 > /sys/xxx"
-off   = "echo 0 > /sys/xxx"
+script = "echo $game_mode > /sys/xxx"
 get   = "cat /sys/xxx"       # tùy chọn: đọc trạng thái thật bằng shell lúc item xuất hiện
 shell = "live"               # chế độ hiển thị khi chạy (mặc định live)
-lock  = "ROOT_MODE != root"
-lock_mode = "readonly"
+readonly = "ROOT_MODE != root"
 ```
 
 ## 5. Bố cục
@@ -187,28 +185,28 @@ lock_mode = "readonly"
 | `icon_size` | không | Kích thước icon (dp), số dương, mặc định `24` |
 | `icon_tint` | không | `true` (mặc định): tô icon theo màu theme; `false`: giữ nguyên màu của ảnh (PNG / SVG nhiều màu) |
 | `divider` | không | Chỉ có tác dụng với item con của `[[group]]`. `true`: vẽ đường kẻ ngăn cách ngay dưới item này (giữa nó và item hiện kế tiếp). Mặc định `false`. Không vẽ ở item cuối của group (kể cả khi các item sau bị ẩn) và group chỉ có một item; item đứng ngoài group bỏ qua khóa này |
-| `visible_if` | không | Điều kiện hiển thị (mục 8) |
-| `lock` | không | Điều kiện khóa item (mục 9) |
-| `lock_mode` | không | `readonly` (mặc định) hoặc `hide` |
+| `visible` / `visible-sh` | không | Điều kiện hiện item, sai thì ẩn hẳn (mục 8, 9) |
+| `readonly` / `readonly-sh` | không | Điều kiện làm mờ item, không bấm được (mục 9) |
+| `lock` / `lock-sh` | không | Điều kiện khóa: bấm vào thì hiện snackbar lý do (mục 9) |
 | `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `live` |
 | `confirm` | không | Nội dung hộp thoại xác nhận trước khi chạy |
-| `timeout` | không | Giây. Không khai báo thì lệnh `run` chạy **không giới hạn thời gian**; có khai báo thì quá số giây đó bị dừng và báo hết giờ. Riêng lệnh `get` không khai báo vẫn giới hạn 30 giây để không treo giao diện |
+| `timeout` | không | Giây. Không khai báo thì lệnh `script` chạy **không giới hạn thời gian**; có khai báo thì quá số giây đó bị dừng và báo hết giờ. Riêng lệnh `get` không khai báo vẫn giới hạn 30 giây để không treo giao diện |
 
 ## 7. Các loại item (type)
 
 | type | Trường riêng |
 |---|---|
 | `text` | (không có trường riêng; đoạn chữ viết ở `desc`) |
-| `button` | `run` |
-| `switch` | `on`, `off`, `get` |
-| `input` | `hint`, `default`, `run`, `input_type` (`text`/`number`) |
-| `slider` | `min`, `max`, `step`, `default`, `run` |
+| `button` | `script` |
+| `switch` | `script` (chạy khi đổi, `$id` = `1` bật / `0` tắt), `get` |
+| `input` | `hint`, `default`, `script`, `input_type` (`text`/`number`) |
+| `slider` | `min`, `max`, `step`, `default`, `script` |
 | `link` | `tab` (id của một `[[tab]]`, chuyển tab) hoặc `page` (đường dẫn file trang con, mở trang mới) |
-| `checkbox` | `on`, `off`, `get` (giống `switch`, hiện ô tick) |
-| `radio` | `options`, `default`, `run` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
-| `dropdown` | `options`, `default`, `run` (chọn bằng menu thả xuống) |
-| `multiselect` | `options`, `default`, `run`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
-| `singleselect` | `options`, `default`, `run`, `columns` (chọn một mục: hộp nhỏ chạm là chọn luôn, toàn màn hình có Xác nhận, xem bên dưới) |
+| `checkbox` | `script`, `get` (giống `switch`, hiện ô tick) |
+| `radio` | `options`, `default`, `script` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
+| `dropdown` | `options`, `default`, `script` (chọn bằng menu thả xuống) |
+| `multiselect` | `options`, `default`, `script`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
+| `singleselect` | `options`, `default`, `script`, `columns` (chọn một mục: hộp nhỏ chạm là chọn luôn, toàn màn hình có Xác nhận, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `slider`: `max < min` thì hai giá trị được đổi chỗ; `min = max` thì `max` được đặt lại thành `min + step`; `step` không chia hết `max - min` thì thanh trượt không tới được `max`. Cả ba trường hợp đều hiện cảnh báo cấu hình ở đầu trang.
@@ -231,11 +229,11 @@ id    = "game_mode"
 title = "Chế độ game"
 ```
 
-- `[[group]]` dùng được `title` (không bắt buộc), `visible_if`, `lock`, `lock_mode`; không có `type`.
+- `[[group]]` dùng được `title` (không bắt buộc), `visible`, `readonly`, `lock` (và các bản `-sh`); không có `type`. `readonly` của group làm mờ mọi item con; `lock` của group khiến bấm vào item con nào cũng hiện lý do.
 - Thứ tự `[[item]]` và `[[group]]` trên trang theo thứ tự xuất hiện trong file.
 - Các item con trong một `[[group]]` nằm chung trong một thẻ lớn. `[[item]]` đứng ngoài group thì mỗi item một thẻ riêng.
 - Muốn kẻ ngang giữa các item con, đặt `divider = true` ở item đứng trên đường kẻ (ví dụ `divider = true` ở item một thì đường kẻ nằm giữa item một và item hai). Đường kẻ không vẽ sau item cuối đang hiện của group.
-- Group mà mọi item con đều bị ẩn (`visible_if`, `lock_mode = "hide"`) thì ẩn luôn cả group (kể cả tiêu đề nếu có).
+- Group mà mọi item con đều bị ẩn (`visible` / `visible-sh`) thì ẩn luôn cả group (kể cả tiêu đề nếu có).
 - Chưa hỗ trợ group lồng group (`[[group.group]]`).
 
 ### Lưu giá trị theo id
@@ -260,7 +258,7 @@ Cách khai báo `options` (dùng cho `radio`, `dropdown`, `multiselect`, `single
 type  = "radio"
 id    = "governor"
 title = "Governor"
-run   = "echo $governor > /sys/yyy"
+script = "echo $governor > /sys/yyy"
 options = [
   "Hiệu năng|performance",   # "nhãn|giá trị"
   "Tiết kiệm|powersave",
@@ -291,7 +289,7 @@ type  = "link"
 title = "Nhập nhanh"
 page  = "pages/quick.toml"
 style = "dialog"                 # dialog: dưới 5 mục thì nhỏ gọn giữa màn hình, từ 5 mục thì full màn hình
-run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
+script = 'echo "$ten"'            # chạy khi bấm Xác nhận
 ```
 
 - Trang con là màn hình mới có nút quay lại ở thanh trên (và nút Back của máy); tiêu đề lấy từ `title` của item link.
@@ -300,8 +298,8 @@ run   = 'echo "$ten"'            # chạy khi bấm Xác nhận
   - **Dưới 5 mục: dialog nhỏ gọn** ở giữa màn hình, có tiêu đề, các mục (cuộn nếu cao) và hai nút **Hủy** / **Xác nhận**. Chạm ra ngoài hoặc Back là Hủy.
   - **Từ 5 mục: full màn hình**, trượt từ dưới lên, thanh trên có nút đóng (X) ở góc trái, hai nút **Hủy** / **Xác nhận** cố định ở đáy. Không kéo thu gọn, không có dấu tích.
 - Dialog có hai nút ở cuối: **Hủy** và **Xác nhận**.
-  - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`run`, `on`, `off`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
-  - **Xác nhận**: đóng dialog rồi chạy `run` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `run` thì chỉ lưu biến.
+  - Item trong dialog chỉ để truyền biến: đổi giá trị chỉ cập nhật biến, không chạy lệnh (`script`, `confirm` của item bị bỏ qua, nút "Chạy" của `input` ẩn).
+  - **Xác nhận**: đóng dialog rồi chạy `script` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `script` thì chỉ lưu biến.
   - **Hủy**, nút X hoặc Back của máy: đóng dialog và khôi phục biến về giá trị lúc mở.
 - `button` và `link` không dùng được trong dialog (đã có Hủy / Xác nhận): bị bỏ qua kèm cảnh báo.
 - `singleselect` / `multiselect` trong dialog không có Xác nhận riêng (dialog ngoài đã có): `singleselect` chạm mục là chọn luôn và đóng; `multiselect` đổi là ghi vào biến ngay, đóng hộp bằng chạm ra ngoài, Back hoặc nút Đóng (màn hình chọn toàn màn hình). Hủy của dialog ngoài khôi phục lại các giá trị này.
@@ -321,15 +319,15 @@ options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
 default   = "audio\nnet"     # tùy chọn: các giá trị chọn sẵn, cách nhau bằng separator (kiểu cũ "audio,net" vẫn đọc được khi separator là xuống dòng)
 columns   = 2                # tùy chọn: 1 (mặc định) hoặc 2 cột trong hộp thoại
 separator = ","              # tùy chọn: dấu phân tách trong $id, mặc định là xuống dòng (mỗi giá trị một dòng)
-run       = 'echo "Đã chọn: $features"'
+script    = 'echo "Đã chọn: $features"'
 ```
 
 - `options` khai báo như mục 7. Hàng hiện số mục đã chọn dạng `Đã chọn n` (không có thì "Chưa chọn"); bấm mở hộp thoại, mỗi mục là một thẻ bo góc không viền (chưa chọn: nền xám nhạt; đã chọn: nền và chữ màu chủ đạo), chữ bên trái, ô tích bên phải. Riêng khi `columns = 1` (mặc định) thì bỏ nền thẻ, chỉ còn chữ và ô tích, màu chữ giữ nguyên khi chọn; `columns = 2` giữ thẻ có nền.
-- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
+- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `script` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `script`.
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
-`singleselect` – chọn một mục: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy `run` luôn (chỉ khi giá trị đổi), không có nút, chạm ra ngoài hoặc Back để thoát; toàn màn hình (từ 6 mục) có Xác nhận:
+`singleselect` – chọn một mục: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy `script` luôn (chỉ khi giá trị đổi), không có nút, chạm ra ngoài hoặc Back để thoát; toàn màn hình (từ 6 mục) có Xác nhận:
 
 ```toml
 [[item]]
@@ -339,17 +337,17 @@ title   = "Chế độ"
 options = ["Hiệu năng|performance", "Tiết kiệm|powersave"]
 default = "performance"      # tùy chọn: mặc định là lựa chọn đầu
 columns = 2                  # tùy chọn: 1 (mặc định) hoặc 2 cột trong hộp thoại
-run     = 'echo "Đã chọn: $mode"'
+script  = 'echo "Đã chọn: $mode"'
 ```
 
 - `options` khai báo như mục 7. Hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm mở hộp thoại, mỗi mục là một thẻ bo góc không viền (chưa chọn: nền xám nhạt; đã chọn: nền và chữ màu chủ đạo), chữ bên trái, nút tròn bên phải (chỉ chọn được một mục). Riêng khi `columns = 1` (mặc định) thì bỏ nền thẻ, chỉ còn chữ và nút tròn, dòng đã chọn đổi chữ sang màu chủ đạo, giống chế độ toàn màn hình; `columns = 2` giữ thẻ có nền.
-- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `run` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `run`.
+- Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `script` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `script`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
 
 `multiselect` / `singleselect` – chế độ toàn màn hình:
 
 - Có **từ 6 mục trở lên** trong `options` thì bấm hàng sẽ mở **toàn màn hình** thay cho hộp thoại nhỏ. Dưới 6 mục giữ hộp thoại như cũ. Ngưỡng cố định trong code (`FULLSCREEN_MIN_OPTIONS`, `ui/render/SelectScreen.kt`), không cấu hình trong TOML.
-- Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Mọi thành phần có lề ngoài hai bên 16dp, đệm trong thẻ như trên; danh sách nằm trong một thẻ bo góc, mỗi dòng bấm được trên toàn chiều ngang thẻ và không có hiệu ứng nhấn. Màn hình **trượt từ dưới lên** khi mở và trượt xuống khi đóng. Cách lưu và chạy `run` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
+- Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Mọi thành phần có lề ngoài hai bên 16dp, đệm trong thẻ như trên; danh sách nằm trong một thẻ bo góc, mỗi dòng bấm được trên toàn chiều ngang thẻ và không có hiệu ứng nhấn. Màn hình **trượt từ dưới lên** khi mở và trượt xuống khi đóng. Cách lưu và chạy `script` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
 - Nền: khi bật **Làm mờ nền** (Android 13+) màn hình có nền bán trong suốt, trang phía sau mờ và tối nhẹ, giống log toàn màn hình; tắt blur hoặc máy không hỗ trợ thì nền đặc. Cũng vậy với dialog sheet khi kéo lên full màn hình.
 - Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
 - `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Góc phải trên cùng màn hình hiện khung bo góc không viền, nền màu chủ đạo nhạt `Đã chọn x/y` tính trên toàn bộ danh sách.
@@ -357,9 +355,9 @@ run     = 'echo "Đã chọn: $mode"'
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 
-- `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `on` / `off` chạy khi đổi trạng thái, chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
+- `checkbox` dùng đúng quy tắc của `switch`: `get` in `1`/`true`/`on` là bật, `script` chạy khi đổi trạng thái (`$id` = `1` bật / `0` tắt), chỉ đổi khi lệnh thành công. Bấm cả hàng cũng đổi.
 - `radio` khai báo `options` như mục 7, nhãn hiện trên giao diện, giá trị truyền qua `$id`.
-- `dropdown` khai báo `options` như mục 7. Bên phải hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm vào thì menu thả xuống ngay dưới hàng, căn mép phải (thiếu chỗ phía dưới thì lật lên trên, danh sách dài thì cuộn được). Mục đang chọn nổi nền màu chủ đạo và có dấu tích bên phải. Chọn xong đóng menu và chạy `run`.
+- `dropdown` khai báo `options` như mục 7. Bên phải hàng hiện nhãn đang chọn kèm mũi tên lên/xuống; bấm vào thì menu thả xuống ngay dưới hàng, căn mép phải (thiếu chỗ phía dưới thì lật lên trên, danh sách dài thì cuộn được). Mục đang chọn nổi nền màu chủ đạo và có dấu tích bên phải. Chọn xong đóng menu và chạy `script`.
 - `progress` cần `id`. `get` in ra một số trong khoảng `min`..`max` (mặc định 0..100), chỉ đọc khi item xuất hiện. Giá trị nằm ngoài khoảng được cắt về mép. Không có `get` thì dùng `default` (mặc định `min`).
 
 ```toml
@@ -367,14 +365,13 @@ run     = 'echo "Đã chọn: $mode"'
 type  = "checkbox"
 id    = "auto_clean"
 title = "Tự dọn dẹp"
-on    = "echo 1 > /sys/xxx"
-off   = "echo 0 > /sys/xxx"
+script = "echo $auto_clean > /sys/xxx"
 
 [[item]]
 type    = "radio"
 id      = "profile"
 title   = "Chế độ"
-run     = "echo $profile > /sys/yyy"
+script  = "echo $profile > /sys/yyy"
 options = ["Cân bằng|balanced", "Hiệu năng|performance"]
 
 [[item]]
@@ -397,36 +394,60 @@ options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]
 ```
 
 - Giá trị option chỉ nhận `system`, `en`, `vi`; giá trị khác bị bỏ kèm cảnh báo. Có thể chỉ liệt kê một vài ngôn ngữ.
-- Chọn xong ngôn ngữ đổi ngay, không nạp lại TOML; `run`, `shell`, `confirm` bị bỏ qua (không chạy lệnh).
+- Chọn xong ngôn ngữ đổi ngay, không nạp lại TOML; `script`, `shell`, `confirm` bị bỏ qua (không chạy lệnh).
 - Không lưu vào `files/state`; giá trị luôn là ngôn ngữ app đang dùng. Nhiều item cùng id (ở các trang khác nhau) dùng chung một trạng thái.
 - Type khác dùng id này bị báo là id dành riêng và bỏ qua.
 
 ## 8. Biến và điều kiện
 
 - Giá trị của item có `id` dùng trong lệnh dưới dạng `$id`.
-- Trong điều kiện (`visible_if`, `lock`) viết tên biến không có `$`:
+- Trong điều kiện (`visible`, `readonly`, `lock`) viết tên biến không có `$`:
   `game_mode == 1`, `ROOT_MODE != root`.
-- Toán tử: `==`, `!=`, `&&`, `||`.
+- Toán tử: `==`, `!=`, `&&`, `||`. Hằng số: `1` (đúng), `0` (sai).
 - Biến dựng sẵn: `SDK`, `ABI`, `ARCH`, `ROOT_MODE`.
 
-## 9. Khóa item (lock)
+## 9. Ẩn, mờ, khóa item (visible / readonly / lock)
 
-`lock` là một điều kiện. Điều kiện đúng thì item bị khóa:
+Ba khóa độc lập, dùng được cho item và `[[group]]`. Mỗi khóa là một điều kiện (mục 8):
 
-| `lock_mode` | Khi bị khóa |
+| Khóa | Điều kiện đúng thì | Bấm vào |
+|---|---|---|
+| `visible` | Item hiện; sai thì ẩn hẳn, các item dưới dồn lên | Bình thường |
+| `readonly` | Item mờ (alpha) | Không phản ứng |
+| `lock` | Item vẫn hiện bình thường | Hiện snackbar lý do, không chạy lệnh |
+
+- `lock = "điều kiện|lý do"`: lý do (tùy chọn) nằm sau dấu `|` đơn cuối cùng (không tính `||`), được thay `@khóa` để dịch, và không được chứa `|`. Không có lý do thì hiện câu mặc định ("Mục này đang bị khóa" / "This item is locked").
+- `readonly` và `lock` cùng đúng thì `readonly` thắng (mờ, không hiện snackbar).
+- `[[group]]` có `readonly` thì mọi item con mờ; có `lock` thì bấm vào item con nào cũng hiện lý do (lý do của item con ưu tiên hơn); có `visible` sai thì ẩn cả group.
+
+### Bản shell (`visible-sh`, `readonly-sh`, `lock-sh`)
+
+Mỗi khóa có bản `-sh`: chạy một lệnh shell và đọc **stdout** dòng đầu tiên:
+
+| Lệnh in ra | Ý nghĩa |
 |---|---|
-| `readonly` (mặc định) | Vẫn hiện, làm mờ (alpha), không bấm được |
-| `hide` | Ẩn hẳn, các item dưới dồn lên |
+| `0` hoặc rỗng | Điều kiện sai |
+| `1` | Điều kiện đúng |
+| `1\|lý do` | Điều kiện đúng kèm lý do (dùng cho `lock-sh`, hiện trong snackbar) |
+
+- Lệnh chạy khi item xuất hiện và chạy lại mỗi khi một biến đổi (đợi khoảng 0,3 giây để gõ chữ không chạy từng phím). Biến dùng được dưới dạng `$id`, giới hạn 5 giây mỗi lần chạy.
+- Lệnh lỗi hoặc hết giờ thì coi như không ẩn, không mờ, không khóa.
+- Có cả bản tĩnh và bản `-sh` thì `visible` phải đúng cả hai; `readonly` / `lock` chỉ cần một trong hai đúng.
 
 Ví dụ:
 
 ```toml
 # Chỉ dùng được khi có root, ngược lại hiện mờ
-lock = "ROOT_MODE != root"
+readonly = "ROOT_MODE != root"
 
 # Ẩn nếu không phải root hoặc ROM
-lock = "ROOT_MODE != root && ROOT_MODE != system"
-lock_mode = "hide"
+visible = "ROOT_MODE == root || ROOT_MODE == system"
+
+# Bấm thì hiện lý do, không chạy lệnh
+lock = "game_mode != 1|Bật Chế độ game trước"
+
+# Khóa theo kết quả lệnh shell
+lock-sh = 'test -f /sys/xxx && echo 0 || echo "1|Máy không hỗ trợ"'
 ```
 
 ## 10. Chế độ hiển thị khi chạy (shell)
@@ -461,7 +482,7 @@ Quy tắc chung: ở chế độ `hidden`, nếu lệnh lỗi thì hiện **toas
 - Thiếu trường bắt buộc hoặc `type` lạ: bỏ qua mục đó và ghi cảnh báo.
 - Cảnh báo cấu hình hiện thành banner ở đầu danh sách của **trang có lỗi** (tab hoặc trang con), cuộn cùng nội dung; trang không có cảnh báo thì không hiện. Bấm Xem để đọc danh sách của trang đó, Ẩn để ẩn banner. Trang bị lỗi cú pháp TOML chỉ hiện thẻ lỗi, không kèm banner. Banner chung phía trên chỉ còn cho lỗi toàn app: script khởi động lỗi hoặc cảnh báo của `main.toml`.
 - Lỗi không lưu ra file, chỉ giữ trong bộ nhớ của phiên chạy.
-- **Demo crash**: để thử màn hình lỗi, đặt `run` của một `button` là một trong hai lệnh dựng sẵn dưới đây (nên kèm `confirm` vì app thoát thật):
+- **Demo crash**: để thử màn hình lỗi, đặt `script` của một `button` là một trong hai lệnh dựng sẵn dưới đây (nên kèm `confirm` vì app thoát thật):
   - `@crash`: ném lỗi trên luồng chính.
   - `@crash-thread`: ném lỗi trong luồng nền.
   Cả hai hiện Trung tâm lỗi "Ứng dụng bị lỗi" với stack trace rồi kill tiến trình. Mẫu có sẵn ở nhóm "Crash app" của `pages/crash.toml` (tab Lỗi code).

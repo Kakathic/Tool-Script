@@ -24,7 +24,7 @@ title   = "Dòng hai"
 desc    = "Nội dung có thể dài và tự xuống dòng khi hết chiều ngang thẻ, không bị cắt."
 
 [[group]]
-title = "text hiện theo điều kiện (visible_if)"
+title = "text hiện theo điều kiện (visible)"
 
 [[group.item]]
 type  = "switch"
@@ -36,10 +36,10 @@ desc  = "Bật để hiện text bên dưới"
 type       = "text"
 title      = "Dòng ẩn"
 desc       = "Chỉ hiện khi t_text_show == 1"
-visible_if = "t_text_show == 1"
+visible    = "t_text_show == 1"
 
 [[group.item]]
 type       = "text"
 title      = "Chỉ hiện khi không root"
 desc       = "Chỉ hiện khi ROOT_MODE == any"
-visible_if = "ROOT_MODE == any"
+visible    = "ROOT_MODE == any"

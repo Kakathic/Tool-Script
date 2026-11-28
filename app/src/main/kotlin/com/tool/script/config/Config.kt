@@ -1,5 +1,6 @@
 package com.tool.script.config
 
+import com.tool.script.state.ConditionEvaluator
 import com.tool.script.util.APP_LANGUAGE_ID
 import com.tool.script.util.AppLanguage
 import com.tool.script.util.AppText
@@ -29,8 +30,6 @@ enum class ItemType(val key: String) {
 
 enum class ShellMode { Live, Full, Hidden, Banner, Notice, Snackbar }
 
-enum class LockMode { Readonly, Hide }
-
 data class SelectOption(val label: String, val value: String)
 
 data class Item(
@@ -43,18 +42,21 @@ data class Item(
     // icon_size (dp, mặc định 24) và icon_tint (true = tô màu theme, false = giữ màu ảnh gốc)
     val iconSize: Float,
     val iconTint: Boolean,
-    val visibleIf: String?,
+    // visible / readonly / lock (docs/schema.md mục 9); bản -sh chạy lệnh shell, in 0 = sai, 1 hoặc 1|lý do = đúng
+    val visible: String?,
+    val visibleSh: String?,
+    val readonly: String?,
+    val readonlySh: String?,
     val lock: String?,
-    val lockMode: LockMode,
+    val lockMsg: String?,
+    val lockSh: String?,
     val shell: ShellMode,
     val confirm: String?,
     // null = không giới hạn thời gian chạy (không khai báo timeout); có giá trị thì quá số giây đó lệnh bị dừng
     val timeoutSec: Int?,
     // button / input / slider
-    val run: String?,
+    val script: String?,
     // switch / checkbox
-    val on: String?,
-    val off: String?,
     val get: String?,
     // input
     val hint: String?,
@@ -104,7 +106,7 @@ data class SubPage(
     val items: List<Item>,
     val error: String? = null,
     val dialog: Boolean = false,
-    /** Item link mở trang này; với dialog, `run` / `shell` / `timeout` / `confirm` của nó chạy khi bấm Xác nhận. */
+    /** Item link mở trang này; với dialog, `script` / `shell` / `timeout` / `confirm` của nó chạy khi bấm Xác nhận. */
     val action: Item? = null,
     /** Cảnh báo cấu hình của riêng file này (không gồm lỗi parse). */
     val warnings: List<String> = emptyList(),
@@ -143,11 +145,11 @@ object TomlParser {
 
     /**
      * Khóa TOML mà giá trị không bao giờ bị thay `@khóa`: định danh, kiểu, đường dẫn, biểu thức, số, chế độ...
-     * Mọi khóa còn lại (title, desc, hint, confirm, nhãn trong options, lệnh run/on/off/get, name, env...) đều được thay.
+     * Mọi khóa còn lại (title, desc, hint, confirm, nhãn trong options, lệnh script/get, name, env...) đều được thay.
      */
     private val RAW_KEYS = setOf(
-        "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "lock_mode", "input_type", "style",
-        "tab", "page", "file", "visible_if", "lock", "timeout", "min", "max", "step", "default", "separator",
+        "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "input_type", "style",
+        "tab", "page", "file", "visible", "readonly", "lock", "timeout", "min", "max", "step", "default", "separator",
         "lang", "lang-sh", "load-string", "load-string-sh",
     )
 
@@ -156,8 +158,8 @@ object TomlParser {
     private val TAB_KEYS = setOf("id", "title", "icon", "file")
     private val PAGE_KEYS = setOf("item", "group")
     private val ITEM_KEYS = setOf(
-        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible_if", "lock", "lock_mode", "confirm", "timeout",
-        "run", "on", "off", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
+        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "confirm", "timeout",
+        "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
         "columns", "tab", "page", "style", "shell", "divider",
     )
 
@@ -415,14 +417,8 @@ object TomlParser {
             }
         }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: "\n"
-        val lockMode = when (t.str("lock_mode")?.lowercase()) {
-            null, "readonly" -> LockMode.Readonly
-            "hide" -> LockMode.Hide
-            else -> {
-                warnings += AppText.get(R.string.cfg_invalid_lock_mode, label, title, t.str("lock_mode").orEmpty())
-                LockMode.Readonly
-            }
-        }
+        // lock = "điều kiện|lý do": phần lý do (tùy chọn) được thay @khóa; điều kiện giữ nguyên.
+        val (lockCondition, lockRawMsg) = ConditionEvaluator.splitMessage(t.str("lock").orEmpty())
 
         // options = ["Nhãn|giá trị", ...]; không có dấu | thì nhãn = giá trị.
         val options = mutableListOf<SelectOption>()
@@ -485,15 +481,17 @@ object TomlParser {
             icon = t.str("icon")?.takeIf { it.isNotBlank() && type != ItemType.Text },
             iconSize = iconSize,
             iconTint = iconTint,
-            visibleIf = t.str("visible_if")?.takeIf { it.isNotBlank() },
-            lock = t.str("lock")?.takeIf { it.isNotBlank() },
-            lockMode = lockMode,
+            visible = t.str("visible")?.takeIf { it.isNotBlank() },
+            visibleSh = t.str("visible-sh")?.takeIf { it.isNotBlank() },
+            readonly = t.str("readonly")?.takeIf { it.isNotBlank() },
+            readonlySh = t.str("readonly-sh")?.takeIf { it.isNotBlank() },
+            lock = lockCondition.takeIf { it.isNotBlank() },
+            lockMsg = lockRawMsg?.let { strings.resolve(it) },
+            lockSh = t.str("lock-sh")?.takeIf { it.isNotBlank() },
             shell = shell,
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
             timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },
-            run = if (id == APP_LANGUAGE_ID) null else t.str("run"),
-            on = t.str("on"),
-            off = t.str("off"),
+            script = if (id == APP_LANGUAGE_ID) null else t.str("script"),
             get = t.str("get"),
             hint = t.str("hint"),
             default = t.str("default"),

@@ -1,4 +1,4 @@
-# type = "checkbox": dùng đúng quy tắc của switch (on, off, get, tự lưu theo id), nhưng hiện ô tick.
+# type = "checkbox": dùng đúng quy tắc của switch (script, get, tự lưu theo id), nhưng hiện ô tick.
 # Bấm cả hàng cũng đổi.
 
 [[item]]
@@ -19,9 +19,8 @@ desc  = "Chỉ lưu giá trị vào file t_check_basic"
 type  = "checkbox"
 id    = "t_check_cmd"
 title = "Ô tick chạy lệnh"
-desc  = "on / off chạy khi đổi"
-on    = 'echo "Ô tick: bật"'
-off   = 'echo "Ô tick: tắt"'
+desc  = "script chạy khi đổi ($id = 1 hoặc 0)"
+script = 'if [ "$t_check_cmd" = 1 ]; then echo "Ô tick: bật"; else echo "Ô tick: tắt"; fi'
 shell = "banner"
 
 [[group.item]]
@@ -30,12 +29,11 @@ id    = "t_check_get"
 title = "Ô tick đọc bằng get"
 desc  = "get = echo 1: mở app luôn thấy tick"
 get   = "echo 1"
-on    = 'echo "bật"'
-off   = 'echo "tắt"'
+script = 'if [ "$t_check_get" = 1 ]; then echo "bật"; else echo "tắt"; fi'
 shell = "banner"
 
 [[group]]
-title = "Hiện theo ô tick (visible_if)"
+title = "Hiện theo ô tick (visible)"
 
 [[group.item]]
 type  = "checkbox"
@@ -47,4 +45,4 @@ type       = "checkbox"
 id         = "t_check_sub"
 title      = "Ô tick phụ"
 desc       = "Chỉ hiện khi t_check_more == 1"
-visible_if = "t_check_more == 1"
+visible    = "t_check_more == 1"

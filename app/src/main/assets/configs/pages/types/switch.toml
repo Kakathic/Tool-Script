@@ -1,11 +1,11 @@
-# type = "switch": công tắc. Trường riêng: on, off, get. Cần id.
+# type = "switch": công tắc. Trường riêng: script, get. Cần id.
 # Giá trị tự lưu vào file tên = id trong $STATE_DIR (1 hoặc 0), mở lại app vẫn giữ.
-# on / off chạy khi đổi; chỉ đổi trạng thái khi lệnh thành công.
+# script chạy khi đổi, $id = 1 (bật) hoặc 0 (tắt); chỉ đổi trạng thái khi lệnh thành công.
 
 [[item]]
 type    = "text"
 title   = "switch"
-desc    = "Bật tắt một giá trị. Có on / off thì chạy lệnh khi đổi, không có thì chỉ lưu giá trị để item khác dùng qua visible_if, lock hoặc $id."
+desc    = "Bật tắt một giá trị. Có script thì chạy lệnh khi đổi ($id = 1 hoặc 0), không có thì chỉ lưu giá trị để item khác dùng qua visible, readonly, lock hoặc $id."
 
 [[group]]
 title = "Cơ bản"
@@ -13,10 +13,9 @@ title = "Cơ bản"
 [[group.item]]
 type  = "switch"
 id    = "t_switch_basic"
-title = "Có on / off"
+title = "Có script"
 desc  = "Tự lưu vào file t_switch_basic"
-on    = "echo bật"
-off   = "echo tắt"
+script = 'if [ "$t_switch_basic" = 1 ]; then echo bật; else echo tắt; fi'
 shell = "banner"
 
 [[group.item]]
@@ -25,21 +24,20 @@ id    = "t_switch_get"
 title = "Đọc trạng thái bằng get"
 desc  = "get = echo 1 nên luôn hiện bật khi mở app"
 get   = "echo 1"
-on    = "echo bật"
-off   = "echo tắt"
+script = 'if [ "$t_switch_get" = 1 ]; then echo bật; else echo tắt; fi'
 shell = "banner"
 
 [[group.item]]
 type  = "switch"
 id    = "t_switch_only"
 title = "Chỉ lưu giá trị"
-desc  = "Không có on / off, nút bên dưới đọc giá trị qua $t_switch_only"
+desc  = "Không có script, nút bên dưới đọc giá trị qua $t_switch_only"
 
 [[group.item]]
 type  = "button"
 title = "Đọc công tắc bên trên"
-desc  = 'run = echo "$t_switch_only"'
-run   = 'echo "t_switch_only=$t_switch_only"'
+desc  = 'script = echo "$t_switch_only"'
+script = 'echo "t_switch_only=$t_switch_only"'
 shell = "banner"
 
 [[group]]
@@ -49,9 +47,8 @@ title = "Lệnh thất bại thì không đổi"
 type  = "switch"
 id    = "t_switch_fail"
 title = "Lệnh bật luôn lỗi"
-desc  = "on = exit 1: banner báo lỗi và công tắc giữ nguyên"
-on    = 'echo "Chuẩn bị bật"; exit 1'
-off   = "echo tắt"
+desc  = "script thoát mã 1 khi bật: banner báo lỗi và công tắc giữ nguyên"
+script = 'if [ "$t_switch_fail" = 1 ]; then echo "Chuẩn bị bật"; exit 1; else echo tắt; fi'
 shell = "banner"
 
 [[group]]
@@ -65,10 +62,10 @@ title = "Mở khóa nút bên dưới"
 [[group.item]]
 type  = "button"
 title = "Nút khóa theo công tắc"
-desc  = "lock = t_switch_unlock != 1"
-run   = 'echo "Đã mở khóa"'
+desc  = "lock = t_switch_unlock != 1|lý do: bấm khi chưa mở khóa thì hiện snackbar"
+script = 'echo "Đã mở khóa"'
 shell = "banner"
-lock  = "t_switch_unlock != 1"
+lock  = "t_switch_unlock != 1|Bật công tắc phía trên để mở khóa"
 
 [[group.item]]
 type  = "switch"

@@ -1,10 +1,10 @@
-# type = "input": ô nhập. Trường riêng: hint, default, run, input_type (text / number). Cần id.
+# type = "input": ô nhập. Trường riêng: hint, default, script, input_type (text / number). Cần id.
 # Giá trị tự lưu theo id, dùng trong lệnh dạng "$id" (luôn đặt trong nháy kép).
 
 [[item]]
 type    = "text"
 title   = "input"
-desc    = "Nhập chữ hoặc số rồi bấm Chạy. Không có run thì nút Chạy mờ, giá trị chỉ được lưu để item khác đọc."
+desc    = "Nhập chữ hoặc số rồi bấm Chạy. Không có script thì nút Chạy mờ, giá trị chỉ được lưu để item khác đọc."
 
 [[group]]
 title = "Cơ bản"
@@ -15,7 +15,7 @@ id      = "t_input_text"
 title   = "Ô nhập chữ"
 hint    = "Nhập nội dung"
 default = "xin chào"
-run     = 'echo "Đã nhập: $t_input_text"'
+script  = 'echo "Đã nhập: $t_input_text"'
 shell   = "banner"
 
 [[group.item]]
@@ -26,37 +26,37 @@ desc       = "input_type = number"
 hint       = "Ví dụ 5555"
 default    = "5555"
 input_type = "number"
-run        = 'echo "Số đã nhập: $t_input_number"'
+script     = 'echo "Số đã nhập: $t_input_number"'
 shell      = "live"
 
 [[group]]
-title = "Không có run"
+title = "Không có script"
 
 [[group.item]]
 type    = "input"
 id      = "t_input_store"
 title   = "Chỉ lưu giá trị"
-desc    = "Không có run nên nút Chạy mờ"
+desc    = "Không có script nên nút Chạy mờ"
 hint    = "Nhập rồi bấm nút bên dưới"
 default = "giá trị đã lưu"
 
 [[group.item]]
 type  = "button"
 title = "Đọc ô bên trên"
-desc  = 'run = echo "$t_input_store"'
-run   = 'echo "Đã lưu: $t_input_store"'
+desc  = 'script = echo "$t_input_store"'
+script = 'echo "Đã lưu: $t_input_store"'
 shell = "banner"
 
 [[group]]
-title = "Khóa (lock)"
+title = "Mờ (readonly)"
 
 [[group.item]]
 type    = "input"
 id      = "t_input_locked"
-title   = "Khóa khi không root"
-desc    = "lock = ROOT_MODE != root: ô nhập và nút Chạy đều mờ"
+title   = "Mờ khi không root"
+desc    = "readonly = ROOT_MODE != root: ô nhập và nút Chạy đều mờ"
 hint    = "Chỉ nhập được khi có root"
 default = "khóa"
-run     = 'echo "Nhập khi root: $t_input_locked"'
+script  = 'echo "Nhập khi root: $t_input_locked"'
 shell   = "banner"
-lock    = "ROOT_MODE != root"
+readonly = "ROOT_MODE != root"

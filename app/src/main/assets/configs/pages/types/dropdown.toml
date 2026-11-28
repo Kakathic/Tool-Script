@@ -1,5 +1,5 @@
 # type = "dropdown": chọn một bằng menu thả xuống ngay dưới hàng, căn mép phải.
-# Trường riêng: options, default, run. Cần id. Chọn xong đóng menu và chạy run.
+# Trường riêng: options, default, script. Cần id. Chọn xong đóng menu và chạy script.
 
 [[item]]
 type    = "text"
@@ -14,7 +14,7 @@ type    = "dropdown"
 id      = "t_dropdown_basic"
 title   = "Giới hạn thiết bị"
 default = "0"
-run     = 'echo "Đã chọn: $t_dropdown_basic"'
+script  = 'echo "Đã chọn: $t_dropdown_basic"'
 shell   = "banner"
 options = ["Không giới hạn|0", "1", "2", "3", "4", "5", "6"]
 
@@ -23,7 +23,7 @@ type    = "dropdown"
 id      = "t_dropdown_short"
 title   = "Ít lựa chọn"
 default = "2"
-run     = 'echo "Đã chọn: $t_dropdown_short"'
+script  = 'echo "Đã chọn: $t_dropdown_short"'
 shell   = "snackbar"
 options = ["Một|1", "Hai|2", "Ba|3"]
 
@@ -33,7 +33,7 @@ id      = "t_dropdown_alone"
 title   = "Thả xuống đứng riêng"
 desc    = "Item nằm ngoài group nên có thẻ riêng"
 default = "b"
-run     = 'echo "Đã chọn: $t_dropdown_alone"'
+script  = 'echo "Đã chọn: $t_dropdown_alone"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c"]
 

@@ -13,7 +13,7 @@ title = "Mục bị bỏ qua"
 # thiếu title: bỏ qua
 [[group.item]]
 type = "button"
-run  = 'echo "không có title"'
+script = 'echo "không có title"'
 
 # type lạ: bỏ qua
 [[group.item]]
@@ -56,7 +56,7 @@ title = "Giá trị sai, dùng mặc định"
 type  = "button"
 title = "shell sai"
 desc  = 'shell = "abc", dùng live'
-run   = 'echo "chạy với shell mặc định"'
+script = 'echo "chạy với shell mặc định"'
 shell = "abc"
 
 # shell = "log" đã bỏ: dùng live
@@ -64,7 +64,7 @@ shell = "abc"
 type  = "button"
 title = "shell log kiểu cũ"
 desc  = 'shell = "log" đã bỏ, dùng live'
-run   = 'echo "chạy với shell mặc định"'
+script = 'echo "chạy với shell mặc định"'
 shell = "log"
 
 # columns chỉ nhận 1 hoặc 2: dùng 1
@@ -75,7 +75,7 @@ title   = "columns sai"
 desc    = "columns = 3, dùng 1"
 default = "a"
 columns = 3
-run     = 'echo "Đã chọn: $b_columns"'
+script  = 'echo "Đã chọn: $b_columns"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b"]
 
@@ -86,7 +86,7 @@ title     = "icon_size sai"
 desc      = 'icon_size = "abc", dùng 24'
 icon      = "icons/about.svg"
 icon_size = "abc"
-run       = 'echo "icon_size sai"'
+script    = 'echo "icon_size sai"'
 shell     = "banner"
 
 # icon_tint chỉ nhận true hoặc false: dùng true
@@ -96,15 +96,15 @@ title     = "icon_tint sai"
 desc      = 'icon_tint = "abc", dùng true'
 icon      = "icons/about.svg"
 icon_tint = "abc"
-run       = 'echo "icon_tint sai"'
+script    = 'echo "icon_tint sai"'
 shell     = "banner"
 
-# lock_mode chỉ nhận readonly hoặc hide: dùng readonly
+# lock_mode đã bỏ (thay bằng readonly / lock): báo khóa lạ, khóa bị bỏ qua
 [[group.item]]
 type      = "button"
-title     = "lock_mode sai"
-desc      = 'lock_mode = "abc", dùng readonly'
-run       = 'echo "lock_mode sai"'
+title     = "lock_mode cũ"
+desc      = 'lock_mode đã bỏ, báo khóa lạ'
+script    = 'echo "lock_mode cũ"'
 shell     = "banner"
 lock_mode = "abc"
 
@@ -118,5 +118,5 @@ min     = 10
 max     = 0
 step    = 1
 default = 5
-run     = 'echo "Giá trị: $b_slider"'
+script  = 'echo "Giá trị: $b_slider"'
 shell   = "banner"

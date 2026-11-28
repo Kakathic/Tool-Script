@@ -61,5 +61,5 @@ title = "Dialog có button và link"
 desc  = "Dialog chỉ để truyền biến: button và link bị bỏ qua"
 page  = "pages/broken/dialog_bad.toml"
 style = "dialog"
-run   = 'echo "Xác nhận dialog lỗi: $b_dlg_note"'
+script = 'echo "Xác nhận dialog lỗi: $b_dlg_note"'
 shell = "banner"

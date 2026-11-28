@@ -57,7 +57,7 @@ app/                           # beta.jks, proguard-rules.pro, build.gradle.kts
    │  ├─ boot/               # splash + máy trạng thái khởi động
    │  ├─ config/             # model + parser TOML
    │  ├─ executor/           # su -> ROM -> adb -> thường
-   │  ├─ state/              # kho biến, visible_if / lock
+   │  ├─ state/              # kho biến, visible / readonly / lock
    │  ├─ crash/              # CrashActivity (tiến trình :crash, không ghi log ra file)
    │  ├─ ui/{theme,main,render,feedback}
    │  └─ util/
@@ -96,14 +96,14 @@ Giai đoạn 1: khung ứng dụng
 - [x] `boot/`: splash (logo, thanh tiến trình, 5 dòng log) -> xin quyền bộ nhớ -> dò backend -> chạy `init.sh` -> nạp TOML -> vào màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
 - [x] `config/`: model + parser TOML theo `docs/schema.md`. Cảnh báo khi thiếu trường hoặc `type` lạ, báo file + dòng khi sai cú pháp. `main.toml` sai thì sang Trung tâm lỗi; file trang sai thì chỉ trang đó hiện thẻ lỗi.
 - [x] `executor/`: backend `su` (libsu) và shell thường, biến `ROOT_MODE`; hết giờ dò quyền root sau 5 giây.
-- [x] `state/`: kho biến (`VariableStore`), bộ tính điều kiện `visible_if` / `lock` (`==`, `!=`, `&&`, `||`), biến dựng sẵn `SDK`, `ABI`, `ARCH`, `ROOT_MODE`.
+- [x] `state/`: kho biến (`VariableStore`), bộ tính điều kiện `visible` / `readonly` / `lock` (`==`, `!=`, `&&`, `||`), biến dựng sẵn `SDK`, `ABI`, `ARCH`, `ROOT_MODE`.
 - [x] `crash/`: Trung tâm lỗi (tiến trình `:crash`) và bộ bắt crash trong `App`; nút Chia sẻ (icon + chữ, khung bo) ở góc phải hàng tiêu đề, hai nút Khởi động lại và Thoát ở dưới; nhấn giữ log để chọn và sao chép chữ. Demo crash: `run = "@crash"` hoặc `"@crash-thread"` (nhóm cuối `output.toml`).
 
 Giai đoạn 2: giao diện
 
 - [x] Màn hình chính: tiêu đề lớn kiểu Miuix thu gọn khi vuốt lên (`LargeTitleTopBar`, dùng `MiuixScrollBehavior`), `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
-- [x] Trường chung: `visible_if`, `lock` + `lock_mode` (`readonly` / `hide`), `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
+- [x] Trường chung: `visible`, `readonly`, `lock` (và bản `-sh`), `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
 - [x] Icon Nguồn (menu khởi động lại, thả xuống ngay dưới icon) và Cài đặt (hộp thoại giữa màn hình, sát lề phải) ở thanh trên cùng.
 - [x] Chủ đề (trong hộp thoại Cài đặt): hàng ngang chọn Hệ thống / Sáng / Tối, kèm ô tích Màu động (Monet) của Miuix cho cả ba; được lưu lại (vẫn là 6 giá trị `ThemeMode`, không đổi dữ liệu lưu).
 - [x] Ngôn ngữ (trong hộp thoại Cài đặt): Hệ thống / English / Tiếng Việt, đổi ngay không cần mở lại app.

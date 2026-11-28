@@ -18,7 +18,7 @@ desc  = "Tự lưu vào file t_lsub_switch"
 [[group.item]]
 type  = "button"
 title = "Nút thử"
-run   = 'echo "Xin chào từ trang con"'
+script = 'echo "Xin chào từ trang con"'
 shell = "banner"
 
 [[group.item]]

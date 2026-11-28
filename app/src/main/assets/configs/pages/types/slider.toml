@@ -1,4 +1,4 @@
-# type = "slider": thanh trượt. Trường riêng: min, max, step, default, run. Cần id.
+# type = "slider": thanh trượt. Trường riêng: min, max, step, default, script. Cần id.
 # Lệnh chạy khi thả tay. max < min thì app đổi chỗ hai số và ghi cảnh báo.
 
 [[item]]
@@ -18,7 +18,7 @@ min     = 0
 max     = 100
 step    = 5
 default = 40
-run     = 'echo "Giá trị: $t_slider_basic"'
+script  = 'echo "Giá trị: $t_slider_basic"'
 shell   = "banner"
 
 [[group.item]]
@@ -30,13 +30,13 @@ min     = 1
 max     = 10
 step    = 1
 default = 5
-run     = 'echo "Mức: $t_slider_small"'
+script  = 'echo "Mức: $t_slider_small"'
 shell   = "snackbar"
 
 [[group.item]]
 type    = "slider"
 id      = "t_slider_store"
-title   = "Không có run"
+title   = "Không có script"
 desc    = "Chỉ lưu giá trị, nút bên dưới đọc lại"
 min     = 0
 max     = 20
@@ -46,5 +46,5 @@ default = 10
 [[group.item]]
 type  = "button"
 title = "Đọc thanh trượt bên trên"
-run   = 'echo "t_slider_store=$t_slider_store"'
+script = 'echo "t_slider_store=$t_slider_store"'
 shell = "banner"

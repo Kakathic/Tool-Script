@@ -4,6 +4,10 @@ Mỗi lần có cập nhật hoặc sửa lỗi đều ghi vào đây: thêm dò
 Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu để hiện trong phần Nhật ký khi có bản cập nhật.
 
 ## 0.1.0 · 2026-11-27
+- Đổi: tách khóa `visible_if` / `lock` + `lock_mode` thành ba khóa `visible` (ẩn hiện), `readonly` (mờ, không bấm được) và `lock` (bấm thì hiện snackbar lý do, dạng `lock = "điều kiện|lý do"`); mỗi khóa có bản `-sh` chạy lệnh shell (in `0` = sai, `1` hoặc `1|lý do` = đúng). Dùng được cho cả `[[group]]`. TOML cũ còn `visible_if` / `lock_mode` sẽ báo khóa lạ.
+- Thêm: câu mặc định khi `lock` không kèm lý do ("Mục này đang bị khóa").
+- Đổi: `switch` / `checkbox` bỏ `on` / `off`, dùng `script` chạy cho cả hai chiều với `$id` = `1` (bật) hoặc `0` (tắt). TOML cũ còn `on` / `off` sẽ báo khóa lạ và lệnh không chạy.
+- Đổi: khóa `run` của item đổi tên thành `script` (TOML cũ còn `run` sẽ báo khóa lạ và lệnh không chạy).
 - Đổi: type `text` không còn bắt buộc `title`; bỏ trống thì chỉ hiện đoạn chữ `desc` (thiếu cả hai thì bỏ item và báo cảnh báo).
 - Đổi: type `text` bỏ trường `content`, viết đoạn chữ ở `desc` như các type khác (TOML cũ còn `content` sẽ báo khóa lạ và không hiện chữ).
 - Thêm: tải và cài đặt bản mới ngay trong app (nút ở đáy Cài đặt có thanh tiến độ, tải xong mở trình cài đặt của hệ thống).

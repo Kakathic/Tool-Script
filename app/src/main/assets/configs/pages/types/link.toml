@@ -1,4 +1,4 @@
-# type = "link": chuyển tab hoặc mở trang con. Trường riêng: tab, page, style, run.
+# type = "link": chuyển tab hoặc mở trang con. Trường riêng: tab, page, style, script.
 # Có cả tab và page thì dùng tab. Thiếu cả hai thì bỏ item và ghi cảnh báo.
 
 [[item]]
@@ -39,7 +39,7 @@ title = "Dialog nhỏ gọn"
 desc  = "Tối đa 4 mục: hộp thoại giữa màn hình"
 page  = "pages/types/link_dialog_small.toml"
 style = "dialog"
-run   = 'echo "tên=$t_ldlg_small_name chế độ=$t_ldlg_small_mode cờ=$t_ldlg_small_flag mức=$t_ldlg_small_level"'
+script = 'echo "tên=$t_ldlg_small_name chế độ=$t_ldlg_small_mode cờ=$t_ldlg_small_flag mức=$t_ldlg_small_level"'
 shell = "banner"
 
 [[group.item]]
@@ -48,14 +48,14 @@ title = "Dialog đủ các loại item"
 desc  = "Mọi loại dùng được trong dialog: switch, checkbox, input, slider, radio, dropdown, singleselect, multiselect, progress"
 page  = "pages/types/link_dialog_all.toml"
 style = "dialog"
-run   = 'echo "switch=$t_ldlg_all_switch tick=$t_ldlg_all_check nhập=$t_ldlg_all_input trượt=$t_ldlg_all_slider radio=$t_ldlg_all_radio thả=$t_ldlg_all_dropdown một=$t_ldlg_all_single nhiều=$t_ldlg_all_multi"'
+script = 'echo "switch=$t_ldlg_all_switch tick=$t_ldlg_all_check nhập=$t_ldlg_all_input trượt=$t_ldlg_all_slider radio=$t_ldlg_all_radio thả=$t_ldlg_all_dropdown một=$t_ldlg_all_single nhiều=$t_ldlg_all_multi"'
 shell = "live"
 
 [[group.item]]
 type  = "link"
 title = "Dialog full màn hình"
-desc  = "Từ 5 mục: full màn hình, X ở góc trái. Xác nhận mới chạy run của link, Hủy thì khôi phục biến"
+desc  = "Từ 5 mục: full màn hình, X ở góc trái. Xác nhận mới chạy script của link, Hủy thì khôi phục biến"
 page  = "pages/types/link_dialog.toml"
 style = "dialog"
-run   = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'
+script = 'echo "ghi chú=$t_ldlg_note chế độ=$t_ldlg_mode mức=$t_ldlg_level cờ=$t_ldlg_flag"'
 shell = "live"

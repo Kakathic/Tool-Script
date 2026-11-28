@@ -15,7 +15,7 @@ id      = "b_opt_empty"
 title   = "options có mục rỗng"
 desc    = 'options #2 = "|" bị bỏ qua'
 default = "a"
-run     = 'echo "Đã chọn: $b_opt_empty"'
+script  = 'echo "Đã chọn: $b_opt_empty"'
 shell   = "banner"
 options = ["Mục A|a", "|", "Mục C|c"]
 
@@ -25,7 +25,7 @@ type    = "radio"
 id      = "b_opt_none"
 title   = "Không có options hợp lệ"
 desc    = "options chỉ gồm mục rỗng"
-run     = 'echo "Radio: $b_opt_none"'
+script  = 'echo "Radio: $b_opt_none"'
 shell   = "banner"
 options = ["|", "|"]
 
@@ -36,6 +36,6 @@ id        = "b_opt_sep"
 title     = "Giá trị chứa dấu phân tách"
 desc      = 'separator = "," nhưng giá trị "x,y" chứa dấu phẩy'
 separator = ","
-run       = 'echo "Đã chọn: $b_opt_sep"'
+script    = 'echo "Đã chọn: $b_opt_sep"'
 shell     = "banner"
 options   = ["Mục X,Y|x,y", "Mục Z|z"]

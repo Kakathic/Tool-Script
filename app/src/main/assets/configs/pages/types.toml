@@ -27,7 +27,7 @@ title = "Hành động"
 [[group.item]]
 type  = "link"
 title = "button"
-desc  = "Nút chạy lệnh: shell, confirm, timeout, lock"
+desc  = "Nút chạy lệnh: shell, confirm, timeout, visible, readonly, lock"
 page  = "pages/types/button.toml"
 
 [[group]]
@@ -36,7 +36,7 @@ title = "Bật / tắt"
 [[group.item]]
 type  = "link"
 title = "switch"
-desc  = "Công tắc: on, off, get, tự lưu theo id"
+desc  = "Công tắc: script, get, tự lưu theo id"
 page  = "pages/types/switch.toml"
 
 [[group.item]]

@@ -14,7 +14,7 @@ type  = "button"
 title = "Tác giả"
 desc  = "Chủ dự án: đặt ý tưởng, quyết định tính năng, thiết kế giao diện, thử và kiểm tra trên máy thật"
 icon  = "icons/about.svg"
-run   = 'echo "Tác giả: chủ dự án Tool Script"'
+script = 'echo "Tác giả: chủ dự án Tool Script"'
 shell = "snackbar"
 
 [[group.item]]
@@ -22,7 +22,7 @@ type  = "button"
 title = "Người viết code: Claude"
 desc  = "Mô hình AI của Anthropic: viết và chỉnh mã Kotlin, TOML, script shell và tài liệu theo yêu cầu của tác giả"
 icon  = "icons/star.svg"
-run   = 'echo "Code do Claude (Anthropic) viết theo yêu cầu của tác giả"'
+script = 'echo "Code do Claude (Anthropic) viết theo yêu cầu của tác giả"'
 shell = "snackbar"
 
 [[group]]
@@ -64,7 +64,7 @@ type  = "button"
 title = "Xem thông tin máy"
 desc  = "SDK, ABI, ARCH, ROOT_MODE"
 icon  = "icons/demo.svg"
-run   = 'echo "SDK=$SDK"; echo "ABI=$ABI"; echo "ARCH=$ARCH"; echo "ROOT_MODE=$ROOT_MODE"'
+script = 'echo "SDK=$SDK"; echo "ABI=$ABI"; echo "ARCH=$ARCH"; echo "ROOT_MODE=$ROOT_MODE"'
 shell = "banner"
 
 [[group.item]]

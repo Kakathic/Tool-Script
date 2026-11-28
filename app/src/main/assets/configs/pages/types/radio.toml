@@ -1,6 +1,6 @@
 # type = "radio": chọn một, hiện sẵn mọi lựa chọn (mỗi dòng một nút tròn).
-# Trường riêng: options, default, run. Cần id. options dạng "nhãn|giá trị"; không có | thì nhãn = giá trị.
-# run chạy ngay khi chọn, $id = giá trị của mục đã chọn.
+# Trường riêng: options, default, script. Cần id. options dạng "nhãn|giá trị"; không có | thì nhãn = giá trị.
+# script chạy ngay khi chọn, $id = giá trị của mục đã chọn.
 
 [[item]]
 type    = "text"
@@ -15,7 +15,7 @@ type    = "radio"
 id      = "t_radio_basic"
 title   = "Chế độ"
 default = "balanced"
-run     = 'echo "Radio: $t_radio_basic"'
+script  = 'echo "Radio: $t_radio_basic"'
 shell   = "banner"
 options = ["Cân bằng|balanced", "Hiệu năng|performance", "Tiết kiệm|powersave"]
 
@@ -25,12 +25,12 @@ id      = "t_radio_plain"
 title   = "Nhãn trùng giá trị"
 desc    = "options không có dấu |"
 default = "schedutil"
-run     = 'echo "Governor: $t_radio_plain"'
+script  = 'echo "Governor: $t_radio_plain"'
 shell   = "banner"
 options = ["performance", "powersave", "schedutil"]
 
 [[group]]
-title = "Hiện theo lựa chọn (visible_if)"
+title = "Hiện theo lựa chọn (visible)"
 
 [[group.item]]
 type    = "radio"
@@ -44,7 +44,7 @@ options = ["Ẩn|hide", "Hiện|show"]
 type       = "text"
 title      = "Mục phụ"
 desc       = 'Chỉ hiện khi chọn "Hiện" (t_radio_toggle == show)'
-visible_if = "t_radio_toggle == show"
+visible    = "t_radio_toggle == show"
 
 [[group]]
 title = "Ngôn ngữ ứng dụng (id dành riêng app_language)"

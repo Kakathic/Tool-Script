@@ -186,7 +186,7 @@
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" is invalid (positive number), using 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" is invalid (true or false), using true</string>
     <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" is invalid (true or false), using false</string>
-    <string name="cfg_invalid_lock_mode">%1$s \"%2$s\": lock_mode = \"%3$s\" is invalid, using readonly</string>
+    <string name="lock_default_msg">This item is locked</string>
     <string name="cfg_invalid_option">%1$s \"%2$s\": options #%3$s is invalid (expected \"label|value\"), ignored</string>
     <string name="cfg_no_valid_options">%1$s \"%2$s\" (%3$s) has no valid options</string>
     <string name="cfg_separator_in_value">%1$s \"%2$s\": an options value contains the separator \"%3$s\", the result will be wrong</string>
@@ -230,8 +230,8 @@
     <string name="exec_backend_plain">Backend: plain shell (ROOT_MODE = any)</string>
 
     <!-- Khác -->
-    <string name="crash_demo_main">Demo crash: error thrown from the main thread (run = \"%1$s\")</string>
-    <string name="crash_demo_background">Demo crash: error thrown from a background thread (run = \"%1$s\")</string>
+    <string name="crash_demo_main">Demo crash: error thrown from the main thread (script = \"%1$s\")</string>
+    <string name="crash_demo_background">Demo crash: error thrown from a background thread (script = \"%1$s\")</string>
     <string name="asset_rename_failed">couldn\'t rename the temp file</string>
     <string name="log_write_stopped">[Stopped writing: log exceeds %1$sMB]</string>
 </resources>

@@ -1,10 +1,10 @@
-# type = "button": nút chạy lệnh. Trường riêng: run.
-# Trường chung hay dùng: shell, confirm, timeout, lock, icon.
+# type = "button": nút chạy lệnh. Trường riêng: script.
+# Trường chung hay dùng: shell, confirm, timeout, visible, readonly, lock, icon.
 
 [[item]]
 type    = "text"
 title   = "button"
-desc    = "Bấm để chạy lệnh trong run. Kết quả hiện theo shell (mặc định live: bảng log)."
+desc    = "Bấm để chạy lệnh trong script. Kết quả hiện theo shell (mặc định live: bảng log)."
 
 [[group]]
 title = "Cơ bản"
@@ -13,20 +13,20 @@ title = "Cơ bản"
 type  = "button"
 title = "Mặc định (live)"
 desc  = "Không khai báo shell: bảng log hiện từng dòng"
-run   = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
+script = 'echo "Dòng 1"; echo "Dòng 2"; echo "Dòng 3"'
 
 [[group.item]]
 type  = "button"
 title = "shell = banner"
 desc  = "Kết quả hiện ở banner đầu màn hình"
-run   = 'echo "Xin chào từ button"'
+script = 'echo "Xin chào từ button"'
 shell = "banner"
 
 [[group.item]]
 type  = "button"
 title = "shell = snackbar"
 desc  = "Kết quả hiện ở snackbar đáy màn hình"
-run   = 'echo "Xin chào từ snackbar"'
+script = 'echo "Xin chào từ snackbar"'
 shell = "snackbar"
 
 [[group]]
@@ -36,7 +36,7 @@ title = "Tùy chọn của lệnh"
 type    = "button"
 title   = "confirm"
 desc    = "Hỏi xác nhận trước khi chạy"
-run     = 'echo "Đã xác nhận"'
+script  = 'echo "Đã xác nhận"'
 confirm = "Chạy lệnh mẫu này?"
 shell   = "banner"
 
@@ -44,7 +44,7 @@ shell   = "banner"
 type    = "button"
 title   = "timeout"
 desc    = "sleep 5 nhưng timeout = 2: báo hết thời gian chờ"
-run     = "sleep 5"
+script  = "sleep 5"
 timeout = 2
 shell   = "banner"
 
@@ -53,25 +53,69 @@ type  = "button"
 title = "Nút có icon"
 desc  = 'icon = "icons/tools.svg"'
 icon  = "icons/tools.svg"
-run   = 'echo "Nút có icon"'
+script = 'echo "Nút có icon"'
 shell = "banner"
 
 [[group]]
-title = "Khóa (lock)"
+title = "Ẩn, mờ, khóa (visible / readonly / lock)"
 
 [[group.item]]
-type  = "button"
-title = "Khóa khi không root"
-desc  = "lock = ROOT_MODE != root, mờ và không bấm được nếu không root"
-run   = 'echo "Đang có root"'
-shell = "banner"
-lock  = "ROOT_MODE != root"
+type     = "button"
+title    = "Mờ khi không root (readonly)"
+desc     = "readonly = ROOT_MODE != root: mờ và không bấm được"
+script   = 'echo "Đang có root"'
+shell    = "banner"
+readonly = "ROOT_MODE != root"
 
 [[group.item]]
-type      = "button"
-title     = "Ẩn khi không root"
-desc      = "lock + lock_mode = hide: ẩn hẳn khi không root"
-run       = 'echo "Đang có root"'
-shell     = "banner"
-lock      = "ROOT_MODE != root"
-lock_mode = "hide"
+type    = "button"
+title   = "Ẩn khi không root (visible)"
+desc    = "visible = ROOT_MODE == root: ẩn hẳn khi không root"
+script  = 'echo "Đang có root"'
+shell   = "banner"
+visible = "ROOT_MODE == root"
+
+[[group.item]]
+type   = "button"
+title  = "Bấm để xem lý do (lock)"
+desc   = "lock = 1|lý do: hiện bình thường, bấm thì hiện snackbar, không chạy lệnh"
+script = 'echo "Không bao giờ chạy"'
+shell  = "banner"
+lock   = "1|Mục đã bị khóa"
+
+[[group.item]]
+type   = "button"
+title  = "Khóa không kèm lý do"
+desc   = "lock = 1: bấm thì hiện câu mặc định"
+script = 'echo "Không bao giờ chạy"'
+shell  = "banner"
+lock   = "1"
+
+[[group.item]]
+type    = "button"
+title   = "Khóa bằng lệnh shell (lock-sh)"
+desc    = "lock-sh in 1|lý do: bị khóa; in 0 thì bấm bình thường"
+script  = 'echo "Chạy được"'
+shell   = "banner"
+lock-sh = 'echo "1|Lệnh shell báo mục này đang khóa"'
+
+[[group.item]]
+type        = "button"
+title       = "Mờ bằng lệnh shell (readonly-sh)"
+desc        = "readonly-sh in 1: mờ, không bấm được"
+script      = 'echo "Chạy được"'
+shell       = "banner"
+readonly-sh = 'echo 1'
+
+[[group.item]]
+type       = "button"
+title      = "Ẩn bằng lệnh shell (visible-sh)"
+desc       = "visible-sh in 1: hiện; in 0 thì ẩn. Lệnh này đọc biến t_button_show nên đổi công tắc là cập nhật"
+script     = 'echo "Chạy được"'
+shell      = "banner"
+visible-sh = 'echo "$t_button_show"'
+
+[[group.item]]
+type   = "switch"
+id     = "t_button_show"
+title  = "Hiện nút phía trên (visible-sh)"

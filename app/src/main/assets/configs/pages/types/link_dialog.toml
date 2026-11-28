@@ -1,8 +1,8 @@
 # Trang dùng cho link có style = "dialog". Trang này có 5 mục hiển thị nên mở full màn hình (X ở góc trái, nút Hủy / Xác nhận ở đáy).
 # Dưới 5 mục thì hiện dialog nhỏ gọn giữa màn hình, xem link_dialog_small.toml.
-# Item trong dialog chỉ để truyền biến: đổi giá trị không chạy lệnh (run / on / off / confirm bị bỏ qua).
+# Item trong dialog chỉ để truyền biến: đổi giá trị không chạy lệnh (script / confirm bị bỏ qua).
 # button và link không dùng được trong dialog (đã có Hủy / Xác nhận).
-# Bấm Xác nhận mới chạy run của link đã mở dialog; Hủy, X hoặc Back thì khôi phục biến về lúc mở.
+# Bấm Xác nhận mới chạy script của link đã mở dialog; Hủy, X hoặc Back thì khôi phục biến về lúc mở.
 
 [[item]]
 type    = "text"

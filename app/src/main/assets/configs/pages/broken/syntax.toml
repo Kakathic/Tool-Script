@@ -12,5 +12,5 @@ title = "Nhóm mẫu
 [[group.item]]
 type  = "button"
 title = "Nút mẫu"
-run   = 'echo "xin chào"'
+script = 'echo "xin chào"'
 shell = "banner"

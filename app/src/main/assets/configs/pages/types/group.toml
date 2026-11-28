@@ -1,5 +1,5 @@
 # [[group]]: gom item vào một thẻ. Khai báo [[group]] rồi các item con là [[group.item]].
-# group không phải một type. Dùng được title (không bắt buộc), visible_if, lock, lock_mode; chưa hỗ trợ icon.
+# group không phải một type. Dùng được title (không bắt buộc), visible, readonly, lock (và bản -sh); chưa hỗ trợ icon.
 # Chưa hỗ trợ group lồng group ([[group.group]] bị bỏ qua kèm cảnh báo, xem tab Trang hỏng).
 
 [[item]]
@@ -51,23 +51,29 @@ title = "Điều khiển cả group"
 type  = "switch"
 id    = "t_group_show"
 title = "Hiện group bên dưới"
-desc  = "visible_if đặt ở cấp group"
+desc  = "visible đặt ở cấp group"
 
 [[group.item]]
 type  = "switch"
 id    = "t_group_lock"
 title = "Khóa group bên dưới"
-desc  = "lock đặt ở cấp group, mặc định readonly: mờ, không bấm được"
+desc  = "readonly đặt ở cấp group: mọi mục trong group mờ, không bấm được"
+
+[[group.item]]
+type  = "switch"
+id    = "t_group_lock2"
+title = "Khóa group (lock) bên dưới"
+desc  = "lock đặt ở cấp group: bấm vào mục nào trong group cũng hiện lý do"
 
 [[group]]
 title      = "Group bị điều khiển"
-visible_if = "t_group_show == 1"
-lock       = "t_group_lock == 1"
+visible    = "t_group_show == 1"
+readonly   = "t_group_lock == 1"
 
 [[group.item]]
 type  = "button"
 title = "Nút trong group"
-run   = 'echo "Group đang mở"'
+script = 'echo "Group đang mở"'
 shell = "banner"
 
 [[group.item]]
@@ -77,13 +83,12 @@ title = "Công tắc trong group"
 
 [[group]]
 title      = "Group ẩn khi không root"
-lock       = "ROOT_MODE != root"
-lock_mode  = "hide"
+visible    = "ROOT_MODE == root"
 
 [[group.item]]
 type  = "button"
 title = "Nút chỉ có khi root"
-run   = 'echo "Đang có root"'
+script = 'echo "Đang có root"'
 shell = "banner"
 
 [[group]]
@@ -104,3 +109,13 @@ desc    = "Không có divider nên dính liền item ba."
 type    = "text"
 title   = "Item ba"
 desc    = "Item cuối: divider ở đây (nếu có) sẽ không được vẽ."
+
+[[group]]
+title = "Group bị lock"
+lock  = "t_group_lock2 == 1|Group này đang bị khóa"
+
+[[group.item]]
+type   = "button"
+title  = "Nút trong group bị lock"
+script = 'echo "Group đang mở"'
+shell  = "banner"

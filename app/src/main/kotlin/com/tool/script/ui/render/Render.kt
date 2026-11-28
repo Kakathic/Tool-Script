@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -46,7 +47,7 @@ import com.tool.script.config.Item
 import com.tool.script.config.SelectOption
 import coil3.compose.AsyncImage
 import com.tool.script.config.ItemType
-import com.tool.script.config.LockMode
+import com.tool.script.state.ShellFlags
 import com.tool.script.config.ShellMode
 import com.tool.script.crash.CrashDemo
 import com.tool.script.executor.ExecResult
@@ -106,7 +107,7 @@ import com.tool.script.ui.theme.LocalMonetEnabled
 import kotlin.math.roundToInt
 
 // Renderer: ánh xạ type trong TOML sang composable Miuix.
-// Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng lock (readonly = alpha / hide) và visible_if.
+// Lề 2 bên 16dp, khoảng cách giữa các thẻ 16dp (do trang đặt). Áp dụng visible (ẩn / hiện), readonly (mờ, không bấm được) và lock (bấm thì hiện snackbar lý do).
 
 private const val SELECTED_ALPHA = 0.16f
 
@@ -116,8 +117,11 @@ private const val UNSELECTED_ALPHA = 0.06f
 // Độ đậm nền nút Chạy (0 = trong suốt, 1 = đặc). Muốn nhạt hơn nữa thì giảm số này.
 internal const val RUN_BUTTON_ALPHA = 0.16f
 
-// Lệnh `get` (đọc trạng thái) không khai báo timeout vẫn giới hạn 30 giây để không treo giao diện; lệnh run thì không giới hạn.
+// Lệnh `get` (đọc trạng thái) không khai báo timeout vẫn giới hạn 30 giây để không treo giao diện; lệnh script thì không giới hạn.
 private const val GET_TIMEOUT_SEC = 30
+
+// Lệnh `visible-sh` / `readonly-sh` / `lock-sh` chạy mỗi khi biến đổi nên giới hạn ngắn.
+private const val FLAG_TIMEOUT_SEC = 5
 
 // Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
 // Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.
@@ -149,11 +153,13 @@ class RenderEnv(
     val openPage: (String) -> Unit,
     /** true = chỉ truyền biến (trang dialog): item không chạy lệnh, lệnh do nút Xác nhận của dialog chạy. */
     val varsOnly: Boolean = false,
+    /** Kết quả các lệnh `-sh` (visible / readonly / lock). Dialog dùng chung bản của trang để không chạy lại. */
+    val flags: ShellFlags = ShellFlags(store, scope) { ExecutorManager.current.exec(it, FLAG_TIMEOUT_SEC) },
 ) {
     var confirm by mutableStateOf<ConfirmRequest?>(null)
 
     /** Bản dùng trong dialog: cùng kho biến, nhưng item chỉ đổi biến, không chạy lệnh. */
-    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true)
+    fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true, flags = flags)
 
     /**
      * Chạy [command] của [item] với các biến trong kho cộng [extra]; hiện kết quả theo `shell`.
@@ -212,39 +218,86 @@ class RenderEnv(
     }
 }
 
-/** Item có được vẽ không (visible_if, và lock kiểu hide). Đọc kho biến nên tự vẽ lại khi biến đổi. */
-fun isShown(item: Item, store: VariableStore): Boolean {
-    val visibleIf = item.visibleIf
-    if (visibleIf != null && !store.evaluate(visibleIf)) return false
-    val lock = item.lock
-    if (lock != null && item.lockMode == LockMode.Hide && store.evaluate(lock)) return false
+/**
+ * Item có được vẽ không: `visible` và `visible-sh` (có cả hai thì phải đúng cả hai). `visible-sh` chưa có kết quả
+ * hoặc lệnh lỗi thì coi như hiện. Đọc kho biến và kết quả `-sh` nên tự vẽ lại khi chúng đổi.
+ */
+fun isShown(item: Item, env: RenderEnv): Boolean {
+    val visible = item.visible
+    if (visible != null && !env.store.evaluate(visible)) return false
+    val sh = item.visibleSh
+    if (sh != null && env.flags.get(sh)?.on == false) return false
     return true
 }
 
+/** `readonly` hoặc `readonly-sh` đúng thì item mờ và không bấm được. */
+private fun isReadonly(item: Item, env: RenderEnv): Boolean {
+    val cond = item.readonly
+    if (cond != null && env.store.evaluate(cond)) return true
+    val sh = item.readonlySh
+    return sh != null && env.flags.get(sh)?.on == true
+}
+
+/** Item bị `lock` thì trả lý do ("" = dùng câu mặc định), không bị khóa thì null. */
+private fun lockMessage(item: Item, env: RenderEnv): String? {
+    val cond = item.lock
+    if (cond != null && env.store.evaluate(cond)) return item.lockMsg.orEmpty()
+    val sh = item.lockSh
+    if (sh != null) {
+        val result = env.flags.get(sh)
+        if (result?.on == true) return result.message ?: item.lockMsg.orEmpty()
+    }
+    return null
+}
+
+/**
+ * Vẽ một item. [parentReadonly] / [parentLock] là trạng thái kế thừa từ `[[group]]` chứa nó:
+ * group `readonly` thì mọi con mờ; group `lock` thì bấm vào con nào cũng hiện lý do (lý do của con ưu tiên hơn).
+ */
 @Composable
-fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false) {
-    val lock = item.lock
-    val locked = lock != null && env.store.evaluate(lock)
-    // Item bị khóa (mờ) khi dính `lock`, hoặc khi banner của chính nó còn hiện (đang chạy tới hết đếm ngược 5 giây); item banner khác vẫn bấm được.
+fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false, parentReadonly: Boolean = false, parentLock: String? = null) {
+    val readonly = parentReadonly || isReadonly(item, env)
+    // readonly thắng lock: item mờ và không bấm được thì không cần hiện lý do.
+    val lockMsg = if (readonly) null else (lockMessage(item, env) ?: parentLock)
+    if (item.type == ItemType.Group) {
+        GroupItem(item, env, readonly, lockMsg)
+        return
+    }
+    // Item mờ khi readonly, hoặc khi banner của chính nó còn hiện (đang chạy tới hết đếm ngược 5 giây); item banner khác vẫn bấm được.
     val bannerBusy = (item.shell == ShellMode.Banner || item.shell == ShellMode.Notice) && env.feedback.isBusy(item)
-    val enabled = !locked && !bannerBusy
+    val enabled = !readonly && !bannerBusy
     val modifier = Modifier
         .fillMaxWidth()
         .alpha(if (enabled) 1f else 0.4f)
-    when (item.type) {
-        ItemType.Text -> TextItem(item, modifier, inGroup)
-        ItemType.Group -> GroupItem(item, env)
-        ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
-        ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
-        ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
-        ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
-        ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
-        ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
-        ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
-        ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
-        ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
-        ItemType.Radio -> RadioItem(item, env, modifier, enabled, inGroup)
-        ItemType.Progress -> ProgressItem(item, env, modifier, inGroup)
+    Box(Modifier.fillMaxWidth()) {
+        when (item.type) {
+            ItemType.Text -> TextItem(item, modifier, inGroup)
+            ItemType.Group -> Unit
+            ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
+            ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
+            ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
+            ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
+            ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
+            ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
+            ItemType.Checkbox -> CheckboxItem(item, env, modifier, enabled, inGroup)
+            ItemType.Radio -> RadioItem(item, env, modifier, enabled, inGroup)
+            ItemType.Progress -> ProgressItem(item, env, modifier, inGroup)
+        }
+        // Item bị lock: vẫn vẽ bình thường nhưng một lớp trong suốt nuốt mọi chạm và hiện snackbar lý do.
+        if (lockMsg != null) {
+            val message = lockMsg.ifBlank { stringResource(R.string.lock_default_msg) }
+            val haptic = LocalHapticFeedback.current
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        env.feedback.showSnackbar(message)
+                    },
+            )
+        }
     }
 }
 
@@ -281,8 +334,8 @@ private val GroupTitleShiftLeft = 12.dp
 private val GroupTitleTrimBottom = 4.dp
 
 @Composable
-private fun GroupItem(item: Item, env: RenderEnv) {
-    val children = item.children.filter { isShown(it, env.store) }
+private fun GroupItem(item: Item, env: RenderEnv, readonly: Boolean, lockMsg: String?) {
+    val children = item.children.filter { isShown(it, env) }
     if (children.isEmpty()) return // group trống (con bị ẩn hết) thì ẩn luôn cả tiêu đề
     Column {
         // Group không có title thì không vẽ tiêu đề, chỉ còn thẻ.
@@ -301,7 +354,7 @@ private fun GroupItem(item: Item, env: RenderEnv) {
         // Mọi item con gộp chung trong một thẻ lớn, tiêu đề dính sát thẻ.
         Card(Modifier.fillMaxWidth()) {
             children.forEachIndexed { index, child ->
-                ItemRenderer(child, env, inGroup = true)
+                ItemRenderer(child, env, inGroup = true, parentReadonly = readonly, parentLock = lockMsg)
                 // Đường kẻ chỉ vẽ giữa hai item đang hiện: item cuối (kể cả khi các item sau bị ẩn) và group chỉ có một item thì bỏ qua.
                 if (child.divider && index < children.lastIndex) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -321,7 +374,7 @@ private fun ButtonItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
             startAction = itemIcon(item),
             endActions = { EndIcon(AppIcons.BarRun) },
             enabled = enabled,
-            onClick = withTapHaptic { env.run(item, item.run) },
+            onClick = withTapHaptic { env.run(item, item.script) },
         )
     }
 }
@@ -392,7 +445,7 @@ private fun BinaryItem(
 
     val apply: (Boolean) -> Unit = { newValue ->
         val value = if (newValue) "1" else "0"
-        val command = if (newValue) item.on else item.off
+        val command = item.script
         // Chỉ đổi trạng thái khi lệnh thành công (hoặc item không có lệnh).
         env.run(item, command, mapOf(id to value)) { result ->
             if (result.ok) env.store[id] = value
@@ -432,7 +485,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
         item.options.forEach { option ->
             val select = {
                 if (option.value != current) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                env.run(item, item.script, mapOf(id to option.value)) { result ->
                     if (result.ok) env.store[id] = option.value
                 }
             }
@@ -517,8 +570,8 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
                 // Nút Chạy nằm ngay trong ô nhập, sát mép phải (trang dialog không có nút).
                 trailingIcon = if (env.varsOnly) null else {
                     {
-                        val runEnabled = enabled && !item.run.isNullOrBlank()
-                        val onRun = withTapHaptic { env.run(item, item.run) }
+                        val runEnabled = enabled && !item.script.isNullOrBlank()
+                        val onRun = withTapHaptic { env.run(item, item.script) }
                         Box(
                             modifier = Modifier
                                 .padding(start = RUN_BUTTON_GAP_START, end = RUN_BUTTON_GAP)
@@ -543,7 +596,7 @@ private fun InputItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
     }
 }
 
-// Chọn nhiều: hàng hiện các mục đã chọn; hộp thoại (hoặc toàn màn hình khi từ 6 mục) có ô tích, bấm Xác nhận mới lưu và chạy `run` (chỉ khi có thay đổi).
+// Chọn nhiều: hàng hiện các mục đã chọn; hộp thoại (hoặc toàn màn hình khi từ 6 mục) có ô tích, bấm Xác nhận mới lưu và chạy `script` (chỉ khi có thay đổi).
 @Composable
 private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -597,7 +650,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
             if (!env.varsOnly) showDialog = false
             val newValue = item.options.filter { it.value in chosen }.joinToString(item.separator) { it.value }
             if (newValue != current) {
-                env.run(item, item.run, mapOf(id to newValue)) { result ->
+                env.run(item, item.script, mapOf(id to newValue)) { result ->
                     if (result.ok) env.store[id] = newValue
                 }
             }
@@ -633,7 +686,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
                         showDialog = false
                         val newValue = item.options.filter { it.value in draft }.joinToString(item.separator) { it.value }
                         if (newValue != current) {
-                            env.run(item, item.run, mapOf(id to newValue)) { result ->
+                            env.run(item, item.script, mapOf(id to newValue)) { result ->
                                 if (result.ok) env.store[id] = newValue
                             }
                         }
@@ -694,7 +747,7 @@ private fun ChoiceCard(
     }
 }
 
-// Chọn một: hàng hiện mục đang chọn. Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy `run` luôn (chỉ khi có thay đổi), không có nút. Toàn màn hình (từ 6 mục, có ô tìm): chọn rồi bấm Xác nhận mới lưu và chạy.
+// Chọn một: hàng hiện mục đang chọn. Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy `script` luôn (chỉ khi có thay đổi), không có nút. Toàn màn hình (từ 6 mục, có ô tìm): chọn rồi bấm Xác nhận mới lưu và chạy.
 @Composable
 private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
@@ -746,7 +799,7 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
             showDialog = false
             val newValue = chosen.firstOrNull() ?: current
             if (newValue != current) {
-                env.run(item, item.run, mapOf(id to newValue)) { result ->
+                env.run(item, item.script, mapOf(id to newValue)) { result ->
                     if (result.ok) env.store[id] = newValue
                 }
             }
@@ -762,10 +815,10 @@ private fun SingleSelectItem(item: Item, env: RenderEnv, modifier: Modifier, ena
                             if (!selected) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             draft = option.value
                             // Hộp nhỏ: chạm là chọn luôn và đóng, không có Hủy / Xác nhận (chạm ra ngoài hoặc Back để thoát).
-                            // Trong dialog thì chỉ ghi biến (Hủy của dialog khôi phục); ngoài dialog chạy `run` nếu giá trị đổi.
+                            // Trong dialog thì chỉ ghi biến (Hủy của dialog khôi phục); ngoài dialog chạy `script` nếu giá trị đổi.
                             showDialog = false
                             if (option.value != current) {
-                                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                env.run(item, item.script, mapOf(id to option.value)) { result ->
                                     if (result.ok) env.store[id] = option.value
                                 }
                             }
@@ -962,7 +1015,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
     if (LocalGlassEnabled.current) {
         ItemSurface(modifier, inGroup) {
             GlassDropdownRow(item, current, enabled, LocalGlassBackdrop.current) { option ->
-                env.run(item, item.run, mapOf(id to option.value)) { result ->
+                env.run(item, item.script, mapOf(id to option.value)) { result ->
                     if (result.ok) env.store[id] = option.value
                 }
             }
@@ -1014,7 +1067,7 @@ private fun DropdownItem(item: Item, env: RenderEnv, modifier: Modifier, enabled
                                 onSelectedIndexChange = {
                                     haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                                     expanded = false
-                                    env.run(item, item.run, mapOf(id to option.value)) { result ->
+                                    env.run(item, item.script, mapOf(id to option.value)) { result ->
                                         if (result.ok) env.store[id] = option.value
                                     }
                                 },
@@ -1073,7 +1126,7 @@ private fun SliderItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: 
                 enabled = enabled,
                 valueRange = item.min..item.max,
                 steps = steps,
-                onValueChangeFinished = { env.run(item, item.run) },
+                onValueChangeFinished = { env.run(item, item.script) },
                 // Rung đã tự xử lý ở onValueChange; tắt rung có sẵn của Miuix để không bị rung đôi.
                 hapticEffect = SliderDefaults.SliderHapticEffect.None,
             )

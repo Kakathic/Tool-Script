@@ -1,4 +1,4 @@
-# type = "multiselect": chọn nhiều, có Xác nhận. Trường riêng: options, default, run, columns, separator.
+# type = "multiselect": chọn nhiều, có Xác nhận. Trường riêng: options, default, script, columns, separator.
 # $id = các giá trị đã chọn nối bằng separator (mặc định mỗi giá trị một dòng), theo thứ tự khai báo trong options.
 # default là các giá trị chọn sẵn, cách nhau bằng separator ("a\nc" = chọn a và c).
 # Từ 6 mục trở lên: toàn màn hình, có ô tìm và ô Chọn tất cả (chỉ tác động lên mục đang hiện trong kết quả tìm).
@@ -18,7 +18,7 @@ title   = "Hai cột, chọn sẵn A và C"
 desc    = 'default = "a\nc", columns = 2'
 default = "a\nc"
 columns = 2
-run     = 'echo "Đã chọn: $t_multi_2col"'
+script  = 'echo "Đã chọn: $t_multi_2col"'
 shell   = "banner"
 options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
 
@@ -29,7 +29,7 @@ title     = "Phân tách bằng dấu |"
 desc      = 'separator = "|"'
 default   = "net"
 separator = "|"
-run       = 'echo "Đã chọn: $t_multi_sep"'
+script    = 'echo "Đã chọn: $t_multi_sep"'
 shell     = "banner"
 options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
 
@@ -42,6 +42,6 @@ id      = "t_multi_full"
 title   = "Tính năng bật"
 desc    = 'Thử gõ "m" rồi bấm Chọn tất cả'
 default = "audio\nnet"
-run     = 'echo "Đã chọn: $t_multi_full"'
+script  = 'echo "Đã chọn: $t_multi_full"'
 shell   = "banner"
 options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage"]

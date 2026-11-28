@@ -18,7 +18,7 @@ default = "xin chào"
 [[group.item]]
 type  = "button"
 title = "Nút không dùng được trong dialog"
-run   = 'echo "không chạy"'
+script = 'echo "không chạy"'
 
 [[group.item]]
 type  = "link"

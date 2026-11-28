@@ -260,7 +260,7 @@ fun MainScreen(
         if (top != null && top.dialog) {
             val action = top.action
             if (confirmed) {
-                if (action != null) env.run(action, action.run)
+                if (action != null) env.run(action, action.script)
             } else {
                 dialogSnapshot.forEach { (name, value) -> result.store[name] = value }
             }
@@ -443,7 +443,7 @@ fun MainScreen(
                                             HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { pageIndex ->
                                                 val page = pages[pageIndex]
                                                 PageList(
-                                                    list = page.items.filter { isShown(it, env.store) },
+                                                    list = page.items.filter { isShown(it, env) },
                                                     error = page.error,
                                                     file = page.ref.file,
                                                     warnings = page.warnings,
@@ -784,7 +784,7 @@ private fun SubPageScreen(
         ) {
             Box(Modifier.weight(1f)) {
                 PageList(
-                    list = page.items.filter { isShown(it, pageEnv.store) },
+                    list = page.items.filter { isShown(it, pageEnv) },
                     error = page.error,
                     file = page.file,
                     warnings = page.warnings,
@@ -845,7 +845,7 @@ private fun AnimatedVisibilityScope.FullDialogLayer(
 
 /** Số mục hiển thị của dialog: mục trong group tính riêng từng mục con (group không tính). */
 private fun dialogItemCount(items: List<Item>, env: RenderEnv): Int =
-    items.filter { isShown(it, env.store) }.sumOf { if (it.type == ItemType.Group) dialogItemCount(it.children, env) else 1 }
+    items.filter { isShown(it, env) }.sumOf { if (it.type == ItemType.Group) dialogItemCount(it.children, env) else 1 }
 
 /**
  * Dialog nhỏ gọn giữa màn hình (dùng khi có ít hơn [DIALOG_FULL_MIN_ITEMS] mục): tiêu đề, các mục (cuộn nếu cao), rồi Hủy / Xác nhận.
@@ -868,7 +868,7 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
             ) {
                 if (shouldShowPageWarnings(page.file, page.warnings)) PageWarningBanner(page.file, page.warnings)
                 page.error?.let { PageErrorCard(it) }
-                page.items.filter { isShown(it, pageEnv.store) }.forEach { ItemRenderer(it, pageEnv) }
+                page.items.filter { isShown(it, pageEnv) }.forEach { ItemRenderer(it, pageEnv) }
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

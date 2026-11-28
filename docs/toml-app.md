@@ -13,8 +13,7 @@ Ví dụ ngắn nhất, một công tắc bật tắt một thông số:
 type  = "switch"
 id    = "game_mode"
 title = "Chế độ game"
-on    = "echo 1 > /sys/xxx"
-off   = "echo 0 > /sys/xxx"
+script = "echo $game_mode > /sys/xxx"
 ```
 
 ## 2. Luồng chạy
@@ -43,11 +42,11 @@ Trang gồm `[[item]]` (mỗi item một thẻ) và `[[group]]` có `[[group.ite
 |---|---|
 | Type | `text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `singleselect`, `multiselect`, `progress`, `link`; `[[group]]` để gom nhóm |
 | Lưu giá trị | Item có `id` tự lưu vào file tên = id trong `$STATE_DIR`, mở lại app vẫn giữ; lệnh dùng giá trị qua `$id` |
-| Điều kiện | `visible_if` ẩn/hiện, `lock` khóa (mờ hoặc ẩn, theo `lock_mode`); toán tử `==`, `!=`, `&&`, `\|\|`; biến `SDK`, `ABI`, `ARCH`, `ROOT_MODE` và `id` của item |
-| Chạy lệnh | `run`, `on`, `off`, `get`; `confirm` hỏi trước khi chạy; `timeout` giới hạn giây |
+| Điều kiện | `visible` ẩn/hiện, `readonly` mờ, `lock` bấm hiện snackbar lý do (mỗi khóa có bản `-sh` chạy shell); toán tử `==`, `!=`, `&&`, `\|\|`; biến `SDK`, `ABI`, `ARCH`, `ROOT_MODE` và `id` của item |
+| Chạy lệnh | `script`, `get`; `confirm` hỏi trước khi chạy; `timeout` giới hạn giây |
 | Hiển thị kết quả | `shell = live / full / hidden / banner / notice / snackbar`; thanh tiến trình bằng dòng `@progress N`; stderr màu đỏ |
 | Chạy nền | Bảng log có nút Ẩn: lệnh chạy tiếp, log đi vào thông báo Android; nút Hủy chạy `killtree` giết cả cây tiến trình |
-| Điều hướng | `link` chuyển tab, mở trang con, hoặc mở dialog (Xác nhận mới chạy `run`) |
+| Điều hướng | `link` chuyển tab, mở trang con, hoặc mở dialog (Xác nhận mới chạy `script`) |
 | Chọn nhiều mục | `singleselect` / `multiselect` từ 6 mục thì toàn màn hình, có ô tìm không phân biệt dấu; `multiselect` có Chọn tất cả |
 | Icon | `icon`, `icon_size`, `icon_tint` cho mọi item trừ `text` |
 | Môi trường shell | `env.sh` (biến đường dẫn), `[app] env`, lệnh dựng sẵn `busybox`, `slog`, `glog`, `killtree` |
@@ -70,9 +69,9 @@ Quy ước: `id` của item demo có tiền tố theo trang (`t_switch_...`, `n_
 
 ### Đặc biệt với tab Lỗi code
 
-- `run = "@crash"` hoặc `"@crash-thread"` làm app thoát thật rồi mở Trung tâm lỗi (tiến trình `:crash`). Luôn kèm `confirm`.
+- `script = "@crash"` hoặc `"@crash-thread"` làm app thoát thật rồi mở Trung tâm lỗi (tiến trình `:crash`). Luôn kèm `confirm`.
 - Lỗi lệnh shell không làm app thoát: log hiện mã lỗi và phần đã in. `hidden` chỉ hiện toast, `banner` / `snackbar` / `notice` hiện nền đỏ nhạt.
-- `switch` / `checkbox`: lệnh `on` hoặc `off` lỗi thì trạng thái không đổi.
+- `switch` / `checkbox`: lệnh `script` lỗi thì trạng thái không đổi.
 
 ### Đặc biệt với tab Trang hỏng
 
@@ -85,7 +84,7 @@ Quy ước: `id` của item demo có tiền tố theo trang (`t_switch_...`, `n_
 1. Tạo `assets/configs/pages/<ten>.toml`.
 2. Thêm `[[tab]]` vào `main.toml` (bắt buộc `id`, `title`, `icon`, `file`), hoặc mở bằng link `page` từ trang khác.
 3. Đặt `id` hợp lệ (chữ, số, `_`; không bắt đầu bằng số), không trùng giữa các trang.
-4. Đặt lệnh trong nháy đơn khi chứa nháy kép hoặc `$`: `run = 'echo "$id"'`.
+4. Đặt lệnh trong nháy đơn khi chứa nháy kép hoặc `$`: `script = 'echo "$id"'`.
 5. Luôn đặt `$id` trong nháy kép trong lệnh.
 
 ## 7. Chưa làm
