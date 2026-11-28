@@ -160,7 +160,7 @@ private val FloatingBarBandExtra = 28.dp
 private val FloatingBarSideMargin = 16.dp
 
 /** Khoảng trống giữa mép dưới thanh trên và thẻ đầu tiên của danh sách (màn hình chính). */
-private val ListTopGap = 0.dp
+private val ListTopGap = 2.dp
 
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
