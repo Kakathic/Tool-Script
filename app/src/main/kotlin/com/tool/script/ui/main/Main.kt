@@ -156,6 +156,9 @@ import kotlin.math.max
 /** Phần dải nền phía sau đảo kính nhô lên trên đỉnh đảo (dp). */
 private val FloatingBarBandExtra = 28.dp
 
+/** Lề trái / phải của đảo kính (thanh tab nổi), bằng lề thẻ 16dp để đảo rộng ngang hàng với thẻ. */
+private val FloatingBarSideMargin = 16.dp
+
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
  * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi item `app_language` trong TOML đổi giá trị.
@@ -485,7 +488,7 @@ fun MainScreen(
                                                 backdrop = backdrop,
                                                 modifier = Modifier
                                                     .align(Alignment.BottomCenter)
-                                                    .padding(horizontal = 24.dp)
+                                                    .padding(horizontal = FloatingBarSideMargin)
                                                     .onSizeChanged { floatingBarHeight = with(density) { it.height.toDp() } },
                                             )
                                         }
