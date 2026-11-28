@@ -1,6 +1,5 @@
 package com.tool.script.ui.render
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -154,7 +153,8 @@ internal fun FilePicker(
     }
     val canConfirm = selected.isNotEmpty() || folder
 
-    BackHandler {
+    // Dialog là cửa sổ riêng nên phím Back vào thẳng cửa sổ này (gọi onDismissRequest), BackHandler của Activity không nhận được.
+    val onBack = {
         if (history.isEmpty()) {
             onDismiss()
         } else {
@@ -164,7 +164,7 @@ internal fun FilePicker(
         }
     }
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onBack,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
         Column(
