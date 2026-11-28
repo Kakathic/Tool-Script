@@ -27,7 +27,7 @@ private const val BarBlurTint = 0.8f
  * Dùng chung cho ngưỡng kích hoạt: ở màn hình chính, nút chuyển sang viên kính tròn và dải mờ bật khi danh sách cuộn quá đúng chừng này (Main.kt),
  * nên đổi số này thì cả chiều cao blur lẫn chiều cao kích hoạt đổi theo.
  */
-val GlassBarBandOverhang = 16.dp
+val GlassBarBandOverhang = 20.dp
 
 /** Máy có hỗ trợ blur không (Android 13+). Dưới mức này thanh giữ nền đặc như cũ và công tắc "Làm mờ nền" bị ẩn. */
 fun isBlurSupported(): Boolean = isRuntimeShaderSupported()
