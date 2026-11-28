@@ -146,6 +146,23 @@ internal fun FilePicker(
             if (path in selected) emptySet() else setOf(path)
         }
     }
+    // Chọn tất cả (multi): các mục chọn được đang hiện (đã qua ô tìm) trong thư mục này; mục ở thư mục khác giữ nguyên.
+    val selectablePaths = remember(shown, dir) { shown.filter { it.isDir == folder }.map { joinPath(dir, it.name) } }
+    val checkedHere = selectablePaths.count { it in selected }
+    val allState = when {
+        selectablePaths.isEmpty() || checkedHere == 0 -> ToggleableState.Off
+        checkedHere == selectablePaths.size -> ToggleableState.On
+        else -> ToggleableState.Indeterminate
+    }
+    val toggleAll = {
+        if (allState == ToggleableState.On) {
+            haptic.performHapticFeedback(HapticFeedbackType.ToggleOff)
+            selected = selected - selectablePaths.toSet()
+        } else {
+            haptic.performHapticFeedback(HapticFeedbackType.ToggleOn)
+            selected = selected + selectablePaths
+        }
+    }
     val confirm = {
         // Thư mục: không chọn gì thì lấy thư mục đang mở. Tệp: phải chọn ít nhất một.
         val result = if (selected.isNotEmpty()) selected.toList() else if (folder) listOf(dir) else emptyList()
@@ -240,16 +257,42 @@ internal fun FilePicker(
             )
             Spacer(Modifier.height(PICKER_MARGIN - PICKER_ROW_MARGIN.calculateTopPadding()))
             Column(Modifier.weight(1f).fillMaxWidth().padding(horizontal = PICKER_MARGIN)) {
-                if (dir != "/") {
+                // Dòng đầu: ".." (lên thư mục cha) bên trái; multi thì "Chọn tất cả" và ô chọn sát lề phải cùng dòng.
+                if (dir != "/" || multi) {
+                    val canSelectAll = selectablePaths.isNotEmpty() && !loading
                     BasicComponent(
                         insideMargin = PICKER_ROW_MARGIN,
-                        modifier = Modifier.fillMaxWidth().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        modifier = Modifier.fillMaxWidth().clickable(
+                            enabled = dir != "/",
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
                             haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             go(parentOf(dir))
                         },
-                        title = "..",
-                        summary = stringResource(R.string.path_up),
-                        startAction = { PathIcon(AppIcons.BarFolder) },
+                        title = if (dir != "/") ".." else null,
+                        summary = if (dir != "/") stringResource(R.string.path_up) else null,
+                        startAction = if (dir != "/") ({ PathIcon(AppIcons.BarFolder) }) else null,
+                        endActions = {
+                            if (multi) {
+                                Row(
+                                    Modifier.clickable(
+                                        enabled = canSelectAll,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                    ) { toggleAll() },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        stringResource(R.string.select_all),
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                        style = MiuixTheme.textStyles.body2,
+                                        modifier = Modifier.padding(end = 8.dp),
+                                    )
+                                    Checkbox(state = allState, enabled = canSelectAll, onClick = { toggleAll() })
+                                }
+                            }
+                        },
                     )
                     HorizontalDivider()
                 }
