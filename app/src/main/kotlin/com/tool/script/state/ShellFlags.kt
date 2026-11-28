@@ -15,6 +15,7 @@ data class FlagResult(val on: Boolean, val message: String?)
 
 /**
  * Chạy các lệnh `-sh` (docs/schema.md mục 9): lệnh in ra stdout `0` hoặc rỗng là sai, `1` hoặc `1|lý do` là đúng.
+ * Dùng chung bộ theo dõi này cho `title-sh` / `desc-sh` (mục 9.2): lấy thẳng stdout làm văn bản bằng [text].
  * Mỗi lệnh chỉ có một lần theo dõi (khóa theo chuỗi lệnh): chạy khi được hỏi lần đầu, rồi chạy lại mỗi khi
  * một biến trong kho đổi (đợi [DEBOUNCE_MS] để gõ chữ không chạy lệnh từng phím). Lệnh lỗi hoặc hết giờ thì
  * không có kết quả (null): người gọi coi như không khóa, không ẩn.
@@ -24,7 +25,8 @@ class ShellFlags(
     private val scope: CoroutineScope,
     private val exec: suspend (String) -> ExecResult,
 ) {
-    private val results = mutableStateMapOf<String, FlagResult>()
+    // Stdout mới nhất của từng lệnh (không có = chưa chạy xong hoặc lệnh lỗi).
+    private val outputs = mutableStateMapOf<String, String>()
     private val started = HashSet<String>()
     private val refreshTicks = mutableStateMapOf<String, Int>()
 
@@ -36,7 +38,13 @@ class ShellFlags(
     /** Kết quả mới nhất của [command]; null khi chưa chạy xong hoặc lệnh lỗi. Gọi lần đầu sẽ bắt đầu theo dõi lệnh. */
     fun get(command: String): FlagResult? {
         request(command)
-        return results[command]
+        return outputs[command]?.let(::parse)
+    }
+
+    /** Stdout (đã cắt khoảng trắng đầu cuối) của [command] cho `title-sh` / `desc-sh`; null khi chưa chạy xong, lệnh lỗi hoặc in ra rỗng. */
+    fun text(command: String): String? {
+        request(command)
+        return outputs[command]?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     @Synchronized
@@ -48,7 +56,7 @@ class ShellFlags(
                 if (!first) delay(DEBOUNCE_MS)
                 first = false
                 val result = exec(ShellText.silenceStderr(ShellText.withEnv(command, vars)))
-                if (result.ok) results[command] = parse(result.output) else results.remove(command)
+                if (result.ok) outputs[command] = result.output else outputs.remove(command)
             }
         }
     }

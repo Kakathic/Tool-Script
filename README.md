@@ -103,7 +103,7 @@ Giai đoạn 2: giao diện
 
 - [x] Màn hình chính: tiêu đề lớn kiểu Miuix thu gọn khi vuốt lên (`LargeTitleTopBar`, dùng `MiuixScrollBehavior`), `HorizontalPager`, thanh tab cửa sổ trượt 5 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
-- [x] Trường chung: `visible`, `readonly`, `lock` (và bản `-sh`), `refresh`, `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
+- [x] Trường chung: `visible`, `readonly`, `lock` (và bản `-sh`), `title-sh` / `desc-sh`, `refresh`, `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
 - [x] Icon Nguồn (menu khởi động lại, thả xuống ngay dưới icon) và Cài đặt (hộp thoại giữa màn hình, sát lề phải) ở thanh trên cùng.
 - [x] Chủ đề (trong hộp thoại Cài đặt): hàng ngang chọn Hệ thống / Sáng / Tối, kèm ô tích Màu động (Monet) của Miuix cho cả ba; được lưu lại (vẫn là 6 giá trị `ThemeMode`, không đổi dữ liệu lưu).
 - [x] Ngôn ngữ (trong hộp thoại Cài đặt): Hệ thống / English / Tiếng Việt, đổi ngay không cần mở lại app.

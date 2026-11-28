@@ -52,6 +52,9 @@ data class Item(
     val lock: String?,
     val lockMsg: String?,
     val lockSh: String?,
+    // title-sh / desc-sh: lệnh shell in tiêu đề (dòng đầu) / mô tả (cả đầu ra); title / desc là giá trị tạm và dự phòng
+    val titleSh: String?,
+    val descSh: String?,
     // refresh: sau khi lệnh của item chạy xong thành công, làm mới cả trang (true) hoặc các id này trong cùng trang.
     // Đọc từ TOML vào refreshAll / refreshIds, rồi resolveRefresh gộp thành refreshIds (id trong trang) + refreshSh (lệnh -sh của các item đó).
     val refreshAll: Boolean,
@@ -169,7 +172,7 @@ object TomlParser {
     private val TAB_KEYS = setOf("id", "title", "icon", "file")
     private val PAGE_KEYS = setOf("item", "group")
     private val ITEM_KEYS = setOf(
-        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "refresh", "confirm", "timeout",
+        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "refresh", "title-sh", "desc-sh", "confirm", "timeout",
         "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "options-sh", "separator",
         "columns", "tab", "page", "style", "shell", "divider", "multi",
     )
@@ -296,7 +299,7 @@ object TomlParser {
             return item.copy(
                 children = children,
                 refreshIds = targets.mapNotNull { it.id }.distinct(),
-                refreshSh = targets.flatMap { listOfNotNull(it.visibleSh, it.readonlySh, it.lockSh) }.distinct(),
+                refreshSh = targets.flatMap { listOfNotNull(it.visibleSh, it.readonlySh, it.lockSh, it.titleSh, it.descSh) }.distinct(),
             )
         }
         return items.map(::resolve)
@@ -353,14 +356,16 @@ object TomlParser {
             return null
         }
         val rawTitle = t.str("title")
+        val titleSh = t.str("title-sh")?.takeIf { it.isNotBlank() }
+        val descSh = t.str("desc-sh")?.takeIf { it.isNotBlank() }
         // `[[group]]` và `text` không bắt buộc title: group không có title thì thẻ không kèm tiêu đề; text không có title thì chỉ hiện đoạn chữ (desc).
-        // Item khác vẫn bắt buộc title.
-        if (rawTitle.isNullOrBlank() && !isGroup) {
+        // Có `title-sh` thì không cần title. Item khác vẫn bắt buộc title (hoặc title-sh).
+        if (rawTitle.isNullOrBlank() && titleSh == null && !isGroup) {
             if (type != ItemType.Text) {
                 warnings += AppText.get(R.string.cfg_item_missing_title, label, type.key)
                 return null
             }
-            if (t.str("desc").isNullOrBlank()) {
+            if (t.str("desc").isNullOrBlank() && descSh == null) {
                 warnings += AppText.get(R.string.cfg_text_empty, label)
                 return null
             }
@@ -553,6 +558,8 @@ object TomlParser {
             lock = lockCondition.takeIf { it.isNotBlank() },
             lockMsg = lockRawMsg?.let { strings.resolve(it) },
             lockSh = t.str("lock-sh")?.takeIf { it.isNotBlank() },
+            titleSh = titleSh,
+            descSh = descSh,
             refreshAll = refreshAll,
             refreshIds = refreshIds,
             refreshSh = emptyList(),

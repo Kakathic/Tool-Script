@@ -4,6 +4,7 @@ Mỗi lần có cập nhật hoặc sửa lỗi đều ghi vào đây: thêm dò
 Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu để hiện trong phần Nhật ký khi có bản cập nhật.
 
 ## 0.1.0 · 2026-11-27
+- Thêm: khóa `title-sh` và `desc-sh` cho mọi item: lệnh shell in tiêu đề (dòng đầu) / mô tả (cả đầu ra) động; `title` / `desc` là giá trị tạm và dự phòng khi chưa chạy xong, lỗi hoặc rỗng. Chạy lại khi biến đổi hoặc `refresh`. Có `title-sh` thì không cần `title`.
 - Đổi: type `applist` bỏ khóa `get`, dùng `options-sh` (lệnh shell in danh sách app, mỗi dòng một package). TOML cũ còn `get` sẽ báo cảnh báo; thiếu `options-sh` thì bỏ item.
 - Đổi: gộp type `multiselect` và `singleselect` thành `select` với `multi = true` (mặc định, chọn nhiều) hoặc `multi = false` (chọn một), giống `applist`. Trang demo gộp thành `pages/types/select.toml`. TOML cũ còn `multiselect` / `singleselect` sẽ báo type không hợp lệ và bị bỏ qua.
 - Đổi: type `applist` mở màn hình chọn ngay khi lệnh `get` cho ra package: mỗi app là một dòng khung xương (shimmer kiểu Facebook), tên app đọc dần theo nhóm và thay đúng vị trí khung xương, xong thì sắp theo tên; góc phải trên hiện "Đang tải danh sách…" rồi "Đã chọn x/y" (multi) hoặc ẩn (chọn một); Xác nhận và Chọn tất cả mờ khi đang tải; danh sách trống thì báo snackbar. Giúp máy nhiều app không bị đơ.

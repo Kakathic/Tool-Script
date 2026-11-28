@@ -1,7 +1,7 @@
 # type = "applist": chọn ứng dụng trên máy. Trường riêng: options-sh, multi, default, script, separator.
 # options-sh (bắt buộc): lệnh shell in danh sách app, mỗi dòng một package (thường là `pm list packages ...`). Chạy lại mỗi lần mở danh sách.
 #   Chấp nhận cả dạng `package:com.x` của pm (kể cả -f, -U, -i). Dùng được biến của item khác (`$id`); `timeout` giới hạn giây (mặc định 20).
-#   Lệnh lỗi, quá giờ hoặc danh sách trống thì hiện snackbar báo và không mở danh sách. Lúc chạy lệnh, hàng hiện "Đang tải danh sách…".
+#   Lệnh lỗi, quá giờ hoặc danh sách trống thì hiện snackbar báo và không mở danh sách.
 # Có package thì màn hình mở ngay: mỗi app là một dòng khung xương (shimmer kiểu Facebook), tên app đọc dần và thay đúng vị trí khung xương;
 #   đọc xong thì sắp theo tên. Góc phải trên hiện "Đang tải danh sách…", xong thì multi hiện "Đã chọn x/y", chọn một thì ẩn.
 #   Lúc đang tải Xác nhận và Chọn tất cả mờ; Hủy dùng được và hủy việc tải.

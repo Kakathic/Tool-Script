@@ -24,6 +24,16 @@ title   = "Dòng hai"
 desc    = "Nội dung có thể dài và tự xuống dòng khi hết chiều ngang thẻ, không bị cắt."
 
 [[group]]
+title = "title-sh / desc-sh (chữ động từ lệnh shell)"
+
+[[group.item]]
+type     = "text"
+title    = "Đang đọc..."
+title-sh = 'echo "Android $(getprop ro.build.version.release)"'
+desc     = "Đang đọc..."
+desc-sh  = 'echo "Model: $(getprop ro.product.model)"; echo "SDK: $(getprop ro.build.version.sdk)"'
+
+[[group]]
 title = "text hiện theo điều kiện (visible)"
 
 [[group.item]]

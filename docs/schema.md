@@ -188,6 +188,7 @@ readonly = "ROOT_MODE != root"
 | `visible` / `visible-sh` | không | Điều kiện hiện item, sai thì ẩn hẳn (mục 8, 9) |
 | `readonly` / `readonly-sh` | không | Điều kiện làm mờ item, không bấm được (mục 9) |
 | `lock` / `lock-sh` | không | Điều kiện khóa: bấm vào thì hiện snackbar lý do (mục 9) |
+| `title-sh` / `desc-sh` | không | Lệnh shell in tiêu đề / mô tả động; `title` / `desc` là giá trị tạm và dự phòng (mục 9.2) |
 | `refresh` | không | `true` làm mới cả trang, hoặc `"id1,id2"` làm mới các item đó (chỉ trong cùng trang), sau khi lệnh của item xong thành công (mục 9.1) |
 | `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `live` |
 | `confirm` | không | Nội dung hộp thoại xác nhận trước khi chạy |
@@ -382,7 +383,7 @@ options-sh = "pm list packages -3 | grep -v google"             # lọc bằng p
 
 - `options-sh` (bắt buộc): lệnh shell in danh sách app. Thiếu `options-sh` thì item bị bỏ kèm cảnh báo; `get` cũ của applist đã đổi tên thành `options-sh` (còn `get` thì báo cảnh báo và bị bỏ qua). Lệnh chạy qua backend shell của app (có root thì chạy bằng root, nên dùng được mọi cờ của `pm`), **chạy lại mỗi lần mở danh sách** nên danh sách luôn mới, và dùng được biến của các item khác như `$user_id`. Khác với `get` của `switch` / `checkbox` / `progress` (chạy khi item hiện, thay giá trị đã lưu): ở `applist`, `get` chỉ tạo danh sách để chọn, còn `$id` vẫn là các package đã chọn và vẫn lưu như thường.
 - Đầu ra của `options-sh`: mỗi dòng một package. Chấp nhận cả dạng của `pm list packages`: `package:com.x`, `package:/đường/dẫn.apk=com.x` (`-f`), kèm phần phụ như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ (chữ, số, `_`, `.`) bị bỏ qua; chính Tool Script và package trùng bị bỏ. stderr của lệnh bị bỏ, không lẫn vào danh sách.
-- Lệnh thoát khác 0, chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) hoặc không có package nào thì hiện snackbar báo và không mở danh sách. Trong lúc chạy `get`, hàng hiện "Đang tải danh sách…".
+- Lệnh thoát khác 0, chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) hoặc không có package nào thì hiện snackbar báo và không mở danh sách. Hàng bên ngoài không hiện chữ đang tải; "Đang tải danh sách…" chỉ hiện trong màn hình chọn.
 - Có package thì màn hình chọn **mở ngay**: mỗi app là một dòng khung xương (dải sáng chạy ngang, kiểu Facebook); tên app đọc dần theo nhóm và thay đúng vị trí khung xương của nó, đọc xong thì sắp theo tên. Góc phải trên hiện "Đang tải danh sách…"; xong thì `multi = true` hiện "Đã chọn x/y", `multi = false` không hiện gì. Lúc đang tải, **Xác nhận** và **Chọn tất cả** mờ, ô tìm chỉ lọc các dòng đã đọc xong, **Hủy** dùng được và hủy việc tải.
 - Tên và icon lấy từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package và không có icon. Danh sách sắp theo tên, không phân biệt hoa thường.
 - `multi`: `true` (mặc định) chọn nhiều, `$id` là các package nối bằng `separator` (mặc định mỗi package một dòng), theo thứ tự danh sách app; `false` chọn một, `$id` là một package, chưa chọn thì rỗng. Giá trị khác `true` / `false` bị báo cảnh báo và dùng `true`.
@@ -497,7 +498,7 @@ lock-sh = 'test -f /sys/xxx && echo 0 || echo "1|Máy không hỗ trợ"'
 | `true` | Mọi item của trang này |
 | `"id1,id2"` | Chỉ các item có `id` đó trong trang này |
 
-- Làm mới là đọc lại `get` và chạy lại các lệnh `visible-sh`, `readonly-sh`, `lock-sh` của các item đó; item không có `get` thì giữ nguyên giá trị.
+- Làm mới là đọc lại `get` và chạy lại các lệnh `visible-sh`, `readonly-sh`, `lock-sh`, `title-sh`, `desc-sh` của các item đó; item không có `get` thì giữ nguyên giá trị.
 - Chạy ngầm, sau khi `script` của chính item xong **thành công** (lệnh lỗi hoặc hết giờ thì không làm mới). Với `switch` / `checkbox`, bật hay tắt đều làm mới.
 - Item không có `script` (chỉ lưu giá trị) thì làm mới ngay sau khi đổi giá trị. Trang dialog (item chỉ đổi biến) không làm mới.
 - `id` không có trong cùng trang (kể cả `id` của trang khác) thì báo cảnh báo khi đọc config và bỏ qua.
@@ -509,6 +510,27 @@ id      = "wifi"
 title   = "Wi-Fi"
 script  = 'svc wifi $([ "$wifi" = 1 ] && echo enable || echo disable)'
 refresh = "hotspot"          # đổi xong thì hotspot (cùng trang) đọc lại get
+```
+
+### 9.2 Tiêu đề và mô tả động (`title-sh`, `desc-sh`)
+
+Dùng cho mọi type (kể cả `[[group]]`). Lệnh chạy khi item hiện, và chạy lại khi biến đổi hoặc khi `refresh` nhắm tới item.
+
+| Khóa | Lấy từ stdout |
+|---|---|
+| `title-sh` | Dòng không rỗng đầu tiên |
+| `desc-sh` | Cả đầu ra (nhiều dòng được), cắt khoảng trắng đầu cuối |
+
+- Chưa chạy xong, lệnh lỗi, hết giờ hoặc in ra rỗng thì dùng `title` / `desc` khai báo sẵn.
+- Có `title-sh` thì không bắt buộc `title`; `text` có `desc-sh` thì không bắt buộc `desc`.
+- Dùng được biến `$id` như các lệnh `-sh` khác.
+
+```toml
+[[item]]
+type     = "text"
+title    = "Pin"
+desc     = "Đang đọc..."
+desc-sh  = 'dumpsys battery | grep level'
 ```
 
 ## 10. Chế độ hiển thị khi chạy (shell)

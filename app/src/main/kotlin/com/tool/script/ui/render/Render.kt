@@ -250,6 +250,18 @@ fun isShown(item: Item, env: RenderEnv): Boolean {
     return true
 }
 
+/**
+ * Áp `title-sh` (dòng đầu của đầu ra) và `desc-sh` (cả đầu ra) lên [item]. Chưa có kết quả, lệnh lỗi hoặc in ra rỗng thì giữ
+ * `title` / `desc` khai báo sẵn. Item không dùng hai khóa này được trả về nguyên bản (không sao chép).
+ */
+private fun withShellText(item: Item, env: RenderEnv): Item {
+    if (item.titleSh == null && item.descSh == null) return item
+    val title = item.titleSh?.let { env.flags.text(it)?.lineSequence()?.firstOrNull { line -> line.isNotBlank() }?.trim() }
+    val desc = item.descSh?.let { env.flags.text(it) }
+    if (title == null && desc == null) return item
+    return item.copy(title = title ?: item.title, desc = desc ?: item.desc)
+}
+
 /** `readonly` hoặc `readonly-sh` đúng thì item mờ và không bấm được. */
 private fun isReadonly(item: Item, env: RenderEnv): Boolean {
     val cond = item.readonly
@@ -275,7 +287,9 @@ private fun lockMessage(item: Item, env: RenderEnv): String? {
  * group `readonly` thì mọi con mờ; group `lock` thì bấm vào con nào cũng hiện lý do (lý do của con ưu tiên hơn).
  */
 @Composable
-fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false, parentReadonly: Boolean = false, parentLock: String? = null) {
+fun ItemRenderer(rawItem: Item, env: RenderEnv, inGroup: Boolean = false, parentReadonly: Boolean = false, parentLock: String? = null) {
+    // title-sh / desc-sh: thay title / desc bằng kết quả lệnh để mọi type và mọi chỗ dùng item.title (log, banner, dialog) đều đổi theo.
+    val item = withShellText(rawItem, env)
     val readonly = parentReadonly || isReadonly(item, env)
     // readonly thắng lock: item mờ và không bấm được thì không cần hiện lý do.
     val lockMsg = if (readonly) null else (lockMessage(item, env) ?: parentLock)
@@ -776,10 +790,9 @@ private fun ChoiceCard(
 private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     val context = LocalContext.current
-    // showPicker: đã bấm hàng (đang chạy `get` hoặc màn hình đang mở); opened: màn hình chọn đang hiện; fetching: đang chạy `get`.
+    // showPicker: đã bấm hàng (đang chạy `options-sh` hoặc màn hình đang mở); opened: màn hình chọn đang hiện. Hàng bên ngoài không hiện chữ đang tải, chỉ trong màn hình chọn.
     var showPicker by remember { mutableStateOf(false) }
     var opened by remember { mutableStateOf(false) }
-    var fetching by remember { mutableStateOf(false) }
     val live = remember { LiveOptions() }
     val current = env.store[id]
     val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
@@ -796,16 +809,13 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
     LaunchedEffect(showPicker) {
         if (!showPicker) {
             opened = false
-            fetching = false
             live.options = emptyList()
             live.loading = false
             return@LaunchedEffect
         }
         // Danh sách package do lệnh `get` in ra (mỗi dòng một package); biến của các item (`$id`) dùng được trong lệnh.
-        fetching = true
         val command = ShellText.withEnv(item.optionsSh.orEmpty(), env.store.snapshot())
         val result = InstalledApps.loadPackages(context, command, item.timeoutSec ?: InstalledApps.DEFAULT_TIMEOUT_SEC)
-        fetching = false
         if (result.error != null || result.packages.isEmpty()) {
             val message = result.error?.let { context.getString(R.string.applist_get_failed, it) } ?: context.getString(R.string.applist_empty)
             env.feedback.showSnackbar(message)
@@ -835,7 +845,7 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
             endActions = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (fetching) stringResource(R.string.applist_loading) else summary,
+                        summary,
                         color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                         style = MiuixTheme.textStyles.body2,
                         maxLines = 1,
