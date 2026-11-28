@@ -23,7 +23,7 @@ private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
 
 /**
- * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp; đặt 20dp để thẻ chạm mép thanh bớt bị mờ / phủ nền.
+ * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp; đặt 16dp để thẻ chạm mép thanh bớt bị mờ / phủ nền.
  * Dùng chung cho ngưỡng kích hoạt: ở màn hình chính, nút chuyển sang viên kính tròn và dải mờ bật khi danh sách cuộn quá đúng chừng này (Main.kt),
  * nên đổi số này thì cả chiều cao blur lẫn chiều cao kích hoạt đổi theo.
  */

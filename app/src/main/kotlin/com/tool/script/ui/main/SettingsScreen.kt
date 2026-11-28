@@ -166,9 +166,11 @@ private fun SettingsScreenBody(
     }
     // Thanh trên hiện nền ngay khi mép trên của thẻ đầu tiên chạm đáy thanh (thẻ bắt đầu trượt vào dưới thanh), không đợi cuộn hết phần đầu.
     val barPx = with(density) { (topInset + TopBarHeight).roundToPx() }
+    // Giao diện kính: bật muộn thêm đúng [GlassBarBandOverhang] (cùng quy tắc với màn hình chính) để thẻ vừa chạm mép chưa bị mờ / chưa hiện nút tròn.
+    val overhangPx = if (glass) with(density) { GlassBarBandOverhang.roundToPx() } else 0
     val collapsed by remember {
         derivedStateOf {
-            val touchAt = (headerPx + gapPx - barPx).coerceAtLeast(1)
+            val touchAt = (headerPx + gapPx - barPx + overhangPx).coerceAtLeast(1)
             headerPx > 0 && scrollState.value >= touchAt
         }
     }
@@ -328,7 +330,7 @@ private fun SettingsScreenBody(
         if (glass) {
             GlassTopAppBar(
                 title = if (showTitle) title else "",
-                // Dải kính bật ngay khi thẻ đầu tiên chạm tới thanh (collapsed). Lúc đó phần đầu (logo, tên, phiên bản) đã mờ hết nên dải làm mờ
+                // Dải kính bật khi thẻ đầu tiên đã chui vào dưới thanh thêm [GlassBarBandOverhang] (collapsed). Lúc đó phần đầu (logo, tên, phiên bản) đã mờ hết nên dải làm mờ
                 // lấy từ lớp nội dung không phủ lên chữ nào còn đang hiện.
                 isContentScrolled = collapsed,
                 modifier = Modifier.align(Alignment.TopCenter),
