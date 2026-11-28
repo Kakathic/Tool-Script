@@ -188,6 +188,7 @@ readonly = "ROOT_MODE != root"
 | `visible` / `visible-sh` | không | Điều kiện hiện item, sai thì ẩn hẳn (mục 8, 9) |
 | `readonly` / `readonly-sh` | không | Điều kiện làm mờ item, không bấm được (mục 9) |
 | `lock` / `lock-sh` | không | Điều kiện khóa: bấm vào thì hiện snackbar lý do (mục 9) |
+| `refresh` | không | `true` làm mới cả trang, hoặc `"id1,id2"` làm mới các item đó (chỉ trong cùng trang), sau khi lệnh của item xong thành công (mục 9.1) |
 | `shell` | không | Chế độ hiển thị khi chạy lệnh (mục 10), mặc định `live` |
 | `confirm` | không | Nội dung hộp thoại xác nhận trước khi chạy |
 | `timeout` | không | Giây. Không khai báo thì lệnh `script` chạy **không giới hạn thời gian**; có khai báo thì quá số giây đó bị dừng và báo hết giờ. Riêng lệnh `get` không khai báo vẫn giới hạn 30 giây để không treo giao diện |
@@ -380,7 +381,8 @@ get = "pm list packages -3 | grep -v google"             # lọc bằng pipe
 
 - `get` (bắt buộc): lệnh shell in danh sách app. Thiếu `get` thì item bị bỏ kèm cảnh báo. Lệnh chạy qua backend shell của app (có root thì chạy bằng root, nên dùng được mọi cờ của `pm`), **chạy lại mỗi lần mở danh sách** nên danh sách luôn mới, và dùng được biến của các item khác như `$user_id`. Khác với `get` của `switch` / `checkbox` / `progress` (chạy khi item hiện, thay giá trị đã lưu): ở `applist`, `get` chỉ tạo danh sách để chọn, còn `$id` vẫn là các package đã chọn và vẫn lưu như thường.
 - Đầu ra của `get`: mỗi dòng một package. Chấp nhận cả dạng của `pm list packages`: `package:com.x`, `package:/đường/dẫn.apk=com.x` (`-f`), kèm phần phụ như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ (chữ, số, `_`, `.`) bị bỏ qua; chính Tool Script và package trùng bị bỏ. stderr của lệnh bị bỏ, không lẫn vào danh sách.
-- Lệnh thoát khác 0 hoặc chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) thì hiện snackbar báo lỗi và không mở danh sách.
+- Lệnh thoát khác 0, chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) hoặc không có package nào thì hiện snackbar báo và không mở danh sách. Trong lúc chạy `get`, hàng hiện "Đang tải danh sách…".
+- Có package thì màn hình chọn **mở ngay**: mỗi app là một dòng khung xương (dải sáng chạy ngang, kiểu Facebook); tên app đọc dần theo nhóm và thay đúng vị trí khung xương của nó, đọc xong thì sắp theo tên. Góc phải trên hiện "Đang tải danh sách…"; xong thì `multi = true` hiện "Đã chọn x/y", `multi = false` không hiện gì. Lúc đang tải, **Xác nhận** và **Chọn tất cả** mờ, ô tìm chỉ lọc các dòng đã đọc xong, **Hủy** dùng được và hủy việc tải.
 - Tên và icon lấy từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package và không có icon. Danh sách sắp theo tên, không phân biệt hoa thường.
 - `multi`: `true` (mặc định) chọn nhiều, `$id` là các package nối bằng `separator` (mặc định mỗi package một dòng), theo thứ tự danh sách app; `false` chọn một, `$id` là một package, chưa chọn thì rỗng. Giá trị khác `true` / `false` bị báo cảnh báo và dùng `true`.
 - Hàng hiện `Đã chọn N` (`multi = true`) hoặc tên app đang chọn (`multi = false`; app đã gỡ thì hiện package). Bấm hàng mở **toàn màn hình** (không có hộp thoại nhỏ, `columns` không dùng): mỗi dòng có icon, tên app và package name; ô tìm lọc theo tên (không phân biệt hoa thường và dấu) hoặc package; `multi = true` có ô **Chọn tất cả** như `multiselect`.
@@ -483,6 +485,29 @@ lock = "game_mode != 1|Bật Chế độ game trước"
 
 # Khóa theo kết quả lệnh shell
 lock-sh = 'test -f /sys/xxx && echo 0 || echo "1|Máy không hỗ trợ"'
+```
+
+### 9.1 Làm mới (refresh)
+
+`get` chỉ chạy một lần khi item xuất hiện. Khóa `refresh` (mọi item đều dùng được) bắt app đọc lại sau khi item đổi trạng thái. Chỉ có tác dụng trong **trang chứa item** (file `pages/*.toml` đó):
+
+| `refresh` | Làm mới |
+|---|---|
+| `true` | Mọi item của trang này |
+| `"id1,id2"` | Chỉ các item có `id` đó trong trang này |
+
+- Làm mới là đọc lại `get` và chạy lại các lệnh `visible-sh`, `readonly-sh`, `lock-sh` của các item đó; item không có `get` thì giữ nguyên giá trị.
+- Chạy ngầm, sau khi `script` của chính item xong **thành công** (lệnh lỗi hoặc hết giờ thì không làm mới). Với `switch` / `checkbox`, bật hay tắt đều làm mới.
+- Item không có `script` (chỉ lưu giá trị) thì làm mới ngay sau khi đổi giá trị. Trang dialog (item chỉ đổi biến) không làm mới.
+- `id` không có trong cùng trang (kể cả `id` của trang khác) thì báo cảnh báo khi đọc config và bỏ qua.
+
+```toml
+[[item]]
+type    = "switch"
+id      = "wifi"
+title   = "Wi-Fi"
+script  = 'svc wifi $([ "$wifi" = 1 ] && echo enable || echo disable)'
+refresh = "hotspot"          # đổi xong thì hotspot (cùng trang) đọc lại get
 ```
 
 ## 10. Chế độ hiển thị khi chạy (shell)

@@ -142,6 +142,8 @@
     <!-- Hiển thị item -->
     <string name="selection_none">None selected</string>
     <string name="selection_count">%1$d selected</string>
+    <string name="applist_loading">Loading list…</string>
+    <string name="applist_empty">The app list is empty</string>
     <string name="applist_get_failed">Could not load the app list (%1$s)</string>
     <string name="page_error_title">Can\'t read this page</string>
     <string name="select_count_of">%1$d/%2$d selected</string>
@@ -174,6 +176,7 @@
     <string name="cfg_unknown_type">%1$s has unknown type \"%2$s\", ignored</string>
     <string name="cfg_item_missing_title">%1$s (%2$s) is missing title, ignored</string>
     <string name="cfg_text_empty">%1$s (text) has neither title nor desc, ignored</string>
+    <string name="cfg_refresh_unknown_id">%1$s: refresh = \"%2$s\" matches no item on the same page, ignored</string>
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) is missing id, ignored</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" is invalid (letters, digits and underscore only; can\'t start with a digit), ignored</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": duplicate id \"%3$s\", ignored</string>

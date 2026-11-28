@@ -4,7 +4,11 @@ import com.tool.script.R
 import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -27,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -43,7 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -109,7 +117,19 @@ internal class SelectRequest(
     val onConfirm: (Set<String>) -> Unit,
     val desc: String? = null,
     val instant: Boolean = false,
+    val live: LiveOptions? = null,
 )
+
+/**
+ * Danh sách lựa chọn nạp dần (type `applist`): [options] và [loading] đổi theo thời gian. [SelectRequest] chỉ tạo một lần lúc mở nên
+ * màn hình chọn đọc thẳng từ đây (state) để cập nhật theo. Có [LiveOptions] thì nó thay cho `options` truyền vào.
+ * Dòng [SelectOption.placeholder] vẽ khung xương; [loading] = true thì góc phải hiện "Đang tải danh sách…", Xác nhận và Chọn tất cả mờ.
+ */
+@Stable
+class LiveOptions {
+    var options by mutableStateOf<List<SelectOption>>(emptyList())
+    var loading by mutableStateOf(false)
+}
 
 /**
  * Chỗ vẽ màn hình chọn toàn màn hình. Item chọn nằm sâu trong trang nên không phủ kín màn hình được và không dùng chung nền mờ của trang;
@@ -138,16 +158,17 @@ internal fun SelectFullScreenSlot(
     onConfirm: (Set<String>) -> Unit,
     desc: String? = null,
     instant: Boolean = false,
+    live: LiveOptions? = null,
 ) {
     val host = LocalSelectHost.current
     if (host == null) {
-        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm, desc = desc, instant = instant)
+        if (show) SelectFullScreen(title, options, multi, selected, onDismiss, onConfirm, desc = desc, instant = instant, live = live)
     } else {
         val latestDismiss by rememberUpdatedState(onDismiss)
         val latestConfirm by rememberUpdatedState(onConfirm)
         DisposableEffect(show) {
             if (!show) return@DisposableEffect onDispose {}
-            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) }, desc, instant)
+            val request = SelectRequest(title, options, multi, selected, { latestDismiss() }, { latestConfirm(it) }, desc, instant, live)
             host.request = request
             onDispose { if (host.request === request) host.request = null }
         }
@@ -169,6 +190,7 @@ fun SelectFullScreenHost(host: SelectHost) {
             inline = true,
             desc = request.desc,
             instant = request.instant,
+            live = request.live,
         )
     }
 }
@@ -200,14 +222,20 @@ internal fun SelectFullScreen(
     inline: Boolean = false,
     desc: String? = null,
     instant: Boolean = false,
+    live: LiveOptions? = null,
 ) {
+    // Có [live] thì danh sách và trạng thái tải lấy từ đó (đọc state nên tự vẽ lại khi nạp thêm).
+    val allOptions = live?.options ?: options
+    val loading = live?.loading == true
+    val shimmer = if (loading) rememberShimmerBrush() else null
     var draft by remember { mutableStateOf(selected) }
     var query by remember { mutableStateOf("") }
     val haptic = LocalHapticFeedback.current
 
-    val visible = remember(options, query) {
+    val visible = remember(allOptions, query) {
         val q = foldSearch(query.trim())
-        if (q.isEmpty()) options else options.filter { foldSearch(it.label).contains(q) || (it.app && it.value.lowercase().contains(q)) }
+        // Đang tìm thì bỏ các dòng khung xương (chưa có tên để lọc).
+        if (q.isEmpty()) allOptions else allOptions.filter { !it.placeholder && (foldSearch(it.label).contains(q) || (it.app && it.value.lowercase().contains(q))) }
     }
     val visibleValues = visible.map { it.value }
     val checkedVisible = visibleValues.count { it in draft }
@@ -306,10 +334,16 @@ internal fun SelectFullScreen(
                             )
                         }
                     }
-                    if (multi) {
-                        // Số mục đã chọn nằm ở góc phải trên cùng, trong khung bo góc có nền, không viền (cùng kiểu nút Chạy).
+                    // Góc phải trên cùng, trong khung bo góc có nền, không viền (cùng kiểu nút Chạy): đang nạp danh sách thì hiện
+                    // "Đang tải danh sách…" (cả chọn một và chọn nhiều); xong thì chọn nhiều hiện số mục đã chọn, chọn một thì không hiện gì.
+                    val topRight = when {
+                        loading -> stringResource(R.string.applist_loading)
+                        multi -> stringResource(R.string.select_count_of, draft.size, allOptions.size)
+                        else -> null
+                    }
+                    if (topRight != null) {
                         Text(
-                            text = stringResource(R.string.select_count_of, draft.size, options.size),
+                            text = topRight,
                             color = MiuixTheme.colorScheme.primary,
                             style = MiuixTheme.textStyles.body2,
                             maxLines = 1,
@@ -347,16 +381,16 @@ internal fun SelectFullScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(
-                                    enabled = visible.isNotEmpty(),
+                                    enabled = visible.isNotEmpty() && !loading,
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
                                 ) { toggleAll() },
                             title = stringResource(if (query.isBlank()) R.string.select_all else R.string.select_all_results),
-                            enabled = visible.isNotEmpty(),
+                            enabled = visible.isNotEmpty() && !loading,
                             endActions = {
                                 Checkbox(
                                     state = allState,
-                                    enabled = visible.isNotEmpty(),
+                                    enabled = visible.isNotEmpty() && !loading,
                                     onClick = { toggleAll() },
                                 )
                             },
@@ -374,6 +408,10 @@ internal fun SelectFullScreen(
                     } else {
                         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                             items(visible) { option ->
+                                if (option.placeholder) {
+                                    SkeletonRow(shimmer ?: rememberShimmerBrush(), multi)
+                                    return@items
+                                }
                                 val checked = option.value in draft
                                 val click = {
                                     if (multi) {
@@ -435,11 +473,14 @@ internal fun SelectFullScreen(
                         DialogButton(text = stringResource(R.string.action_cancel), onClick = { close(onDismiss) }, modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT))
                         DialogButton(
                             text = stringResource(R.string.action_confirm),
+                            // Đang nạp danh sách thì mờ và không bấm được (thứ tự danh sách còn đổi khi sắp theo tên).
                             onClick = {
-                                val result = draft
-                                close { onConfirm(result) }
+                                if (!loading) {
+                                    val result = draft
+                                    close { onConfirm(result) }
+                                }
                             },
-                            modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT),
+                            modifier = Modifier.weight(1f).height(SELECT_CONTROL_HEIGHT).alpha(if (loading) 0.4f else 1f),
                             primary = true,
                         )
                     }
@@ -457,6 +498,43 @@ internal fun SelectFullScreen(
             onDismissRequest = { close(onDismiss) },
             properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
         ) { screen() }
+    }
+}
+
+/** Dải sáng chạy ngang (shimmer) dùng chung cho mọi dòng khung xương: một animation duy nhất cho cả danh sách. */
+@Composable
+private fun rememberShimmerBrush(): Brush {
+    val base = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.14f)
+    val glow = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.30f)
+    val progress by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1300, easing = LinearEasing)),
+        label = "skeletonShift",
+    )
+    val start = -300f + 1500f * progress
+    return Brush.linearGradient(listOf(base, glow, base), start = Offset(start, 0f), end = Offset(start + 300f, 0f))
+}
+
+/** Dòng khung xương (kiểu Facebook) giữ chỗ cho một app chưa đọc xong tên: ô icon, hai thanh chữ, ô chọn. Cao bằng dòng thật. */
+@Composable
+private fun SkeletonRow(brush: Brush, multi: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(ListRowMargin),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.padding(end = 12.dp).size(40.dp).clip(RoundedCornerShape(10.dp)).background(brush))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.fillMaxWidth(0.55f).height(14.dp).clip(RoundedCornerShape(4.dp)).background(brush))
+            Box(Modifier.fillMaxWidth(0.8f).height(11.dp).clip(RoundedCornerShape(4.dp)).background(brush))
+        }
+        Box(
+            Modifier
+                .padding(start = 12.dp)
+                .size(22.dp)
+                .clip(if (multi) RoundedCornerShape(6.dp) else CircleShape)
+                .background(brush),
+        )
     }
 }
 

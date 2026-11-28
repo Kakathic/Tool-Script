@@ -99,6 +99,19 @@ class VariableStore(
         fetched.remove(id)
     }
 
+    private val refreshTicks = mutableStateMapOf<String, Int>()
+
+    /** Số lần [id] được làm mới. Composable đưa số này vào khóa của hiệu ứng đọc `get` để đọc lại khi nó đổi. */
+    fun refreshVersion(id: String): Int = refreshTicks[id] ?: 0
+
+    /** Làm mới các [ids]: đọc lại `get` của chúng. */
+    fun refresh(ids: List<String>) {
+        ids.forEach { id ->
+            releaseFetch(id)
+            refreshTicks[id] = (refreshTicks[id] ?: 0) + 1
+        }
+    }
+
     fun snapshot(): Map<String, String> = values.toMap()
 
     fun evaluate(condition: String): Boolean = ConditionEvaluator.evaluate(condition, ::get)

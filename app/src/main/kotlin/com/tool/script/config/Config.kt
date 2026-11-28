@@ -30,8 +30,9 @@ enum class ItemType(val key: String) {
 
 enum class ShellMode { Live, Full, Hidden, Banner, Notice, Snackbar }
 
-/** [app] = true: mục là một ứng dụng đã cài (type `applist`), [value] là package name; màn hình chọn vẽ thêm icon và package. */
-data class SelectOption(val label: String, val value: String, val app: Boolean = false)
+/** [app] = true: mục là một ứng dụng đã cài (type `applist`), [value] là package name; màn hình chọn vẽ thêm icon và package.
+ * [placeholder] = true: dòng giữ chỗ khi tên app chưa đọc xong, màn hình chọn vẽ khung xương và không cho bấm. */
+data class SelectOption(val label: String, val value: String, val app: Boolean = false, val placeholder: Boolean = false)
 
 data class Item(
     val type: ItemType,
@@ -51,6 +52,11 @@ data class Item(
     val lock: String?,
     val lockMsg: String?,
     val lockSh: String?,
+    // refresh: sau khi lệnh của item chạy xong thành công, làm mới cả trang (true) hoặc các id này trong cùng trang.
+    // Đọc từ TOML vào refreshAll / refreshIds, rồi resolveRefresh gộp thành refreshIds (id trong trang) + refreshSh (lệnh -sh của các item đó).
+    val refreshAll: Boolean,
+    val refreshIds: List<String>,
+    val refreshSh: List<String>,
     val shell: ShellMode,
     val confirm: String?,
     // null = không giới hạn thời gian chạy (không khai báo timeout); có giá trị thì quá số giây đó lệnh bị dừng
@@ -152,7 +158,7 @@ object TomlParser {
      */
     private val RAW_KEYS = setOf(
         "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "input_type", "style",
-        "tab", "page", "file", "visible", "readonly", "lock", "timeout", "min", "max", "step", "default", "separator",
+        "tab", "page", "file", "visible", "readonly", "lock", "refresh", "timeout", "min", "max", "step", "default", "separator",
         "lang", "lang-sh", "load-string", "load-string-sh", "multi",
     )
 
@@ -161,7 +167,7 @@ object TomlParser {
     private val TAB_KEYS = setOf("id", "title", "icon", "file")
     private val PAGE_KEYS = setOf("item", "group")
     private val ITEM_KEYS = setOf(
-        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "confirm", "timeout",
+        "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "refresh", "confirm", "timeout",
         "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
         "columns", "tab", "page", "style", "shell", "divider", "multi",
     )
@@ -262,7 +268,36 @@ object TomlParser {
             val element = if (isGroup) groups[number - 1] else items[number - 1]
             parseEntry(element, isGroup, "$file: $kind #$number", warnings, ids)?.let { out += it }
         }
-        return out
+        return resolveRefresh(file, out, warnings)
+    }
+
+    /**
+     * Khóa `refresh` chỉ có tác dụng trong cùng trang: `true` thành mọi item của trang, `"id1,id2"` chỉ giữ các id có trong trang
+     * (id lạ báo cảnh báo và bỏ qua). Kết quả là `refreshIds` (id để đọc lại `get`) và `refreshSh` (lệnh `-sh` của các item đó).
+     */
+    private fun resolveRefresh(file: String, items: List<Item>, warnings: MutableList<String>): List<Item> {
+        fun flatten(list: List<Item>): List<Item> = list.flatMap { listOf(it) + flatten(it.children) }
+        val all = flatten(items)
+        val byId = all.mapNotNull { item -> item.id?.let { it to item } }.toMap()
+        fun resolve(item: Item): Item {
+            val children = item.children.map(::resolve)
+            val targets = when {
+                item.refreshAll -> all
+                item.refreshIds.isNotEmpty() -> item.refreshIds.mapNotNull { id ->
+                    byId[id] ?: run {
+                        warnings += AppText.get(R.string.cfg_refresh_unknown_id, file, id)
+                        null
+                    }
+                }
+                else -> return item.copy(children = children)
+            }
+            return item.copy(
+                children = children,
+                refreshIds = targets.mapNotNull { it.id }.distinct(),
+                refreshSh = targets.flatMap { listOfNotNull(it.visibleSh, it.readonlySh, it.lockSh) }.distinct(),
+            )
+        }
+        return items.map(::resolve)
     }
 
     private fun parseEntry(
@@ -434,6 +469,15 @@ object TomlParser {
                 true
             }
         }
+        // refresh = true (cả trang) hoặc "id1,id2" (các item có id này); false / rỗng = không làm mới.
+        val refreshRaw = t.str("refresh")?.trim().orEmpty()
+        val refreshAll = refreshRaw.equals("true", ignoreCase = true)
+        val refreshIds = if (refreshAll || refreshRaw.equals("false", ignoreCase = true)) {
+            emptyList()
+        } else {
+            refreshRaw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        }
+
         // lock = "điều kiện|lý do": phần lý do (tùy chọn) được thay @khóa; điều kiện giữ nguyên.
         val (lockCondition, lockRawMsg) = ConditionEvaluator.splitMessage(t.str("lock").orEmpty())
 
@@ -505,6 +549,9 @@ object TomlParser {
             lock = lockCondition.takeIf { it.isNotBlank() },
             lockMsg = lockRawMsg?.let { strings.resolve(it) },
             lockSh = t.str("lock-sh")?.takeIf { it.isNotBlank() },
+            refreshAll = refreshAll,
+            refreshIds = refreshIds,
+            refreshSh = emptyList(),
             shell = shell,
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
             timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },

@@ -29,42 +29,47 @@ object InstalledApps {
     /** Tên package hợp lệ: chữ, số, `_`, `.`. */
     private val PACKAGE_NAME = Regex("[A-Za-z0-9_.]+")
 
-    /** Kết quả [load]: [error] khác null nghĩa là lệnh `get` không chạy được (mô tả ngắn để báo người dùng). */
-    class LoadResult(val apps: List<SelectOption>, val error: String? = null)
+    /** Kết quả [loadPackages]: [error] khác null nghĩa là lệnh `get` không chạy được (mô tả ngắn để báo người dùng). */
+    class PackagesResult(val packages: List<String>, val error: String? = null)
 
     /**
      * Chạy [command] (lệnh `get` đã kèm biến của các item) qua backend shell của app (có root thì chạy bằng root) rồi đọc danh sách package.
      * Mỗi dòng đầu ra một package; chấp nhận cả dạng của `pm list packages`: `package:<tên>`, `package:/đường/dẫn.apk=<tên>` (`-f`),
      * và phần phụ phía sau như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ bị bỏ qua. Bỏ chính Tool Script, bỏ trùng.
-     * Tên hiển thị lấy từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package. Sắp theo tên.
+     * Bước này nhanh; đọc tên hiển thị (chậm khi nhiều app) làm riêng bằng [labelsOf] để màn hình chọn mở sớm và nạp dần.
      */
-    suspend fun load(context: Context, command: String, timeoutSec: Int): LoadResult {
+    suspend fun loadPackages(context: Context, command: String, timeoutSec: Int): PackagesResult {
         val result = try {
             ExecutorManager.current.exec(ShellText.silenceStderr(command), timeoutSec)
         } catch (e: Exception) {
-            return LoadResult(emptyList(), e.message ?: e.toString())
+            return PackagesResult(emptyList(), e.message ?: e.toString())
         }
         if (!result.ok) {
-            return LoadResult(emptyList(), if (result.timedOut) "timeout ${timeoutSec}s" else "exit ${result.code}")
+            return PackagesResult(emptyList(), if (result.timedOut) "timeout ${timeoutSec}s" else "exit ${result.code}")
         }
         val packages = result.output.lineSequence()
             .map { it.trim().removePrefix("package:").substringBefore(' ').substringAfterLast('=') }
             .filter { PACKAGE_NAME.matches(it) && it != context.packageName }
             .distinct()
             .toList()
-        val apps = withContext(Dispatchers.IO) {
-            val pm = context.packageManager
-            packages.map { pkg ->
-                val label = try {
-                    // MATCH_UNINSTALLED_PACKAGES: thấy cả app đã gỡ nhưng còn dữ liệu (pm list packages -u).
-                    pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES).loadLabel(pm).toString().ifBlank { pkg }
-                } catch (_: Exception) {
-                    pkg
-                }
-                SelectOption(label, pkg, app = true)
-            }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
+        return PackagesResult(packages)
+    }
+
+    /**
+     * Tên hiển thị của [packages] từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package.
+     * Chạy ở luồng IO, giữ nguyên thứ tự [packages] (người gọi tự sắp theo tên khi đã đọc hết).
+     */
+    suspend fun labelsOf(context: Context, packages: List<String>): List<SelectOption> = withContext(Dispatchers.IO) {
+        val pm = context.packageManager
+        packages.map { pkg ->
+            val label = try {
+                // MATCH_UNINSTALLED_PACKAGES: thấy cả app đã gỡ nhưng còn dữ liệu (pm list packages -u).
+                pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES).loadLabel(pm).toString().ifBlank { pkg }
+            } catch (_: Exception) {
+                pkg
+            }
+            SelectOption(label, pkg, app = true)
         }
-        return LoadResult(apps)
     }
 
     /** Tên hiển thị của một package, null nếu app không còn được cài. */

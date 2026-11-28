@@ -137,6 +137,8 @@
     <!-- Hiển thị item -->
     <string name="selection_none">Chưa chọn</string>
     <string name="selection_count">Đã chọn %1$d</string>
+    <string name="applist_loading">Đang tải danh sách…</string>
+    <string name="applist_empty">Danh sách app trống</string>
     <string name="applist_get_failed">Không nạp được danh sách app (%1$s)</string>
     <string name="page_error_title">Không đọc được trang này</string>
     <string name="select_count_of">Đã chọn %1$d/%2$d</string>
@@ -169,6 +171,7 @@
     <string name="cfg_unknown_type">%1$s có type lạ \"%2$s\", bỏ qua</string>
     <string name="cfg_item_missing_title">%1$s (%2$s) thiếu title, bỏ qua</string>
     <string name="cfg_text_empty">%1$s (text) không có title lẫn desc, bỏ qua</string>
+    <string name="cfg_refresh_unknown_id">%1$s: refresh = \"%2$s\" không có item nào trong cùng trang, bỏ qua</string>
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) thiếu id, bỏ qua</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" không hợp lệ (chỉ chữ, số, gạch dưới; không bắt đầu bằng số), bỏ qua</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": trùng id \"%3$s\", bỏ qua</string>

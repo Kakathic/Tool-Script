@@ -125,6 +125,9 @@ private const val GET_TIMEOUT_SEC = 30
 // Lệnh `visible-sh` / `readonly-sh` / `lock-sh` chạy mỗi khi biến đổi nên giới hạn ngắn.
 private const val FLAG_TIMEOUT_SEC = 5
 
+// Số app đọc tên mỗi nhóm khi nạp danh sách applist (mỗi nhóm xong thì cập nhật giao diện một lần).
+private const val APPLIST_CHUNK = 25
+
 // Nút Chạy trong ô nhập: ô cao khoảng 56dp (đệm 16dp + một dòng chữ), nút cao 40dp nên hở trên và dưới còn 8dp, bằng hở bên phải.
 // Muốn hở nhỏ hơn thì tăng chiều cao nút; RUN_BUTTON_GAP_START là khoảng cách từ chữ đang nhập tới nút.
 private val RUN_BUTTON_HEIGHT = 40.dp
@@ -163,6 +166,12 @@ class RenderEnv(
     /** Bản dùng trong dialog: cùng kho biến, nhưng item chỉ đổi biến, không chạy lệnh. */
     fun asVarsOnly() = RenderEnv(store, feedback, scope, openTab, openPage, varsOnly = true, flags = flags)
 
+    /** `refresh` đã được gộp lúc đọc TOML thành các id và lệnh `-sh` trong cùng trang: đọc lại `get` và chạy lại `-sh` của chúng. */
+    private fun refresh(item: Item) {
+        if (item.refreshIds.isNotEmpty()) store.refresh(item.refreshIds)
+        if (item.refreshSh.isNotEmpty()) flags.refresh(item.refreshSh)
+    }
+
     /**
      * Chạy [command] của [item] với các biến trong kho cộng [extra]; hiện kết quả theo `shell`.
      * Có `confirm` thì hỏi trước. [onDone] chạy sau khi lệnh xong (kể cả lỗi).
@@ -173,8 +182,17 @@ class RenderEnv(
         extra: Map<String, String> = emptyMap(),
         onDone: (ExecResult) -> Unit = {},
     ) {
-        if (varsOnly || command.isNullOrBlank()) {
+        if (varsOnly) {
             onDone(ExecResult(0, ""))
+            return
+        }
+        // Lệnh xong thành công (hoặc item không có lệnh, chỉ đổi giá trị) thì làm mới theo `refresh` của item, sau onDone.
+        val finish: (ExecResult) -> Unit = { result ->
+            onDone(result)
+            if (result.ok) refresh(item)
+        }
+        if (command.isNullOrBlank()) {
+            finish(ExecResult(0, ""))
             return
         }
         val notifies = item.shell == ShellMode.Banner || item.shell == ShellMode.Notice
@@ -208,7 +226,7 @@ class RenderEnv(
                         ExecutorManager.current.exec(full, item.timeoutSec, onOutput)
                     }
                     feedback.report(item, command, result, runId)
-                    onDone(result)
+                    finish(result)
                 } finally {
                     if (notifies) feedback.endRun(runId)
                 }
@@ -428,7 +446,7 @@ private fun BinaryItem(
     val haptic = LocalHapticFeedback.current
 
     // Tùy chọn: có `get` thì đọc trạng thái thật bằng shell khi item xuất hiện lần đầu (bản đo của dialog không đọc; đọc lỗi thì lần hiện sau đọc lại).
-    LaunchedEffect(id) {
+    LaunchedEffect(id, env.store.refreshVersion(id)) {
         val get = item.get
         if (env.varsOnly || get.isNullOrBlank() || !env.store.claimFetch(id)) return@LaunchedEffect
         var done = false
@@ -510,7 +528,7 @@ private fun RadioItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: B
 private fun ProgressItem(item: Item, env: RenderEnv, modifier: Modifier, inGroup: Boolean) {
     val id = item.id ?: return
 
-    LaunchedEffect(id) {
+    LaunchedEffect(id, env.store.refreshVersion(id)) {
         val get = item.get
         if (env.varsOnly || get.isNullOrBlank() || !env.store.claimFetch(id)) return@LaunchedEffect
         var done = false
@@ -751,13 +769,18 @@ private fun ChoiceCard(
 }
 
 // Danh sách app: hàng hiện số app đã chọn (`multi = true`) hoặc tên app đang chọn (`multi = false`); bấm mở màn hình chọn toàn màn hình
-// (luôn toàn màn hình, có ô tìm theo tên hoặc package, mỗi dòng có icon). Danh sách do lệnh `get` in ra, chạy lại mỗi lần mở. Bấm Xác nhận mới lưu và chạy `script` (chỉ khi có thay đổi).
+// (luôn toàn màn hình, có ô tìm theo tên hoặc package, mỗi dòng có icon). Danh sách package do lệnh `get` in ra, chạy lại mỗi lần mở.
+// Có package thì màn hình mở ngay với các dòng khung xương, tên app đọc dần (nhóm 25) và thay đúng vị trí khung xương; đọc xong thì sắp theo tên.
+// Bấm Xác nhận mới lưu và chạy `script` (chỉ khi có thay đổi).
 @Composable
 private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
     val id = item.id ?: return
     val context = LocalContext.current
+    // showPicker: đã bấm hàng (đang chạy `get` hoặc màn hình đang mở); opened: màn hình chọn đang hiện; fetching: đang chạy `get`.
     var showPicker by remember { mutableStateOf(false) }
-    var apps by remember { mutableStateOf<List<SelectOption>?>(null) }
+    var opened by remember { mutableStateOf(false) }
+    var fetching by remember { mutableStateOf(false) }
+    val live = remember { LiveOptions() }
     val current = env.store[id]
     val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     // Chọn một: tên app (không còn cài thì hiện package). Chỉ một lần gọi PackageManager cho một package nên chạy thẳng trong khi vẽ.
@@ -772,18 +795,34 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
 
     LaunchedEffect(showPicker) {
         if (!showPicker) {
-            apps = null
+            opened = false
+            fetching = false
+            live.options = emptyList()
+            live.loading = false
             return@LaunchedEffect
         }
-        // Danh sách app do lệnh `get` in ra (mỗi dòng một package); biến của các item (`$id`) dùng được trong lệnh.
+        // Danh sách package do lệnh `get` in ra (mỗi dòng một package); biến của các item (`$id`) dùng được trong lệnh.
+        fetching = true
         val command = ShellText.withEnv(item.get.orEmpty(), env.store.snapshot())
-        val result = InstalledApps.load(context, command, item.timeoutSec ?: InstalledApps.DEFAULT_TIMEOUT_SEC)
-        if (result.error != null) {
-            env.feedback.showSnackbar(context.getString(R.string.applist_get_failed, result.error))
+        val result = InstalledApps.loadPackages(context, command, item.timeoutSec ?: InstalledApps.DEFAULT_TIMEOUT_SEC)
+        fetching = false
+        if (result.error != null || result.packages.isEmpty()) {
+            val message = result.error?.let { context.getString(R.string.applist_get_failed, it) } ?: context.getString(R.string.applist_empty)
+            env.feedback.showSnackbar(message)
             showPicker = false
-        } else {
-            apps = result.apps
+            return@LaunchedEffect
         }
+        // Mở ngay với khung xương rồi đọc tên theo nhóm; mỗi nhóm xong thì app thật thay đúng vị trí khung xương của nó.
+        live.options = result.packages.map { SelectOption(it, it, app = true, placeholder = true) }
+        live.loading = true
+        opened = true
+        val resolved = HashMap<String, SelectOption>()
+        for (chunk in result.packages.chunked(APPLIST_CHUNK)) {
+            InstalledApps.labelsOf(context, chunk).forEach { resolved[it.value] = it }
+            live.options = live.options.map { resolved[it.value] ?: it }
+        }
+        live.options = live.options.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
+        live.loading = false
     }
 
     ItemSurface(modifier, inGroup) {
@@ -796,7 +835,7 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
             endActions = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        summary,
+                        if (fetching) stringResource(R.string.applist_loading) else summary,
                         color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                         style = MiuixTheme.textStyles.body2,
                         maxLines = 1,
@@ -810,12 +849,12 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
             onClick = withTapHaptic { showPicker = true },
         )
     }
-    val list = apps
     SelectFullScreenSlot(
-        show = showPicker && list != null,
+        show = opened,
         title = item.title,
         desc = item.desc,
-        options = list.orEmpty(),
+        options = emptyList(),
+        live = live,
         multi = item.multi,
         selected = if (item.multi) currentSet else setOf(current),
         instant = env.varsOnly,
@@ -824,7 +863,7 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
             if (!item.multi || !env.varsOnly) showPicker = false
             // Chọn nhiều: theo thứ tự danh sách app; package đã gỡ không còn trong danh sách nên bị bỏ khi xác nhận.
             val newValue = if (item.multi) {
-                list.orEmpty().filter { it.value in chosen }.joinToString(item.separator) { it.value }
+                live.options.filter { it.value in chosen }.joinToString(item.separator) { it.value }
             } else {
                 chosen.firstOrNull() ?: current
             }

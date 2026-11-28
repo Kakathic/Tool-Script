@@ -119,3 +119,14 @@ visible-sh = 'echo "$t_button_show"'
 type   = "switch"
 id     = "t_button_show"
 title  = "Hiện nút phía trên (visible-sh)"
+
+[[group]]
+title = "Làm mới cả trang (refresh)"
+
+[[group.item]]
+type    = "button"
+title   = "Chạy rồi làm mới cả trang"
+desc    = "refresh = true: lệnh thành công thì mọi get và lệnh -sh của trang này được chạy lại"
+script  = 'echo "Đã chạy"'
+shell   = "banner"
+refresh = true

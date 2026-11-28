@@ -42,6 +42,7 @@ Trang gồm `[[item]]` (mỗi item một thẻ) và `[[group]]` có `[[group.ite
 |---|---|
 | Type | `text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `singleselect`, `multiselect`, `applist`, `progress`, `link`; `[[group]]` để gom nhóm |
 | Lưu giá trị | Item có `id` tự lưu vào file tên = id trong `$STATE_DIR`, mở lại app vẫn giữ; lệnh dùng giá trị qua `$id` |
+| Làm mới | `refresh = true` (cả trang) hoặc `refresh = "id1,id2"` (chỉ trong cùng trang): sau khi lệnh của item thành công thì đọc lại `get` và chạy lại `-sh` |
 | Điều kiện | `visible` ẩn/hiện, `readonly` mờ, `lock` bấm hiện snackbar lý do (mỗi khóa có bản `-sh` chạy shell); toán tử `==`, `!=`, `&&`, `\|\|`; biến `SDK`, `ABI`, `ARCH`, `ROOT_MODE` và `id` của item |
 | Chạy lệnh | `script`, `get`; `confirm` hỏi trước khi chạy; `timeout` giới hạn giây |
 | Hiển thị kết quả | `shell = live / full / hidden / banner / notice / snackbar`; thanh tiến trình bằng dòng `@progress N`; stderr màu đỏ |

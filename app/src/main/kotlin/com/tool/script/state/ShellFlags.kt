@@ -26,6 +26,12 @@ class ShellFlags(
 ) {
     private val results = mutableStateMapOf<String, FlagResult>()
     private val started = HashSet<String>()
+    private val refreshTicks = mutableStateMapOf<String, Int>()
+
+    /** Chạy lại các lệnh `-sh` [commands] (khóa `refresh`, chỉ các lệnh của item trong cùng trang). */
+    fun refresh(commands: List<String>) {
+        commands.forEach { refreshTicks[it] = (refreshTicks[it] ?: 0) + 1 }
+    }
 
     /** Kết quả mới nhất của [command]; null khi chưa chạy xong hoặc lệnh lỗi. Gọi lần đầu sẽ bắt đầu theo dõi lệnh. */
     fun get(command: String): FlagResult? {
@@ -38,7 +44,7 @@ class ShellFlags(
         if (!started.add(command)) return
         scope.launch {
             var first = true
-            snapshotFlow { store.snapshot() }.distinctUntilChanged().collectLatest { vars ->
+            snapshotFlow { store.snapshot() to (refreshTicks[command] ?: 0) }.distinctUntilChanged().collectLatest { (vars, _) ->
                 if (!first) delay(DEBOUNCE_MS)
                 first = false
                 val result = exec(ShellText.silenceStderr(ShellText.withEnv(command, vars)))

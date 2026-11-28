@@ -73,3 +73,22 @@ id    = "t_switch_icon"
 title = "Công tắc có icon"
 desc  = 'icon = "icons/demo.svg"'
 icon  = "icons/demo.svg"
+
+[[group]]
+title = "Làm mới (refresh)"
+
+[[group.item]]
+type    = "switch"
+id      = "t_switch_ref_src"
+title   = "Bật hoặc tắt để làm mới"
+desc    = 'refresh = "t_switch_ref_dst": bật hay tắt đều làm mới công tắc bên dưới (cùng trang)'
+script  = 'echo "Đổi: $t_switch_ref_src"'
+shell   = "banner"
+refresh = "t_switch_ref_dst"
+
+[[group.item]]
+type  = "switch"
+id    = "t_switch_ref_dst"
+title = "Đọc lại bằng get"
+desc  = "get = giây hiện tại chẵn hay lẻ, nên mỗi lần làm mới có thể đổi"
+get   = 'echo $(( $(date +%s) % 2 ))'
