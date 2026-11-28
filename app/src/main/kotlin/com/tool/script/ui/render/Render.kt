@@ -267,7 +267,7 @@ private fun ItemSurface(modifier: Modifier, inGroup: Boolean, content: @Composab
 @Composable
 private fun TextItem(item: Item, modifier: Modifier, inGroup: Boolean) {
     ItemSurface(modifier, inGroup) {
-        BasicComponent(insideMargin = CardInsideMargin, title = item.title, summary = item.content ?: item.desc)
+        BasicComponent(insideMargin = CardInsideMargin, title = item.title.takeIf { it.isNotBlank() }, summary = item.desc)
     }
 }
 

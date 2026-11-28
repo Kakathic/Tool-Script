@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "slider"
-content = "Kéo để chọn số trong khoảng min..max, bước step. Giá trị truyền vào lệnh qua $id khi thả tay."
+desc    = "Kéo để chọn số trong khoảng min..max, bước step. Giá trị truyền vào lệnh qua $id khi thả tay."
 
 [[group]]
 title = "Ví dụ"

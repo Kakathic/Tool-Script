@@ -6,7 +6,7 @@
 [[item]]
 type    = "text"
 title   = "multiselect"
-content = "Hàng hiện số mục đã chọn. Bấm để mở hộp thoại, chọn thoải mái rồi bấm Xác nhận."
+desc    = "Hàng hiện số mục đã chọn. Bấm để mở hộp thoại, chọn thoải mái rồi bấm Xác nhận."
 
 [[group]]
 title = "Hộp thoại nhỏ (dưới 6 mục)"

@@ -3,7 +3,7 @@
 [[item]]
 type    = "text"
 title   = "Lỗi link"
-content = "Link thiếu đích bị bỏ qua; link trỏ tab không tồn tại vẫn hiện nhưng có cảnh báo; có cả tab và page thì dùng tab."
+desc    = "Link thiếu đích bị bỏ qua; link trỏ tab không tồn tại vẫn hiện nhưng có cảnh báo; có cả tab và page thì dùng tab."
 
 [[group]]
 title = "Ví dụ"

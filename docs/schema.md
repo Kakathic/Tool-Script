@@ -181,7 +181,7 @@ lock_mode = "readonly"
 |---|---|---|
 | `type` | có | Loại thành phần |
 | `id` | tùy loại | Định danh, dùng làm tên biến |
-| `title` | có (riêng `[[group]]` không bắt buộc) | Tiêu đề hiển thị |
+| `title` | có (`[[group]]` không bắt buộc; `text` có thể bỏ nếu có `desc`) | Tiêu đề hiển thị |
 | `desc` | không | Mô tả phụ |
 | `icon` | không | Icon bên trái tiêu đề, đường dẫn như icon tab (`icons/x.svg` trong configs, hoặc `/sdcard/...`). Mặc định tô màu theo theme (xem `icon_tint`). Dùng được cho mọi type trừ `text` (bị bỏ qua); `group` chưa hỗ trợ |
 | `icon_size` | không | Kích thước icon (dp), số dương, mặc định `24` |
@@ -198,7 +198,7 @@ lock_mode = "readonly"
 
 | type | Trường riêng |
 |---|---|
-| `text` | `content` |
+| `text` | (không có trường riêng; đoạn chữ viết ở `desc`) |
 | `button` | `run` |
 | `switch` | `on`, `off`, `get` |
 | `input` | `hint`, `default`, `run`, `input_type` (`text`/`number`) |
@@ -220,7 +220,7 @@ nằm trong `[[group.item]]`.
 [[item]]                      # item đứng ngoài nhóm
 type    = "text"
 title   = "Chào mừng"
-content = "Nội dung"
+desc    = "Nội dung"
 
 [[group]]
 title = "Công tắc"            # tùy chọn; hiện sát phía trên thẻ. Bỏ trống thì group chỉ có thẻ, không có tiêu đề

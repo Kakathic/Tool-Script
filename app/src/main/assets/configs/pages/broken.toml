@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "Mô phỏng trang hỏng"
-content = "Lỗi nặng (sai cú pháp TOML, mất file) thì trang chỉ hiện thẻ lỗi. Lỗi nhẹ (thiếu trường, giá trị sai) thì mục sai bị bỏ qua hoặc dùng mặc định, kèm banner cảnh báo ở đầu trang đó."
+desc    = "Lỗi nặng (sai cú pháp TOML, mất file) thì trang chỉ hiện thẻ lỗi. Lỗi nhẹ (thiếu trường, giá trị sai) thì mục sai bị bỏ qua hoặc dùng mặc định, kèm banner cảnh báo ở đầu trang đó."
 
 [[group]]
 title = "Lỗi nặng: trang không đọc được"

@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "dropdown"
-content = "Gọn hơn radio khi có nhiều lựa chọn. Hàng hiện nhãn đang chọn kèm mũi tên; thiếu chỗ phía dưới thì menu lật lên trên, danh sách dài thì cuộn được."
+desc    = "Gọn hơn radio khi có nhiều lựa chọn. Hàng hiện nhãn đang chọn kèm mũi tên; thiếu chỗ phía dưới thì menu lật lên trên, danh sách dài thì cuộn được."
 
 [[group]]
 title = "Ví dụ"

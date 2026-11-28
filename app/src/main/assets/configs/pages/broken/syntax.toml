@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Trang bình thường"
-content = "Nếu thấy dòng này nghĩa là file đã hết lỗi cú pháp."
+desc    = "Nếu thấy dòng này nghĩa là file đã hết lỗi cú pháp."
 
 [[group]]
 title = "Nhóm mẫu

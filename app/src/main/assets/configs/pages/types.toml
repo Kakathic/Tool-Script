@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Các loại item (type)"
-content = "Bấm một dòng bên dưới để mở trang demo của type đó: giải thích trường riêng và có ví dụ chạy được. Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị."
+desc    = "Bấm một dòng bên dưới để mở trang demo của type đó: giải thích trường riêng và có ví dụ chạy được. Mọi lệnh chỉ là echo / sleep, không đổi thông số thiết bị."
 
 [[group]]
 title = "Hiển thị"

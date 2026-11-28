@@ -50,8 +50,6 @@ data class Item(
     val confirm: String?,
     // null = không giới hạn thời gian chạy (không khai báo timeout); có giá trị thì quá số giây đó lệnh bị dừng
     val timeoutSec: Int?,
-    // text
-    val content: String?,
     // button / input / slider
     val run: String?,
     // switch / checkbox
@@ -145,7 +143,7 @@ object TomlParser {
 
     /**
      * Khóa TOML mà giá trị không bao giờ bị thay `@khóa`: định danh, kiểu, đường dẫn, biểu thức, số, chế độ...
-     * Mọi khóa còn lại (title, desc, hint, confirm, content, nhãn trong options, lệnh run/on/off/get, name, env...) đều được thay.
+     * Mọi khóa còn lại (title, desc, hint, confirm, nhãn trong options, lệnh run/on/off/get, name, env...) đều được thay.
      */
     private val RAW_KEYS = setOf(
         "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "lock_mode", "input_type", "style",
@@ -159,7 +157,7 @@ object TomlParser {
     private val PAGE_KEYS = setOf("item", "group")
     private val ITEM_KEYS = setOf(
         "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible_if", "lock", "lock_mode", "confirm", "timeout",
-        "content", "run", "on", "off", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
+        "run", "on", "off", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
         "columns", "tab", "page", "style", "shell", "divider",
     )
 
@@ -313,10 +311,17 @@ object TomlParser {
             return null
         }
         val rawTitle = t.str("title")
-        // `[[group]]` không bắt buộc title: không có thì thẻ group hiện không kèm tiêu đề. Item khác vẫn bắt buộc.
+        // `[[group]]` và `text` không bắt buộc title: group không có title thì thẻ không kèm tiêu đề; text không có title thì chỉ hiện đoạn chữ (desc).
+        // Item khác vẫn bắt buộc title.
         if (rawTitle.isNullOrBlank() && !isGroup) {
-            warnings += AppText.get(R.string.cfg_item_missing_title, label, type.key)
-            return null
+            if (type != ItemType.Text) {
+                warnings += AppText.get(R.string.cfg_item_missing_title, label, type.key)
+                return null
+            }
+            if (t.str("desc").isNullOrBlank()) {
+                warnings += AppText.get(R.string.cfg_text_empty, label)
+                return null
+            }
         }
         val title = rawTitle.orEmpty()
         val id = t.str("id")?.takeIf { it.isNotBlank() }
@@ -486,7 +491,6 @@ object TomlParser {
             shell = shell,
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
             timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },
-            content = t.str("content"),
             run = if (id == APP_LANGUAGE_ID) null else t.str("run"),
             on = t.str("on"),
             off = t.str("off"),

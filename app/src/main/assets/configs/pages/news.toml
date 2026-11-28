@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Tính năng mới"
-content = "Các tính năng vừa thêm gần đây. Mỗi nhóm bên dưới có ví dụ bấm thử; giải thích đầy đủ nằm trong docs/toml-app.md và docs/schema.md."
+desc    = "Các tính năng vừa thêm gần đây. Mỗi nhóm bên dưới có ví dụ bấm thử; giải thích đầy đủ nằm trong docs/toml-app.md và docs/schema.md."
 
 [[group]]
 title = "Giao diện"
@@ -12,17 +12,17 @@ title = "Giao diện"
 [[group.item]]
 type    = "text"
 title   = "Tiêu đề lớn kiểu Miuix"
-content = "Tên app hiện chữ lớn ở đầu trang, vuốt lên thì thu thành chữ nhỏ căn trái, vuốt xuống tới đầu danh sách thì mở rộng lại. Thử vuốt trang này."
+desc    = "Tên app hiện chữ lớn ở đầu trang, vuốt lên thì thu thành chữ nhỏ căn trái, vuốt xuống tới đầu danh sách thì mở rộng lại. Thử vuốt trang này."
 
 [[group.item]]
 type    = "text"
 title   = "Hộp thoại Cài đặt"
-content = "Biểu tượng bánh răng sát lề phải thanh trên mở hộp thoại giữa màn hình: Giao diện (Hệ thống / Sáng / Tối), các ô tích Màu động, Rung khi chạm, Làm mờ nền (Android 13+) và Ngôn ngữ (Hệ thống / English / Tiếng Việt). Đổi xong áp dụng ngay và được lưu lại."
+desc    = "Biểu tượng bánh răng sát lề phải thanh trên mở hộp thoại giữa màn hình: Giao diện (Hệ thống / Sáng / Tối), các ô tích Màu động, Rung khi chạm, Làm mờ nền (Android 13+) và Ngôn ngữ (Hệ thống / English / Tiếng Việt). Đổi xong áp dụng ngay và được lưu lại."
 
 [[group.item]]
 type    = "text"
 title   = "Menu nguồn"
-content = "Biểu tượng Nguồn: khởi động lại ứng dụng, khởi động lại máy, Recovery và các mục nâng cao (cần root)."
+desc    = "Biểu tượng Nguồn: khởi động lại ứng dụng, khởi động lại máy, Recovery và các mục nâng cao (cần root)."
 
 [[group]]
 title = "Hiển thị kết quả: snackbar và notice"
@@ -199,7 +199,7 @@ title = "Trang đa ngôn ngữ"
 [[group.item]]
 type    = "text"
 title   = "@demo_lang_title"
-content = "@demo_lang_body"
+desc    = "@demo_lang_body"
 
 [[group.item]]
 type  = "button"

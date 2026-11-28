@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "progress"
-content = "Hiển thị một giá trị đo được, ví dụ pin hoặc dung lượng. Mở lại trang để đọc lại get."
+desc    = "Hiển thị một giá trị đo được, ví dụ pin hoặc dung lượng. Mở lại trang để đọc lại get."
 
 [[group]]
 title = "Ví dụ"

@@ -3,7 +3,7 @@
 [[item]]
 type    = "text"
 title   = "Lỗi options"
-content = "Mỗi mục bên dưới có options sai ở một kiểu khác nhau; xem banner cảnh báo ở đầu trang."
+desc    = "Mỗi mục bên dưới có options sai ở một kiểu khác nhau; xem banner cảnh báo ở đầu trang."
 
 [[group]]
 title = "Ví dụ"

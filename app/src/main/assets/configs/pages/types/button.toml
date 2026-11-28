@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "button"
-content = "Bấm để chạy lệnh trong run. Kết quả hiện theo shell (mặc định live: bảng log)."
+desc    = "Bấm để chạy lệnh trong run. Kết quả hiện theo shell (mặc định live: bảng log)."
 
 [[group]]
 title = "Cơ bản"

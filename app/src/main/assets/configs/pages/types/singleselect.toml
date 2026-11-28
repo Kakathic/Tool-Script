@@ -6,7 +6,7 @@
 [[item]]
 type    = "text"
 title   = "singleselect"
-content = "Hàng hiện nhãn đang chọn kèm mũi tên. Bấm để mở hộp thoại, chạm một mục là chọn luôn (từ 6 mục thì mở toàn màn hình và bấm Xác nhận)."
+desc    = "Hàng hiện nhãn đang chọn kèm mũi tên. Bấm để mở hộp thoại, chạm một mục là chọn luôn (từ 6 mục thì mở toàn màn hình và bấm Xác nhận)."
 
 [[group]]
 title = "Hộp thoại nhỏ (dưới 6 mục)"

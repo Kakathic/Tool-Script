@@ -3,7 +3,7 @@
 [[item]]
 type    = "text"
 title   = "Trang con cấp hai"
-content = "Back của máy đóng trang này và về trang con cấp một."
+desc    = "Back của máy đóng trang này và về trang con cấp một."
 
 [[group]]
 

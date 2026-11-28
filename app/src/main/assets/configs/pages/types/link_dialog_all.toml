@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "Tất cả loại item"
-content = "Đổi các giá trị bên dưới rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để khôi phục."
+desc    = "Đổi các giá trị bên dưới rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để khôi phục."
 
 [[group]]
 title = "Công tắc và ô tick"

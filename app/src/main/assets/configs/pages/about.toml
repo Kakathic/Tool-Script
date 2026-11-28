@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Tool Script"
-content = "Ứng dụng Android nạp giao diện từ file TOML, dùng thư viện Miuix (Compose). Viết vài file TOML là có ngay công tắc, nút, ô nhập, hộp chọn chạy lệnh shell."
+desc    = "Ứng dụng Android nạp giao diện từ file TOML, dùng thư viện Miuix (Compose). Viết vài file TOML là có ngay công tắc, nút, ô nhập, hộp chọn chạy lệnh shell."
 
 [[group]]
 title = "Con người"
@@ -31,12 +31,12 @@ title = "Phân công"
 [[group.item]]
 type    = "text"
 title   = "Tác giả làm"
-content = "Ý tưởng và yêu cầu, chọn hướng đi khi có nhiều phương án, chạy thử trên máy thật và báo lại lỗi."
+desc    = "Ý tưởng và yêu cầu, chọn hướng đi khi có nhiều phương án, chạy thử trên máy thật và báo lại lỗi."
 
 [[group.item]]
 type    = "text"
 title   = "Claude làm"
-content = "Đọc mã hiện có, viết và sửa mã, đồng bộ README, schema và tài nguyên, giải thích thay đổi. Phần nào chưa chạy thử trên máy thật đều ghi rõ là chưa kiểm chứng."
+desc    = "Đọc mã hiện có, viết và sửa mã, đồng bộ README, schema và tài nguyên, giải thích thay đổi. Phần nào chưa chạy thử trên máy thật đều ghi rõ là chưa kiểm chứng."
 
 [[group]]
 title = "Công nghệ"
@@ -44,17 +44,17 @@ title = "Công nghệ"
 [[group.item]]
 type    = "text"
 title   = "Giao diện"
-content = "Kotlin, Jetpack Compose và thư viện Miuix 0.9.5-rc01."
+desc    = "Kotlin, Jetpack Compose và thư viện Miuix 0.9.5-rc01."
 
 [[group.item]]
 type    = "text"
 title   = "Cấu hình"
-content = "File TOML đọc thẳng từ assets/configs: main.toml chứa danh sách tab, pages/*.toml chứa nội dung từng trang."
+desc    = "File TOML đọc thẳng từ assets/configs: main.toml chứa danh sách tab, pages/*.toml chứa nội dung từng trang."
 
 [[group.item]]
 type    = "text"
 title   = "Thực thi lệnh"
-content = "Shell thường hoặc su (libsu); biến ROOT_MODE cho biết đang chạy ở chế độ nào."
+desc    = "Shell thường hoặc su (libsu); biến ROOT_MODE cho biết đang chạy ở chế độ nào."
 
 [[group]]
 title = "Máy đang chạy"

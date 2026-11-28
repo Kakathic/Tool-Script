@@ -5,4 +5,4 @@
 type    = "text"
 title   = "Dòng thứ nhất"
 title   = "Dòng thứ hai"
-content = "Nếu thấy dòng này nghĩa là file đã hết lỗi."
+desc    = "Nếu thấy dòng này nghĩa là file đã hết lỗi."

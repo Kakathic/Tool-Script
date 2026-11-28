@@ -167,6 +167,7 @@
     <string name="cfg_type_group_renamed">%1$s: type = \"group\" đã đổi thành [[group]], bỏ qua</string>
     <string name="cfg_unknown_type">%1$s có type lạ \"%2$s\", bỏ qua</string>
     <string name="cfg_item_missing_title">%1$s (%2$s) thiếu title, bỏ qua</string>
+    <string name="cfg_text_empty">%1$s (text) không có title lẫn desc, bỏ qua</string>
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) thiếu id, bỏ qua</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" không hợp lệ (chỉ chữ, số, gạch dưới; không bắt đầu bằng số), bỏ qua</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": trùng id \"%3$s\", bỏ qua</string>

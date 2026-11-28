@@ -1,10 +1,10 @@
-# type = "text": đoạn chữ thuần. Trường riêng: content. Không có id, không lưu, không chạy lệnh.
-# icon bị bỏ qua với text.
+# type = "text": đoạn chữ thuần. Không có trường riêng (chữ nằm ở desc). Không có id, không lưu, không chạy lệnh.
+# title không bắt buộc (bỏ trống thì chỉ hiện desc). icon bị bỏ qua với text.
 
 [[item]]
 type    = "text"
 title   = "text đứng riêng"
-content = "Item nằm ngoài [[group]] nên có thẻ riêng. Dùng để mở đầu trang hoặc ghi chú."
+desc    = "Item nằm ngoài [[group]] nên có thẻ riêng. Dùng để mở đầu trang hoặc ghi chú."
 
 [[group]]
 title = "text trong group"
@@ -12,12 +12,16 @@ title = "text trong group"
 [[group.item]]
 type    = "text"
 title   = "Dòng một"
-content = "Các item trong cùng một group nằm chung một thẻ lớn."
+desc    = "Các item trong cùng một group nằm chung một thẻ lớn."
+
+[[group.item]]
+type = "text"
+desc = "Dòng này không có title: chỉ hiện đoạn chữ. Thiếu cả title lẫn desc thì item bị bỏ."
 
 [[group.item]]
 type    = "text"
 title   = "Dòng hai"
-content = "Nội dung có thể dài và tự xuống dòng khi hết chiều ngang thẻ, không bị cắt."
+desc    = "Nội dung có thể dài và tự xuống dòng khi hết chiều ngang thẻ, không bị cắt."
 
 [[group]]
 title = "text hiện theo điều kiện (visible_if)"
@@ -31,11 +35,11 @@ desc  = "Bật để hiện text bên dưới"
 [[group.item]]
 type       = "text"
 title      = "Dòng ẩn"
-content    = "Chỉ hiện khi t_text_show == 1"
+desc       = "Chỉ hiện khi t_text_show == 1"
 visible_if = "t_text_show == 1"
 
 [[group.item]]
 type       = "text"
 title      = "Chỉ hiện khi không root"
-content    = "Chỉ hiện khi ROOT_MODE == any"
+desc       = "Chỉ hiện khi ROOT_MODE == any"
 visible_if = "ROOT_MODE == any"

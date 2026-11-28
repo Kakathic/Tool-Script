@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "switch"
-content = "Bật tắt một giá trị. Có on / off thì chạy lệnh khi đổi, không có thì chỉ lưu giá trị để item khác dùng qua visible_if, lock hoặc $id."
+desc    = "Bật tắt một giá trị. Có on / off thì chạy lệnh khi đổi, không có thì chỉ lưu giá trị để item khác dùng qua visible_if, lock hoặc $id."
 
 [[group]]
 title = "Cơ bản"

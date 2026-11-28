@@ -172,6 +172,7 @@
     <string name="cfg_type_group_renamed">%1$s: type = \"group\" was renamed to [[group]], ignored</string>
     <string name="cfg_unknown_type">%1$s has unknown type \"%2$s\", ignored</string>
     <string name="cfg_item_missing_title">%1$s (%2$s) is missing title, ignored</string>
+    <string name="cfg_text_empty">%1$s (text) has neither title nor desc, ignored</string>
     <string name="cfg_item_missing_id">%1$s \"%2$s\" (%3$s) is missing id, ignored</string>
     <string name="cfg_invalid_id">%1$s \"%2$s\": id \"%3$s\" is invalid (letters, digits and underscore only; can\'t start with a digit), ignored</string>
     <string name="cfg_duplicate_id">%1$s \"%2$s\": duplicate id \"%3$s\", ignored</string>

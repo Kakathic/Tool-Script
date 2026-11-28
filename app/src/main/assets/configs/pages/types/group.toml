@@ -5,17 +5,17 @@
 [[item]]
 type    = "text"
 title   = "group"
-content = "Item đứng ngoài group thì mỗi item một thẻ riêng. Item trong cùng một group nằm chung một thẻ lớn. Thứ tự [[item]] và [[group]] trên trang theo thứ tự trong file."
+desc    = "Item đứng ngoài group thì mỗi item một thẻ riêng. Item trong cùng một group nằm chung một thẻ lớn. Thứ tự [[item]] và [[group]] trên trang theo thứ tự trong file."
 
 [[item]]
 type    = "text"
 title   = "Item đứng riêng thứ nhất"
-content = "Thẻ riêng."
+desc    = "Thẻ riêng."
 
 [[item]]
 type    = "text"
 title   = "Item đứng riêng thứ hai"
-content = "Cũng thẻ riêng, cách thẻ trên 16dp."
+desc    = "Cũng thẻ riêng, cách thẻ trên 16dp."
 
 [[group]]
 title = "Group có tiêu đề"
@@ -23,12 +23,12 @@ title = "Group có tiêu đề"
 [[group.item]]
 type    = "text"
 title   = "Item một"
-content = "Tiêu đề nằm ngoài thẻ, dính sát thẻ của nó."
+desc    = "Tiêu đề nằm ngoài thẻ, dính sát thẻ của nó."
 
 [[group.item]]
 type    = "text"
 title   = "Item hai"
-content = "Cùng thẻ với item một."
+desc    = "Cùng thẻ với item một."
 
 # [[group]] không khai báo title: thẻ chỉ vẽ phần item, không có tiêu đề phía trên.
 [[group]]
@@ -92,15 +92,15 @@ title = "Đường kẻ ngăn cách"
 [[group.item]]
 type    = "text"
 title   = "Item một"
-content = "divider = true: đường kẻ nằm giữa item một và item hai."
+desc    = "divider = true: đường kẻ nằm giữa item một và item hai."
 divider = true
 
 [[group.item]]
 type    = "text"
 title   = "Item hai"
-content = "Không có divider nên dính liền item ba."
+desc    = "Không có divider nên dính liền item ba."
 
 [[group.item]]
 type    = "text"
 title   = "Item ba"
-content = "Item cuối: divider ở đây (nếu có) sẽ không được vẽ."
+desc    = "Item cuối: divider ở đây (nếu có) sẽ không được vẽ."

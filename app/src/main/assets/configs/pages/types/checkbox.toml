@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "checkbox"
-content = "Giống switch về hành vi, khác ở giao diện: ô tick bên phải. Hợp với danh sách tùy chọn nhiều dòng."
+desc    = "Giống switch về hành vi, khác ở giao diện: ô tick bên phải. Hợp với danh sách tùy chọn nhiều dòng."
 
 [[group]]
 title = "Ví dụ"

@@ -7,7 +7,7 @@
 [[item]]
 type    = "text"
 title   = "Dialog"
-content = "Chọn giá trị rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để bỏ."
+desc    = "Chọn giá trị rồi bấm Xác nhận để chạy lệnh của link, hoặc Hủy để bỏ."
 
 [[group]]
 title = "Biến truyền vào lệnh"

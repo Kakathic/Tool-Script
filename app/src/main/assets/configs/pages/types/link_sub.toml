@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Trang con"
-content = "Bấm nút quay lại ở thanh trên hoặc Back của máy để về trang trước. Id của trang con dùng chung kho biến với các tab."
+desc    = "Bấm nút quay lại ở thanh trên hoặc Back của máy để về trang trước. Id của trang con dùng chung kho biến với các tab."
 
 [[group]]
 title = "Thử trong trang con"

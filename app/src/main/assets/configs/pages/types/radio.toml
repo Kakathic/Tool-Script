@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "radio"
-content = "Hợp với ít lựa chọn (2 đến 4 mục) để người dùng thấy hết cùng lúc. Nhiều hơn thì dùng dropdown hoặc singleselect."
+desc    = "Hợp với ít lựa chọn (2 đến 4 mục) để người dùng thấy hết cùng lúc. Nhiều hơn thì dùng dropdown hoặc singleselect."
 
 [[group]]
 title = "Ví dụ"
@@ -43,7 +43,7 @@ options = ["Ẩn|hide", "Hiện|show"]
 [[group.item]]
 type       = "text"
 title      = "Mục phụ"
-content    = 'Chỉ hiện khi chọn "Hiện" (t_radio_toggle == show)'
+desc       = 'Chỉ hiện khi chọn "Hiện" (t_radio_toggle == show)'
 visible_if = "t_radio_toggle == show"
 
 [[group]]

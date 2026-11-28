@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "input"
-content = "Nhập chữ hoặc số rồi bấm Chạy. Không có run thì nút Chạy mờ, giá trị chỉ được lưu để item khác đọc."
+desc    = "Nhập chữ hoặc số rồi bấm Chạy. Không có run thì nút Chạy mờ, giá trị chỉ được lưu để item khác đọc."
 
 [[group]]
 title = "Cơ bản"

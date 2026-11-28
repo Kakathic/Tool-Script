@@ -4,7 +4,7 @@
 [[item]]
 type    = "text"
 title   = "Dialog có mục không hợp lệ"
-content = "Chỉ ô nhập bên dưới hiện; button và link bị bỏ qua."
+desc    = "Chỉ ô nhập bên dưới hiện; button và link bị bỏ qua."
 
 [[group]]
 
