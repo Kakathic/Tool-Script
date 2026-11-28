@@ -23,10 +23,10 @@ private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
 
 /**
- * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp nên thẻ vừa chạm mép thanh đã bị mờ / phủ nền;
- * đặt 0dp để dải kết thúc đúng ở mép dưới thanh, thẻ chỉ bắt đầu mờ khi đã chui vào dưới thanh.
+ * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp; giảm 2dp (30dp) để thẻ chạm mép thanh bớt bị mờ / phủ nền một chút.
+ * Muốn mờ sớm hơn thì tăng, muốn thẻ chỉ mờ khi đã chui vào dưới thanh thì giảm về 0dp.
  */
-val GlassBarBandOverhang = 0.dp
+val GlassBarBandOverhang = 30.dp
 
 /** Máy có hỗ trợ blur không (Android 13+). Dưới mức này thanh giữ nền đặc như cũ và công tắc "Làm mờ nền" bị ẩn. */
 fun isBlurSupported(): Boolean = isRuntimeShaderSupported()
