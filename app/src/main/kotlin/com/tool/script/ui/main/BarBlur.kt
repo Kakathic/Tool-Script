@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
@@ -27,6 +28,16 @@ private const val BarBlurTint = 0.8f
  * Muốn mờ sớm hơn thì tăng, muốn thẻ chỉ mờ khi đã chui vào dưới thanh thì giảm về 0dp.
  */
 val GlassBarBandOverhang = 20.dp
+
+/** Độ kéo dài mặc định của dải mờ ở Miuix 0.9.5-rc01 (điểm mốc để tính độ hạ ngưỡng kích hoạt bên dưới). */
+private val MiuixDefaultBandOverhang = 32.dp
+
+/**
+ * Quãng cuộn (dp) của danh sách trước khi thanh trên kính bật: nút chuyển sang viên kính tròn và dải mờ hiện ra (màn hình chính).
+ * Gắn với [GlassBarBandOverhang]: dải mờ ngắn đi bao nhiêu so với mặc định Miuix (32dp) thì ngưỡng kích hoạt hạ xuống đúng bấy nhiêu
+ * (overhang 20dp = bật sau khi cuộn 12dp; overhang 32dp = bật ngay từ lần cuộn đầu tiên như cũ).
+ */
+val GlassBarActivateScroll = (MiuixDefaultBandOverhang - GlassBarBandOverhang).coerceAtLeast(0.dp)
 
 /** Máy có hỗ trợ blur không (Android 13+). Dưới mức này thanh giữ nền đặc như cũ và công tắc "Làm mờ nền" bị ẩn. */
 fun isBlurSupported(): Boolean = isRuntimeShaderSupported()

@@ -159,9 +159,6 @@ private val FloatingBarBandExtra = 28.dp
 /** Lề trái / phải của đảo kính (thanh tab nổi), bằng lề thẻ 16dp để đảo rộng ngang hàng với thẻ. */
 private val FloatingBarSideMargin = 16.dp
 
-/** Khoảng đệm phía trên thẻ đầu tiên của danh sách (cộng thêm chiều cao thanh trên). Cuộn quá khoảng này thì thẻ mới chạm mép dưới thanh. */
-private val ListTopPadding = 16.dp
-
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
  * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi item `app_language` trong TOML đổi giá trị.
@@ -381,13 +378,13 @@ fun MainScreen(
                                 val density = LocalDensity.current
                                 // Thanh trên kính chỉ hiện chất liệu khi trang hiện tại đã cuộn khỏi đầu.
                                 val currentFile = pages.getOrNull(pagerState.currentPage)?.ref?.file
-                                // Chỉ coi là đã cuộn (nút chuyển sang viên kính tròn, dải mờ bật) khi thẻ đầu tiên thực sự chạm mép dưới thanh, không phải ngay từ lần cuộn đầu tiên.
-                                val listTopPaddingPx = with(density) { ListTopPadding.roundToPx() }
-                                val pageScrolled by remember(currentFile, listTopPaddingPx) {
+                                // Nút chuyển sang viên kính tròn và dải mờ bật khi đã cuộn quá [GlassBarActivateScroll] (BarBlur.kt), không phải từ pixel đầu tiên.
+                                val activatePx = with(density) { GlassBarActivateScroll.roundToPx() }
+                                val pageScrolled by remember(currentFile, activatePx) {
                                     derivedStateOf {
                                         currentFile?.let { file ->
                                             val list = scrollStates.of(file)
-                                            list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset >= listTopPaddingPx
+                                            list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > activatePx
                                         } == true
                                     }
                                 }
@@ -972,7 +969,7 @@ private fun PageList(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().then(if (imePadding) Modifier.imePadding() else Modifier).then(if (fadeEdges) Modifier.fadingEdges(listState) else Modifier),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = ListTopPadding + topInset, bottom = 16.dp + bottomInset),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Thẻ cảnh báo chung của app (script khởi động, main.toml) nằm đầu danh sách như một mục: cuộn cùng nội dung, không dính thanh trên.
