@@ -250,4 +250,6 @@
     <string name="path_pick_here">Select this folder</string>
     <string name="path_empty">This folder is empty</string>
     <string name="path_current">Current folder</string>
+    <string name="path_go_start">Back to start folder</string>
+    <string name="path_need_root">Some folders need root access to view</string>
 </resources>

@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -98,6 +99,16 @@ internal fun FilePicker(
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    // Lịch sử các thư mục đã rời đi: Back quay lại thư mục trước đó (hết lịch sử mới đóng màn hình chọn).
+    var history by remember { mutableStateOf<List<String>>(emptyList()) }
+    val startDir = start.ifBlank { "/" }
+    val go: (String) -> Unit = { target ->
+        if (target != dir) {
+            history = history + dir
+            query = ""
+            dir = target
+        }
+    }
     val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(dir) {
@@ -143,7 +154,15 @@ internal fun FilePicker(
     }
     val canConfirm = selected.isNotEmpty() || folder
 
-    BackHandler(onBack = onDismiss)
+    BackHandler {
+        if (history.isEmpty()) {
+            onDismiss()
+        } else {
+            dir = history.last()
+            history = history.dropLast(1)
+            query = ""
+        }
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
@@ -182,15 +201,34 @@ internal fun FilePicker(
                     )
                 }
             }
-            // Đường dẫn thư mục đang mở.
-            Text(
-                text = dir,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = PICKER_MARGIN),
-                color = MiuixTheme.colorScheme.primary,
-                style = MiuixTheme.textStyles.body2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // Đường dẫn thư mục đang mở, kèm nút về nhanh thư mục bắt đầu (`start`) khi đang ở chỗ khác.
+            Row(Modifier.fillMaxWidth().padding(horizontal = PICKER_MARGIN), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = dir,
+                    modifier = Modifier.weight(1f),
+                    color = MiuixTheme.colorScheme.primary,
+                    style = MiuixTheme.textStyles.body2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (dir != startDir) {
+                    Text(
+                        text = stringResource(R.string.path_go_start),
+                        color = MiuixTheme.colorScheme.primary,
+                        style = MiuixTheme.textStyles.body2,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA))
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                go(startDir)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
+            }
             Spacer(Modifier.height(PICKER_MARGIN))
             AppTextField(
                 value = query,
@@ -207,8 +245,7 @@ internal fun FilePicker(
                         insideMargin = PICKER_ROW_MARGIN,
                         modifier = Modifier.fillMaxWidth().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                             haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            query = ""
-                            dir = parentOf(dir)
+                            go(parentOf(dir))
                         },
                         title = "..",
                         summary = stringResource(R.string.path_up),
@@ -218,7 +255,7 @@ internal fun FilePicker(
                 }
                 when {
                     loading -> Unit
-                    failed -> CenterNote(stringResource(R.string.path_read_failed))
+                    failed -> CenterNote(stringResource(R.string.path_read_failed) + "\n" + stringResource(R.string.path_need_root))
                     shown.isEmpty() -> CenterNote(stringResource(if (query.isBlank()) R.string.path_empty else R.string.select_no_match))
                     else -> LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                         items(shown, key = { it.name }) { entry ->
@@ -231,8 +268,7 @@ internal fun FilePicker(
                                     when {
                                         entry.isDir -> {
                                             haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                            query = ""
-                                            dir = path
+                                            go(path)
                                         }
                                         selectable -> toggle(path)
                                     }
@@ -284,6 +320,6 @@ private fun PathIcon(icon: String) {
 @Composable
 private fun CenterNote(text: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
+        Text(text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = PICKER_MARGIN))
     }
 }

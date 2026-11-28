@@ -404,7 +404,7 @@ script = 'unzip -l "$firmware"'
 ```
 
 - Thẻ có ô văn bản (gõ tay được, chỉ lưu giá trị) và **một nút** ở cuối ô để mở trình quản lý tệp toàn màn hình. Không có nút Chạy.
-- Trình quản lý duyệt bằng `ls` qua backend shell, nên có root thì xem được cả `/`; đường dẫn trả về là đường dẫn thật. Mở ở thư mục chứa mục đang lưu, chưa có thì ở `start` (mặc định `/sdcard`). Có ô tìm, dòng `..` để lên thư mục cha, thư mục xếp trước tệp.
+- Trình quản lý duyệt bằng `ls` qua backend shell, nên có root thì xem được cả `/`; đường dẫn trả về là đường dẫn thật. Mở ở thư mục chứa mục đang lưu, chưa có thì ở `start` (mặc định `/sdcard`). Có ô tìm, dòng `..` để lên thư mục cha, thư mục xếp trước tệp. Khi đang ở thư mục khác `start` thì có nút "Về thư mục đầu" ở cạnh đường dẫn. Nút Back quay lại thư mục đã mở trước đó (hết lịch sử mới đóng). Thư mục không đọc được (thường do chưa có root) thì báo kèm gợi ý, vẫn bấm `..` hoặc Back để quay lại.
 - `file`: bấm thư mục để mở, bấm tệp để chọn. `ext = "zip,apk"` chỉ hiện tệp đúng đuôi (thư mục luôn hiện). `folder`: bấm thư mục để mở, ô chọn ở cuối dòng để chọn thư mục đó; không chọn gì mà bấm nút dưới ("Chọn thư mục này") thì lấy thư mục đang mở.
 - `multi`: mặc định `false` (chọn một). `true` thì chọn nhiều (cả ở nhiều thư mục khác nhau), `$id` là các đường dẫn nối bằng `separator` (mặc định xuống dòng).
 - Chọn xong và bấm **Xác nhận** thì chạy `script` luôn với `$id` là đường dẫn đã chọn; có `confirm` thì hỏi xác nhận trước khi chạy. Trong trang dialog chỉ truyền biến, không chạy lệnh.

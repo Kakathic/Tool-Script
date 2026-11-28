@@ -245,4 +245,6 @@
     <string name="path_pick_here">Chọn thư mục này</string>
     <string name="path_empty">Thư mục trống</string>
     <string name="path_current">Thư mục hiện tại</string>
+    <string name="path_go_start">Về thư mục đầu</string>
+    <string name="path_need_root">Một số thư mục cần quyền root mới xem được</string>
 </resources>
