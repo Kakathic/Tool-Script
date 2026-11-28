@@ -87,6 +87,12 @@ title = "multiselect"
 desc  = "Chọn nhiều có Xác nhận; từ 6 mục thì toàn màn hình"
 page  = "pages/types/multiselect.toml"
 
+[[group.item]]
+type  = "link"
+title = "applist"
+desc  = "Chọn app đã cài: icon, tên, package; chọn một hoặc nhiều"
+page  = "pages/types/applist.toml"
+
 [[group]]
 title = "Điều hướng và bố cục"
 

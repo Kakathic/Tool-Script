@@ -137,6 +137,7 @@
     <!-- Hiển thị item -->
     <string name="selection_none">Chưa chọn</string>
     <string name="selection_count">Đã chọn %1$d</string>
+    <string name="applist_get_failed">Không nạp được danh sách app (%1$s)</string>
     <string name="page_error_title">Không đọc được trang này</string>
     <string name="select_count_of">Đã chọn %1$d/%2$d</string>
     <string name="select_search">Tìm kiếm</string>
@@ -178,6 +179,8 @@
     <string name="cfg_shell_log_removed">%1$s \"%2$s\": shell = \"log\" đã bỏ, dùng live</string>
     <string name="cfg_invalid_shell">%1$s \"%2$s\": shell = \"%3$s\" không hợp lệ, dùng live</string>
     <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" không hợp lệ (1 hoặc 2), dùng 1</string>
+    <string name="cfg_invalid_multi">%1$s \"%2$s\": multi = \"%3$s\" không hợp lệ (true hoặc false), dùng true</string>
+    <string name="cfg_applist_missing_get">%1$s \"%2$s\" (applist) thiếu get (lệnh in danh sách app), bỏ item</string>
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" không hợp lệ (số dương), dùng 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" không hợp lệ (true hoặc false), dùng true</string>
     <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" không hợp lệ (true hoặc false), dùng false</string>

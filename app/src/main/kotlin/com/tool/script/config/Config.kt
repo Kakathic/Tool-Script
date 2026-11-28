@@ -21,7 +21,7 @@ enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Slider("slider"), Link("link"),
     Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
-    MultiSelect("multiselect"), SingleSelect("singleselect");
+    MultiSelect("multiselect"), SingleSelect("singleselect"), AppList("applist");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -30,7 +30,8 @@ enum class ItemType(val key: String) {
 
 enum class ShellMode { Live, Full, Hidden, Banner, Notice, Snackbar }
 
-data class SelectOption(val label: String, val value: String)
+/** [app] = true: mục là một ứng dụng đã cài (type `applist`), [value] là package name; màn hình chọn vẽ thêm icon và package. */
+data class SelectOption(val label: String, val value: String, val app: Boolean = false)
 
 data class Item(
     val type: ItemType,
@@ -81,6 +82,8 @@ data class Item(
     val children: List<Item>,
     // item con của group: true = vẽ đường kẻ ngăn cách ngay dưới item này (không vẽ ở item cuối của group)
     val divider: Boolean = false,
+    // applist: true (mặc định) = chọn nhiều app, false = chọn một app. Danh sách app do lệnh `get` in ra.
+    val multi: Boolean = true,
 )
 
 /** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
@@ -150,7 +153,7 @@ object TomlParser {
     private val RAW_KEYS = setOf(
         "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "input_type", "style",
         "tab", "page", "file", "visible", "readonly", "lock", "timeout", "min", "max", "step", "default", "separator",
-        "lang", "lang-sh", "load-string", "load-string-sh",
+        "lang", "lang-sh", "load-string", "load-string-sh", "multi",
     )
 
     private val APP_KEYS = setOf("name", "env", "lang", "lang-sh", "load-string", "load-string-sh")
@@ -160,7 +163,7 @@ object TomlParser {
     private val ITEM_KEYS = setOf(
         "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "confirm", "timeout",
         "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
-        "columns", "tab", "page", "style", "shell", "divider",
+        "columns", "tab", "page", "style", "shell", "divider", "multi",
     )
 
     /** Khóa không có trong code (thường là gõ sai) đều báo cáo. Bảng vẫn được đọc, chỉ riêng khóa lạ bị bỏ qua. */
@@ -330,7 +333,8 @@ object TomlParser {
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
-            type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect
+            type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect ||
+            type == ItemType.AppList
         if (needsId) {
             if (id == null) {
                 warnings += AppText.get(R.string.cfg_item_missing_id, label, title, type.key)
@@ -358,6 +362,11 @@ object TomlParser {
                 return null
             }
             if (hasTab && hasPage) warnings += AppText.get(R.string.cfg_link_both, label, title)
+        }
+
+        if (type == ItemType.AppList && t.str("get").isNullOrBlank()) {
+            warnings += AppText.get(R.string.cfg_applist_missing_get, label, title)
+            return null
         }
 
         val dialog = when (val style = t.str("style")?.lowercase()) {
@@ -417,6 +426,14 @@ object TomlParser {
             }
         }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: "\n"
+        val multi = when (val raw = t.str("multi")?.lowercase()) {
+            null, "true" -> true
+            "false" -> false
+            else -> {
+                warnings += AppText.get(R.string.cfg_invalid_multi, label, title, raw)
+                true
+            }
+        }
         // lock = "điều kiện|lý do": phần lý do (tùy chọn) được thay @khóa; điều kiện giữ nguyên.
         val (lockCondition, lockRawMsg) = ConditionEvaluator.splitMessage(t.str("lock").orEmpty())
 
@@ -507,6 +524,7 @@ object TomlParser {
             dialog = dialog && t.str("page").isNullOrBlank().not(),
             children = children,
             divider = divider,
+            multi = multi,
         )
     }
 }
@@ -519,6 +537,15 @@ fun Item.normalizeMulti(raw: String): String {
     val parts = raw.split(separator)
     val chosen = parts.map { it.trim() }.toSet()
     return options.filter { it.value in chosen }.joinToString(separator) { it.value }
+}
+
+/**
+ * applist: tách [raw] theo [Item.separator], bỏ dòng trống và trùng; `multi = false` thì chỉ giữ package đầu tiên.
+ * Không đối chiếu với app đã cài (danh sách app chỉ nạp khi mở màn hình chọn, bằng lệnh `get`), nên package đã gỡ vẫn được giữ cho tới lần xác nhận kế tiếp.
+ */
+fun Item.normalizeApps(raw: String): String {
+    val parts = raw.split(separator).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    return (if (multi) parts else parts.take(1)).joinToString(separator)
 }
 
 /** Đọc `assets/configs`; đường dẫn bắt đầu bằng `/` thì đọc thẳng file ngoài APK. Reload nóng để lại sau (schema mục 12). */

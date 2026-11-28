@@ -207,6 +207,7 @@ readonly = "ROOT_MODE != root"
 | `dropdown` | `options`, `default`, `script` (chọn bằng menu thả xuống) |
 | `multiselect` | `options`, `default`, `script`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
 | `singleselect` | `options`, `default`, `script`, `columns` (chọn một mục: hộp nhỏ chạm là chọn luôn, toàn màn hình có Xác nhận, xem bên dưới) |
+| `applist` | `get` (bắt buộc, lệnh in danh sách app), `multi`, `default`, `script`, `separator` (chọn app trên máy, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `slider`: `max < min` thì hai giá trị được đổi chỗ; `min = max` thì `max` được đặt lại thành `min + step`; `step` không chia hết `max - min` thì thanh trượt không tới được `max`. Cả ba trường hợp đều hiện cảnh báo cấu hình ở đầu trang.
@@ -238,7 +239,7 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `multiselect`, `singleselect`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `multiselect`, `singleselect`, `applist`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `slog`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
@@ -352,6 +353,40 @@ script  = 'echo "Đã chọn: $mode"'
 - Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
 - `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Góc phải trên cùng màn hình hiện khung bo góc không viền, nền màu chủ đạo nhạt `Đã chọn x/y` tính trên toàn bộ danh sách.
 - `singleselect` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận (chế độ toàn màn hình). `multiselect` giữ nguyên màu chữ, chỉ đổi ô tích.
+
+`applist` – chọn ứng dụng trên máy. Không khai báo `options`: danh sách app do lệnh `get` in ra.
+
+```toml
+[[item]]
+type    = "applist"
+id      = "target_apps"
+title   = "Ứng dụng áp dụng"
+get     = "pm list packages -3"      # bắt buộc: lệnh in danh sách app, mỗi dòng một package
+multi   = true                       # tùy chọn: true (mặc định) chọn nhiều / false chọn một
+default = "com.android.chrome\ncom.google.android.youtube"   # tùy chọn: package chọn sẵn, cách nhau bằng separator
+script  = 'echo "Đã chọn: $target_apps"'
+```
+
+Ví dụ `get`:
+
+```toml
+get = "pm list packages -d"                              # app đã tắt
+get = "pm list packages -s"                              # app hệ thống
+get = "pm list packages -u"                              # kể cả app đã gỡ nhưng còn dữ liệu
+get = "pm list packages -3 -i com.android.vending"       # app cài từ Play Store
+get = 'pm list packages --user $user_id'                 # dùng biến của item khác
+get = "pm list packages -3 | grep -v google"             # lọc bằng pipe
+```
+
+- `get` (bắt buộc): lệnh shell in danh sách app. Thiếu `get` thì item bị bỏ kèm cảnh báo. Lệnh chạy qua backend shell của app (có root thì chạy bằng root, nên dùng được mọi cờ của `pm`), **chạy lại mỗi lần mở danh sách** nên danh sách luôn mới, và dùng được biến của các item khác như `$user_id`. Khác với `get` của `switch` / `checkbox` / `progress` (chạy khi item hiện, thay giá trị đã lưu): ở `applist`, `get` chỉ tạo danh sách để chọn, còn `$id` vẫn là các package đã chọn và vẫn lưu như thường.
+- Đầu ra của `get`: mỗi dòng một package. Chấp nhận cả dạng của `pm list packages`: `package:com.x`, `package:/đường/dẫn.apk=com.x` (`-f`), kèm phần phụ như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ (chữ, số, `_`, `.`) bị bỏ qua; chính Tool Script và package trùng bị bỏ. stderr của lệnh bị bỏ, không lẫn vào danh sách.
+- Lệnh thoát khác 0 hoặc chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) thì hiện snackbar báo lỗi và không mở danh sách.
+- Tên và icon lấy từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package và không có icon. Danh sách sắp theo tên, không phân biệt hoa thường.
+- `multi`: `true` (mặc định) chọn nhiều, `$id` là các package nối bằng `separator` (mặc định mỗi package một dòng), theo thứ tự danh sách app; `false` chọn một, `$id` là một package, chưa chọn thì rỗng. Giá trị khác `true` / `false` bị báo cảnh báo và dùng `true`.
+- Hàng hiện `Đã chọn N` (`multi = true`) hoặc tên app đang chọn (`multi = false`; app đã gỡ thì hiện package). Bấm hàng mở **toàn màn hình** (không có hộp thoại nhỏ, `columns` không dùng): mỗi dòng có icon, tên app và package name; ô tìm lọc theo tên (không phân biệt hoa thường và dấu) hoặc package; `multi = true` có ô **Chọn tất cả** như `multiselect`.
+- Cách lưu và chạy `script` y hệt `multiselect` / `singleselect` toàn màn hình: chỉ khi bấm **Xác nhận**, chỉ khi có thay đổi; Hủy hoặc Back thì bỏ thay đổi. Lưu vào `files/state` theo id như các type khác.
+- Package trong `default` hoặc trong file đã lưu mà không còn trong danh sách của `get` vẫn giữ trong `$id` cho tới lần xác nhận kế tiếp (lúc đó bị bỏ).
+- Tương thích Android: `targetSdk = 28` nên không bị lọc tầm nhìn package (Android 11+), không cần quyền `QUERY_ALL_PACKAGES` để lấy tên và icon. Nếu sau này nâng `targetSdk` lên 30 trở lên thì phải khai báo quyền này (hoặc `<queries>`), nếu không tên và icon của nhiều app sẽ không đọc được.
 
 `checkbox`, `radio`, `dropdown`, `progress` – ghi chú:
 

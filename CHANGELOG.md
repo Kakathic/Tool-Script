@@ -4,6 +4,7 @@ Mỗi lần có cập nhật hoặc sửa lỗi đều ghi vào đây: thêm dò
 Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu để hiện trong phần Nhật ký khi có bản cập nhật.
 
 ## 0.1.0 · 2026-11-27
+- Thêm: type `applist` (chọn app trên máy): danh sách do lệnh `get` in ra (thường là `pm list packages ...`, chạy qua backend shell, có root thì bằng root; dùng được biến `$id` và pipe), chạy lại mỗi lần mở. Toàn màn hình có icon, tên, package và ô tìm; `multi = true / false` chọn nhiều / một; `$id` là package name. Có trang demo `pages/types/applist.toml`.
 - Sửa: Cài đặt ở giao diện kính: nút tròn và dải mờ bật muộn thêm đúng `GlassBarBandOverhang` (cùng quy tắc với màn hình chính), thẻ vừa chạm mép thanh không còn bị mờ ngay.
 - Đổi: khoảng trống giữa thanh trên và thẻ đầu tiên của màn hình chính nhỏ lại, từ 16dp xuống 0dp (chỉnh ở `ListTopGap` trong Main.kt).
 - Sửa: màn hình chính ở chế độ kính: nút chuyển sang viên kính tròn và dải mờ bật muộn hơn, sau khi cuộn quá `GlassBarBandOverhang` (dùng chung biến với chiều cao dải mờ, hiện 16dp) thay vì ngay từ lần cuộn đầu tiên.

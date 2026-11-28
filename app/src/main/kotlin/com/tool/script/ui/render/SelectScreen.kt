@@ -8,6 +8,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +36,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -41,7 +44,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +58,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tool.script.config.SelectOption
 import com.tool.script.ui.main.LocalBlurRequests
+import com.tool.script.util.InstalledApps
 import java.text.Normalizer
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
@@ -201,7 +207,7 @@ internal fun SelectFullScreen(
 
     val visible = remember(options, query) {
         val q = foldSearch(query.trim())
-        if (q.isEmpty()) options else options.filter { foldSearch(it.label).contains(q) }
+        if (q.isEmpty()) options else options.filter { foldSearch(it.label).contains(q) || (it.app && it.value.lowercase().contains(q)) }
     }
     val visibleValues = visible.map { it.value }
     val checkedVisible = visibleValues.count { it in draft }
@@ -389,6 +395,9 @@ internal fun SelectFullScreen(
                                             indication = null,
                                         ) { click() },
                                     title = option.label,
+                                    // applist: icon app bên trái, package name làm dòng phụ.
+                                    summary = if (option.app) option.value else null,
+                                    startAction = if (option.app) ({ AppIcon(option.value) }) else null,
                                     // Chọn một: dòng đã chọn đổi chữ sang màu chủ đạo; chọn nhiều giữ nguyên màu chữ.
                                     titleColor = if (!multi && checked) {
                                         BasicComponentDefaults.titleColor(color = MiuixTheme.colorScheme.primary)
@@ -448,5 +457,17 @@ internal fun SelectFullScreen(
             onDismissRequest = { close(onDismiss) },
             properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
         ) { screen() }
+    }
+}
+
+/** Icon của một app (type `applist`): nạp ở luồng nền, có đệm; chưa nạp xong hoặc app đã gỡ thì chừa ô trống để dòng không nhảy. */
+@Composable
+private fun AppIcon(pkg: String) {
+    val context = LocalContext.current
+    val icon by produceState<ImageBitmap?>(InstalledApps.cachedIcon(pkg), pkg) {
+        if (value == null) value = InstalledApps.icon(context, pkg)
+    }
+    Box(Modifier.padding(end = 12.dp).size(40.dp)) {
+        icon?.let { Image(bitmap = it, contentDescription = null, modifier = Modifier.size(40.dp)) }
     }
 }

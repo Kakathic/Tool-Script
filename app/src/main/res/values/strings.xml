@@ -142,6 +142,7 @@
     <!-- Hiển thị item -->
     <string name="selection_none">None selected</string>
     <string name="selection_count">%1$d selected</string>
+    <string name="applist_get_failed">Could not load the app list (%1$s)</string>
     <string name="page_error_title">Can\'t read this page</string>
     <string name="select_count_of">%1$d/%2$d selected</string>
     <string name="select_search">Search</string>
@@ -183,6 +184,8 @@
     <string name="cfg_shell_log_removed">%1$s \"%2$s\": shell = \"log\" was removed, using live</string>
     <string name="cfg_invalid_shell">%1$s \"%2$s\": shell = \"%3$s\" is invalid, using live</string>
     <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" is invalid (1 or 2), using 1</string>
+    <string name="cfg_invalid_multi">%1$s \"%2$s\": multi = \"%3$s\" is invalid (true or false), using true</string>
+    <string name="cfg_applist_missing_get">%1$s \"%2$s\" (applist) is missing get (the command that prints the app list), item skipped</string>
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" is invalid (positive number), using 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" is invalid (true or false), using true</string>
     <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" is invalid (true or false), using false</string>

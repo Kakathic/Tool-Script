@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.tool.script.config.Item
 import com.tool.script.config.SelectOption
 import coil3.compose.AsyncImage
+import com.tool.script.util.InstalledApps
 import com.tool.script.config.ItemType
 import com.tool.script.state.ShellFlags
 import com.tool.script.config.ShellMode
@@ -55,6 +56,7 @@ import com.tool.script.executor.ExecutorManager
 import com.tool.script.state.VariableStore
 import com.tool.script.ui.feedback.FeedbackHost
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.tool.script.util.Util
 import com.tool.script.util.ShellText
@@ -278,6 +280,7 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false, parentRea
             ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
             ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
             ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.AppList -> AppListItem(item, env, modifier, enabled, inGroup)
             ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
             ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
             ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
@@ -745,6 +748,93 @@ private fun ChoiceCard(
             )
         }
     }
+}
+
+// Danh sách app: hàng hiện số app đã chọn (`multi = true`) hoặc tên app đang chọn (`multi = false`); bấm mở màn hình chọn toàn màn hình
+// (luôn toàn màn hình, có ô tìm theo tên hoặc package, mỗi dòng có icon). Danh sách do lệnh `get` in ra, chạy lại mỗi lần mở. Bấm Xác nhận mới lưu và chạy `script` (chỉ khi có thay đổi).
+@Composable
+private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    val context = LocalContext.current
+    var showPicker by remember { mutableStateOf(false) }
+    var apps by remember { mutableStateOf<List<SelectOption>?>(null) }
+    val current = env.store[id]
+    val currentSet = current.split(item.separator).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    // Chọn một: tên app (không còn cài thì hiện package). Chỉ một lần gọi PackageManager cho một package nên chạy thẳng trong khi vẽ.
+    val singleLabel = remember(current, item.multi) {
+        if (item.multi || current.isEmpty()) null else InstalledApps.label(context, current) ?: current
+    }
+    val summary = when {
+        !item.multi -> singleLabel ?: stringResource(R.string.selection_none)
+        currentSet.isEmpty() -> stringResource(R.string.selection_none)
+        else -> stringResource(R.string.selection_count, currentSet.size)
+    }
+
+    LaunchedEffect(showPicker) {
+        if (!showPicker) {
+            apps = null
+            return@LaunchedEffect
+        }
+        // Danh sách app do lệnh `get` in ra (mỗi dòng một package); biến của các item (`$id`) dùng được trong lệnh.
+        val command = ShellText.withEnv(item.get.orEmpty(), env.store.snapshot())
+        val result = InstalledApps.load(context, command, item.timeoutSec ?: InstalledApps.DEFAULT_TIMEOUT_SEC)
+        if (result.error != null) {
+            env.feedback.showSnackbar(context.getString(R.string.applist_get_failed, result.error))
+            showPicker = false
+        } else {
+            apps = result.apps
+        }
+    }
+
+    ItemSurface(modifier, inGroup) {
+        BasicComponent(
+            insideMargin = CardInsideMargin,
+            title = item.title,
+            summary = item.desc,
+            startAction = itemIcon(item),
+            enabled = enabled,
+            endActions = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        summary,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        style = MiuixTheme.textStyles.body2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 160.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    UpDownIcon()
+                }
+            },
+            onClick = withTapHaptic { showPicker = true },
+        )
+    }
+    val list = apps
+    SelectFullScreenSlot(
+        show = showPicker && list != null,
+        title = item.title,
+        desc = item.desc,
+        options = list.orEmpty(),
+        multi = item.multi,
+        selected = if (item.multi) currentSet else setOf(current),
+        instant = env.varsOnly,
+        onDismiss = { showPicker = false },
+        onConfirm = { chosen ->
+            if (!item.multi || !env.varsOnly) showPicker = false
+            // Chọn nhiều: theo thứ tự danh sách app; package đã gỡ không còn trong danh sách nên bị bỏ khi xác nhận.
+            val newValue = if (item.multi) {
+                list.orEmpty().filter { it.value in chosen }.joinToString(item.separator) { it.value }
+            } else {
+                chosen.firstOrNull() ?: current
+            }
+            if (newValue != current) {
+                env.run(item, item.script, mapOf(id to newValue)) { result ->
+                    if (result.ok) env.store[id] = newValue
+                }
+            }
+        },
+    )
 }
 
 // Chọn một: hàng hiện mục đang chọn. Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy `script` luôn (chỉ khi có thay đổi), không có nút. Toàn màn hình (từ 6 mục, có ô tìm): chọn rồi bấm Xác nhận mới lưu và chạy.
