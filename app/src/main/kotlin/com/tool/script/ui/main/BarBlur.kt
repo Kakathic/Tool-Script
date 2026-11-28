@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -20,6 +21,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val BarBlurRadius = 25f
 private const val BarBlurTint = 0.8f
+
+/**
+ * Dải mờ của thanh trên kính kéo dài thêm bao nhiêu dưới đáy thanh. Miuix 0.9.5-rc01 mặc định 32dp nên thẻ vừa chạm mép thanh đã bị mờ / phủ nền;
+ * đặt 0dp để dải kết thúc đúng ở mép dưới thanh, thẻ chỉ bắt đầu mờ khi đã chui vào dưới thanh.
+ */
+val GlassBarBandOverhang = 0.dp
 
 /** Máy có hỗ trợ blur không (Android 13+). Dưới mức này thanh giữ nền đặc như cũ và công tắc "Làm mờ nền" bị ẩn. */
 fun isBlurSupported(): Boolean = isRuntimeShaderSupported()

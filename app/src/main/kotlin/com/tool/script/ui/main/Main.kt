@@ -597,6 +597,7 @@ private fun AppTopBar(
             centerObstructionStart = 10_000.dp,
             backdrop = backdrop,
             progressiveBlur = backdrop != null,
+            bandOverhang = GlassBarBandOverhang,
             navigationIcon = {
                 CompositionLocalProvider(LocalInGlassBar provides true) {
                     if (onBack != null) {
@@ -675,6 +676,7 @@ private fun LargeTitleTopBar(
             scrollBehavior = scrollBehavior,
             backdrop = backdrop,
             progressiveBlur = backdrop != null,
+            bandOverhang = GlassBarBandOverhang,
             navigationIcon = {
                 CompositionLocalProvider(LocalInGlassBar provides true) {
                     if (onBack != null) TopBarIcon(icon = AppIcons.BarBack, description = stringResource(R.string.action_back), onClick = onBack)

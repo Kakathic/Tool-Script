@@ -329,6 +329,7 @@ private fun SettingsScreenBody(
                 expandable = false,
                 backdrop = contentBackdrop,
                 progressiveBlur = contentBackdrop != null,
+                bandOverhang = GlassBarBandOverhang,
                 navigationIcon = {
                     GlassIconButton(onClick = onDismiss) {
                         AsyncImage(
