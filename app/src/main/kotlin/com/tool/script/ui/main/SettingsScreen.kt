@@ -108,6 +108,12 @@ private val ScreenEdge = 12.dp
 private val CutoffFade = 20.dp
 
 /**
+ * Độ đục tối thiểu của nền động khi bật làm mờ nền. Cuộn qua phần đầu thì nền động mờ về 0, phía sau thanh trên chỉ còn màu surface (đen ở giao diện tối)
+ * nên dải mờ của thanh ra màu đen; giữ lại một ít nền động để vùng bị mờ còn ánh màu. Đặt 0f để về như cũ (mờ hết).
+ */
+private const val BgMinAlphaWhenBlur = 0.3f
+
+/**
  * Khung màn hình Cài đặt toàn màn hình. [content] là các nhóm ([SettingsGroup]) xếp dọc trong cột cuộn, cách nhau 12dp.
  * Back hoặc X đều đóng. Nền luôn đặc (không làm mờ trang phía sau như [ToolbarFullScreen]).
  */
@@ -202,7 +208,7 @@ private fun SettingsScreenBody(
             BgEffectBackground(
                 modifier = Modifier.fillMaxSize(),
                 bgModifier = if (bgBackdrop != null) Modifier.layerBackdrop(bgBackdrop) else Modifier,
-                alpha = { 1f - progress },
+                alpha = { if (contentBackdrop != null) maxOf(1f - progress, BgMinAlphaWhenBlur) else 1f - progress },
             )
 
             // Lớp 2: logo, tên app, phiên bản, giới thiệu (cố định, mờ và thu nhỏ dần từng dòng khi cuộn).
