@@ -4,6 +4,7 @@ Mỗi lần có cập nhật hoặc sửa lỗi đều ghi vào đây: thêm dò
 Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu để hiện trong phần Nhật ký khi có bản cập nhật.
 
 ## 0.1.0 · 2026-11-27
+- Đổi: thanh tab hiện tối đa 5 tab cùng lúc (trước là 4); từ 6 tab trở lên mới trượt cửa sổ. Cập nhật README và docs/schema.md cho khớp.
 - Sửa: Cài đặt bật làm mờ nền: dải mờ của thanh trên không còn ra màu đen (giao diện tối) khi cuộn qua phần đầu; nền động giữ lại độ đục tối thiểu 0.3 thay vì mờ về 0 (chỉnh ở `BgMinAlphaWhenBlur` trong SettingsScreen.kt).
 - Sửa: thanh trên kính (màn hình chính, Cài đặt, trang con, cửa sổ Nguồn): dải mờ phía sau thanh kéo dài thêm 30dp dưới mép (Miuix mặc định 32dp, giảm 2dp) nên thẻ vừa chạm mép bớt bị mờ một chút; chỉnh ở `GlassBarBandOverhang` trong BarBlur.kt.
 - Đổi: tách khóa `visible_if` / `lock` + `lock_mode` thành ba khóa `visible` (ẩn hiện), `readonly` (mờ, không bấm được) và `lock` (bấm thì hiện snackbar lý do, dạng `lock = "điều kiện|lý do"`); mỗi khóa có bản `-sh` chạy lệnh shell (in `0` = sai, `1` hoặc `1|lý do` = đúng). Dùng được cho cả `[[group]]`. TOML cũ còn `visible_if` / `lock_mode` sẽ báo khóa lạ.

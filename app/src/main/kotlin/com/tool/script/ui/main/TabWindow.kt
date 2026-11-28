@@ -1,7 +1,7 @@
 package com.tool.script.ui.main
 
 /** Số ô tab tối đa trên thanh tab (docs/schema.md mục 5). */
-const val MAX_VISIBLE_TABS = 4
+const val MAX_VISIBLE_TABS = 5
 
 /**
  * Tính vị trí đầu của cửa sổ tab sau khi chọn tab [selected].

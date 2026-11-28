@@ -50,7 +50,7 @@ Trang gồm `[[item]]` (mỗi item một thẻ) và `[[group]]` có `[[group.ite
 | Chọn nhiều mục | `singleselect` / `multiselect` từ 6 mục thì toàn màn hình, có ô tìm không phân biệt dấu; `multiselect` có Chọn tất cả |
 | Icon | `icon`, `icon_size`, `icon_tint` cho mọi item trừ `text` |
 | Môi trường shell | `env.sh` (biến đường dẫn), `[app] env`, lệnh dựng sẵn `busybox`, `slog`, `glog`, `killtree` |
-| Giao diện app | Tiêu đề lớn thu gọn khi vuốt, thanh tab cửa sổ trượt 4 ô, hộp thoại Cài đặt (thẻ giới thiệu và kiểm tra phiên bản, Hệ thống/Sáng/Tối, Màu động, Rung khi chạm, Làm mờ nền, liên kết GitHub), menu Nguồn |
+| Giao diện app | Tiêu đề lớn thu gọn khi vuốt, thanh tab cửa sổ trượt 5 ô, hộp thoại Cài đặt (thẻ giới thiệu và kiểm tra phiên bản, Hệ thống/Sáng/Tối, Màu động, Rung khi chạm, Làm mờ nền, liên kết GitHub), menu Nguồn |
 | Lỗi | Lỗi cú pháp TOML: trang hiện thẻ lỗi kèm file và dòng. Lỗi nhẹ: bỏ mục sai hoặc dùng mặc định, banner cảnh báo ở đầu trang có lỗi. Crash app: Trung tâm lỗi với stack trace |
 
 ## 5. Bộ demo (5 tab)

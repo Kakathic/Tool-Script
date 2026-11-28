@@ -54,7 +54,7 @@ file  = "pages/switches.toml"
 - `icon` là đường dẫn tới file icon:
   - Trong assets: `icons/home.svg` (tính từ thư mục configs).
   - Đường dẫn ngoài: `/sdcard/ToolScript/icons/home.png`.
-- Thanh tab hiện tối đa 4 tab, tối thiểu 2 (xem mục 5).
+- Thanh tab hiện tối đa 5 tab, tối thiểu 2 (xem mục 5).
 
 ### Ngôn ngữ (`@khóa`)
 
@@ -168,7 +168,7 @@ readonly = "ROOT_MODE != root"
   Rung khi chạm và Làm mờ nền; lựa chọn được lưu lại) và Nguồn (menu: khởi động lại ứng dụng, hoặc khởi động lại máy bằng `reboot`, cần root).
 - Lề ngoài thẻ 16dp (trái, phải, trên, dưới), khoảng cách giữa các thẻ 16dp, đệm bên trong thẻ: trái, phải 16dp, trên và dưới 12dp. Tiêu đề group nằm ngoài thẻ, dính sát thẻ của nó.
 - Thanh tab dưới cùng, mỗi trang một tab (icon + title).
-- Cửa sổ tab trượt: hiện tối đa 4 tab. Từ 5 tab trở lên, vuốt tới tab thứ 4
+- Cửa sổ tab trượt: hiện tối đa 5 tab. Từ 6 tab trở lên, vuốt tới tab thứ 5
   của cửa sổ thì tab kế tiếp hiện ra bên phải và tab đầu ẩn đi; vuốt ngược
   về tab đầu của cửa sổ thì tab trước đó hiện lại.
 - Chỉ có 1 tab: ẩn thanh tab, hiện trang toàn màn hình.

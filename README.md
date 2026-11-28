@@ -67,7 +67,7 @@ app/                           # beta.jks, proguard-rules.pro, build.gradle.kts
 ## Quyết định đã chốt
 
 - Khởi động: Splash (logo, thanh tiến trình, 5 dòng log; căn giữa, lề 16dp) -> xin quyền bộ nhớ (từ chối thì thoát) -> chạy script -> nạp TOML -> màn hình chính. Script lỗi vẫn vào app, có banner cảnh báo.
-- Thanh tab: cửa sổ trượt 4 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
+- Thanh tab: cửa sổ trượt 5 ô (tối thiểu 2); mỗi `[[tab]]` là một tab, bắt buộc `title` và `icon`.
 - Backend: su -> ROM -> adb -> không root, biến `ROOT_MODE`; `lock` thay cho `require`.
 - Ngôn ngữ giao diện: `res/values/strings.xml` là English (mặc định), `res/values-vi/strings.xml` là tiếng Việt; app theo ngôn ngữ hệ thống (Android 13+ còn chọn riêng cho app được nhờ `res/xml/locales_config.xml`). Mọi chuỗi trong code Kotlin đã nằm trong tài nguyên; nơi không có Context (parser TOML, executor, tệp log) lấy chuỗi qua `util/AppText.kt` (gắn Context trong `App.onCreate`). Cảnh báo cấu hình được dịch lúc nạp nên đổi ngôn ngữ thì phải mở lại app mới cập nhật. Nội dung các file TOML (tiêu đề, mô tả, nhãn) vẫn là tiếng Việt, chưa đa ngôn ngữ.
 - Hiển thị khi chạy lệnh: `shell = live | full | hidden | banner | notice | snackbar` (mặc định `live`); `hidden` mà lỗi thì hiện toast.
@@ -101,7 +101,7 @@ Giai đoạn 1: khung ứng dụng
 
 Giai đoạn 2: giao diện
 
-- [x] Màn hình chính: tiêu đề lớn kiểu Miuix thu gọn khi vuốt lên (`LargeTitleTopBar`, dùng `MiuixScrollBehavior`), `HorizontalPager`, thanh tab cửa sổ trượt 4 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
+- [x] Màn hình chính: tiêu đề lớn kiểu Miuix thu gọn khi vuốt lên (`LargeTitleTopBar`, dùng `MiuixScrollBehavior`), `HorizontalPager`, thanh tab cửa sổ trượt 5 ô, ẩn thanh tab khi chỉ có 1 trang; giao diện sáng / tối.
 - [x] Renderer cho `text`, `group` (`[[group]]`), `button`, `switch` (có `get`), `input` (text / number), `slider`, `link`, `checkbox`, `radio`, `dropdown`, `progress`.
 - [x] Trường chung: `visible`, `readonly`, `lock` (và bản `-sh`), `confirm`, `timeout`, `shell` (`live` mặc định / `hidden` / `banner` / `notice`).
 - [x] Icon Nguồn (menu khởi động lại, thả xuống ngay dưới icon) và Cài đặt (hộp thoại giữa màn hình, sát lề phải) ở thanh trên cùng.
