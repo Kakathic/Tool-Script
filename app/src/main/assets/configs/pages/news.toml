@@ -93,9 +93,10 @@ shell = "banner"
 title = "Chọn toàn màn hình và dialog"
 
 [[group.item]]
-type    = "singleselect"
+type    = "select"
+multi   = false
 id      = "n_single_full"
-title   = "singleselect toàn màn hình"
+title   = "select (chọn một) toàn màn hình"
 desc    = "30 mục (từ 6 mục là toàn màn hình): danh sách cuộn được, có ô tìm không phân biệt dấu, thử gõ da lat"
 default = "danang"
 script  = 'echo "Đã chọn: $n_single_full"'
@@ -103,9 +104,9 @@ shell   = "banner"
 options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho", "Hạ Long|halong", "Lào Cai|laocai", "Điện Biên Phủ|dienbien", "Sơn La|sonla", "Thái Nguyên|thainguyen", "Bắc Ninh|bacninh", "Nam Định|namdinh", "Ninh Bình|ninhbinh", "Thanh Hóa|thanhhoa", "Vinh|vinh", "Đồng Hới|donghoi", "Quảng Ngãi|quangngai", "Quy Nhơn|quynhon", "Tuy Hòa|tuyhoa", "Pleiku|pleiku", "Buôn Ma Thuột|buonmathuot", "Phan Thiết|phanthiet", "Biên Hòa|bienhoa", "Vũng Tàu|vungtau", "Mỹ Tho|mytho", "Cà Mau|camau", "Phú Quốc|phuquoc"]
 
 [[group.item]]
-type    = "multiselect"
+type    = "select"
 id      = "n_multi_full"
-title   = "multiselect toàn màn hình"
+title   = "select (chọn nhiều) toàn màn hình"
 desc    = "Có ô Chọn tất cả và đếm Đã chọn x/y"
 default = "audio\nnet"
 script  = 'echo "Đã chọn: $n_multi_full"'

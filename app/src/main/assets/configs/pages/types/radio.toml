@@ -5,7 +5,7 @@
 [[item]]
 type    = "text"
 title   = "radio"
-desc    = "Hợp với ít lựa chọn (2 đến 4 mục) để người dùng thấy hết cùng lúc. Nhiều hơn thì dùng dropdown hoặc singleselect."
+desc    = "Hợp với ít lựa chọn (2 đến 4 mục) để người dùng thấy hết cùng lúc. Nhiều hơn thì dùng dropdown hoặc select (multi = false)."
 
 [[group]]
 title = "Ví dụ"

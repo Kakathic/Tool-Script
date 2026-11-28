@@ -206,9 +206,8 @@ readonly = "ROOT_MODE != root"
 | `checkbox` | `script`, `get` (giống `switch`, hiện ô tick) |
 | `radio` | `options`, `default`, `script` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
 | `dropdown` | `options`, `default`, `script` (chọn bằng menu thả xuống) |
-| `multiselect` | `options`, `default`, `script`, `columns`, `separator` (chọn nhiều mục, xem bên dưới) |
-| `singleselect` | `options`, `default`, `script`, `columns` (chọn một mục: hộp nhỏ chạm là chọn luôn, toàn màn hình có Xác nhận, xem bên dưới) |
-| `applist` | `get` (bắt buộc, lệnh in danh sách app), `multi`, `default`, `script`, `separator` (chọn app trên máy, xem bên dưới) |
+| `select` | `options`, `multi`, `default`, `script`, `columns`, `separator` (chọn trong danh sách: `multi = true` mặc định chọn nhiều, `multi = false` chọn một; xem bên dưới) |
+| `applist` | `options-sh` (bắt buộc, lệnh in danh sách app), `multi`, `default`, `script`, `separator` (chọn app trên máy, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
 `slider`: `max < min` thì hai giá trị được đổi chỗ; `min = max` thì `max` được đặt lại thành `min + step`; `step` không chia hết `max - min` thì thanh trượt không tới được `max`. Cả ba trường hợp đều hiện cảnh báo cấu hình ở đầu trang.
@@ -240,7 +239,7 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `multiselect`, `singleselect`, `applist`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `select`, `applist`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `slog`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
@@ -253,7 +252,7 @@ Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, 
   giá trị đã lưu (rồi lưu lại). Dùng khi trạng thái thật nằm ở hệ thống (vd `cat /sys/xxx`).
 - Script đọc được giá trị bằng `glog <id>`; lệnh chạy qua app còn dùng thẳng `$id` (app truyền sẵn mọi giá trị item, cả mặc định, nếu `id` là tên biến hợp lệ: chữ, số, `_`).
 
-Cách khai báo `options` (dùng cho `radio`, `dropdown`, `multiselect`, `singleselect`):
+Cách khai báo `options` (dùng cho `radio`, `dropdown`, `select`):
 
 ```toml
 [[item]]
@@ -268,7 +267,7 @@ options = [
 ]
 ```
 
-- `columns` (tùy chọn, chỉ với `multiselect` và `singleselect`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng). Giá trị khác thì cảnh báo và dùng `1`. `columns` chỉ có tác dụng với hộp thoại nhỏ (dưới 6 mục), chế độ toàn màn hình luôn một cột.
+- `columns` (tùy chọn, chỉ với `select`): số cột lựa chọn trong hộp thoại, `1` (mặc định, mỗi lựa chọn một dòng) hoặc `2` (hai lựa chọn mỗi hàng). Giá trị khác thì cảnh báo và dùng `1`. `columns` chỉ có tác dụng với hộp thoại nhỏ (dưới 6 mục), chế độ toàn màn hình luôn một cột.
 - Mỗi phần tử là một chuỗi `"nhãn|giá trị"`, tách ở dấu `|` đầu tiên.
 - Nhãn hiện trên giao diện, giá trị được truyền vào lệnh qua `$id`.
 - Phần tử có giá trị rỗng bị bỏ qua và ghi cảnh báo.
@@ -304,17 +303,18 @@ script = 'echo "$ten"'            # chạy khi bấm Xác nhận
   - **Xác nhận**: đóng dialog rồi chạy `script` của item link đã mở dialog, với các biến vừa chọn. `shell`, `timeout`, `confirm` của link áp dụng như button. Link không có `script` thì chỉ lưu biến.
   - **Hủy**, nút X hoặc Back của máy: đóng dialog và khôi phục biến về giá trị lúc mở.
 - `button` và `link` không dùng được trong dialog (đã có Hủy / Xác nhận): bị bỏ qua kèm cảnh báo.
-- `singleselect` / `multiselect` trong dialog không có Xác nhận riêng (dialog ngoài đã có): `singleselect` chạm mục là chọn luôn và đóng; `multiselect` đổi là ghi vào biến ngay, đóng hộp bằng chạm ra ngoài, Back hoặc nút Đóng (màn hình chọn toàn màn hình). Hủy của dialog ngoài khôi phục lại các giá trị này.
+- `select` trong dialog không có Xác nhận riêng (dialog ngoài đã có): `multi = false` chạm mục là chọn luôn và đóng; `multi = true` đổi là ghi vào biến ngay, đóng hộp bằng chạm ra ngoài, Back hoặc nút Đóng (màn hình chọn toàn màn hình). Hủy của dialog ngoài khôi phục lại các giá trị này.
 - Cùng một file trang con được nhiều link trỏ tới thì dùng `title` và `style` của link đầu tiên.
 - File trang con viết như file trang thường (mục 4); trong đó có thể có link tới trang con khác.
 - Có cả `tab` và `page` thì dùng `tab`. Thiếu cả hai: bỏ item. `tab` không tồn tại: ghi cảnh báo.
 - Biến (`id`) của trang con dùng chung kho biến với các tab.
 
-`multiselect` – chọn nhiều mục:
+`select` với `multi = true` (mặc định) – chọn nhiều mục:
 
 ```toml
 [[item]]
-type      = "multiselect"
+type      = "select"
+multi     = true             # tùy chọn: true (mặc định) chọn nhiều, false chọn một
 id        = "features"
 title     = "Tính năng bật"
 options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
@@ -329,11 +329,12 @@ script    = 'echo "Đã chọn: $features"'
 - `$id` là các **giá trị** đã chọn nối bằng `separator` (mặc định **mỗi giá trị một dòng**), theo thứ tự khai báo trong `options`; chưa chọn gì thì rỗng. Ví dụ chọn 1, 2, 3, 4 thì `echo "$id"` in ra bốn dòng `1` `2` `3` `4`; banner hiện tối đa 8 dòng. Giá trị trong `options` không được chứa `separator` (có thì cảnh báo).
 - `default` lấy các giá trị hợp lệ; không khai báo thì không chọn gì. File đã lưu có giá trị không còn trong `options` thì bị lọc bỏ.
 
-`singleselect` – chọn một mục: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy `script` luôn (chỉ khi giá trị đổi), không có nút, chạm ra ngoài hoặc Back để thoát; toàn màn hình (từ 6 mục) có Xác nhận:
+`select` với `multi = false` – chọn một mục: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy `script` luôn (chỉ khi giá trị đổi), không có nút, chạm ra ngoài hoặc Back để thoát; toàn màn hình (từ 6 mục) có Xác nhận:
 
 ```toml
 [[item]]
-type    = "singleselect"
+type    = "select"
+multi   = false
 id      = "mode"
 title   = "Chế độ"
 options = ["Hiệu năng|performance", "Tiết kiệm|powersave"]
@@ -346,47 +347,47 @@ script  = 'echo "Đã chọn: $mode"'
 - Hộp thoại có hai nút **Hủy** và **Xác nhận**. Chọn thoải mái, chỉ khi bấm Xác nhận mới lưu và chạy `script` một lần với `$id` mới; Hủy hoặc Back thì bỏ thay đổi. Bấm Xác nhận mà không đổi gì thì không chạy `script`.
 - `$id` là **giá trị** của mục đã chọn. `default` không hợp lệ thì dùng lựa chọn đầu; file đã lưu có giá trị không còn trong `options` thì bị ghi đè bằng mặc định.
 
-`multiselect` / `singleselect` – chế độ toàn màn hình:
+`select` – chế độ toàn màn hình:
 
 - Có **từ 6 mục trở lên** trong `options` thì bấm hàng sẽ mở **toàn màn hình** thay cho hộp thoại nhỏ. Dưới 6 mục giữ hộp thoại như cũ. Ngưỡng cố định trong code (`FULLSCREEN_MIN_OPTIONS`, `ui/render/SelectScreen.kt`), không cấu hình trong TOML.
 - Màn hình gồm tiêu đề, ô **Tìm kiếm**, danh sách (một cột, `columns` bị bỏ qua), rồi hai nút **Hủy** và **Xác nhận**. Mọi thành phần có lề ngoài hai bên 16dp, đệm trong thẻ như trên; danh sách nằm trong một thẻ bo góc, mỗi dòng bấm được trên toàn chiều ngang thẻ và không có hiệu ứng nhấn. Màn hình **trượt từ dưới lên** khi mở và trượt xuống khi đóng. Cách lưu và chạy `script` y hệt hộp thoại: chỉ khi bấm Xác nhận, chỉ khi có thay đổi. Hủy hoặc Back thì bỏ thay đổi.
 - Nền: khi bật **Làm mờ nền** (Android 13+) màn hình có nền bán trong suốt, trang phía sau mờ và tối nhẹ, giống log toàn màn hình; tắt blur hoặc máy không hỗ trợ thì nền đặc. Cũng vậy với dialog sheet khi kéo lên full màn hình.
 - Ô tìm lọc theo **nhãn**, không phân biệt hoa thường và dấu tiếng Việt (gõ `da lat` khớp `Đà Lạt`).
-- `multiselect` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Góc phải trên cùng màn hình hiện khung bo góc không viền, nền màu chủ đạo nhạt `Đã chọn x/y` tính trên toàn bộ danh sách.
-- `singleselect` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận (chế độ toàn màn hình). `multiselect` giữ nguyên màu chữ, chỉ đổi ô tích.
+- `multi = true` có thêm ô **Chọn tất cả** phía trên danh sách. Ô này chỉ tác động lên các mục **đang hiện trong kết quả tìm** (chưa tìm gì thì là toàn bộ danh sách): chưa chọn hết thì chọn hết các mục đang hiện, đã chọn hết thì bỏ chọn các mục đang hiện. Mục nằm ngoài kết quả tìm **không bị đụng tới**, giữ nguyên trạng thái trước đó. Ô có ba trạng thái: trống, gạch ngang (chọn một phần), dấu tích (chọn hết). Góc phải trên cùng màn hình hiện khung bo góc không viền, nền màu chủ đạo nhạt `Đã chọn x/y` tính trên toàn bộ danh sách.
+- `multi = false` bấm một dòng để chọn (nút tròn), dòng đã chọn đổi chữ sang màu chủ đạo, chưa lưu cho tới khi bấm Xác nhận (chế độ toàn màn hình). `multi = true` giữ nguyên màu chữ, chỉ đổi ô tích.
 
-`applist` – chọn ứng dụng trên máy. Không khai báo `options`: danh sách app do lệnh `get` in ra.
+`applist` – chọn ứng dụng trên máy. Không khai báo `options`: danh sách app do lệnh `options-sh` in ra.
 
 ```toml
 [[item]]
 type    = "applist"
 id      = "target_apps"
 title   = "Ứng dụng áp dụng"
-get     = "pm list packages -3"      # bắt buộc: lệnh in danh sách app, mỗi dòng một package
+options-sh = "pm list packages -3"      # bắt buộc: lệnh in danh sách app, mỗi dòng một package
 multi   = true                       # tùy chọn: true (mặc định) chọn nhiều / false chọn một
 default = "com.android.chrome\ncom.google.android.youtube"   # tùy chọn: package chọn sẵn, cách nhau bằng separator
 script  = 'echo "Đã chọn: $target_apps"'
 ```
 
-Ví dụ `get`:
+Ví dụ `options-sh`:
 
 ```toml
-get = "pm list packages -d"                              # app đã tắt
-get = "pm list packages -s"                              # app hệ thống
-get = "pm list packages -u"                              # kể cả app đã gỡ nhưng còn dữ liệu
-get = "pm list packages -3 -i com.android.vending"       # app cài từ Play Store
-get = 'pm list packages --user $user_id'                 # dùng biến của item khác
-get = "pm list packages -3 | grep -v google"             # lọc bằng pipe
+options-sh = "pm list packages -d"                              # app đã tắt
+options-sh = "pm list packages -s"                              # app hệ thống
+options-sh = "pm list packages -u"                              # kể cả app đã gỡ nhưng còn dữ liệu
+options-sh = "pm list packages -3 -i com.android.vending"       # app cài từ Play Store
+options-sh = 'pm list packages --user $user_id'                 # dùng biến của item khác
+options-sh = "pm list packages -3 | grep -v google"             # lọc bằng pipe
 ```
 
-- `get` (bắt buộc): lệnh shell in danh sách app. Thiếu `get` thì item bị bỏ kèm cảnh báo. Lệnh chạy qua backend shell của app (có root thì chạy bằng root, nên dùng được mọi cờ của `pm`), **chạy lại mỗi lần mở danh sách** nên danh sách luôn mới, và dùng được biến của các item khác như `$user_id`. Khác với `get` của `switch` / `checkbox` / `progress` (chạy khi item hiện, thay giá trị đã lưu): ở `applist`, `get` chỉ tạo danh sách để chọn, còn `$id` vẫn là các package đã chọn và vẫn lưu như thường.
-- Đầu ra của `get`: mỗi dòng một package. Chấp nhận cả dạng của `pm list packages`: `package:com.x`, `package:/đường/dẫn.apk=com.x` (`-f`), kèm phần phụ như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ (chữ, số, `_`, `.`) bị bỏ qua; chính Tool Script và package trùng bị bỏ. stderr của lệnh bị bỏ, không lẫn vào danh sách.
+- `options-sh` (bắt buộc): lệnh shell in danh sách app. Thiếu `options-sh` thì item bị bỏ kèm cảnh báo; `get` cũ của applist đã đổi tên thành `options-sh` (còn `get` thì báo cảnh báo và bị bỏ qua). Lệnh chạy qua backend shell của app (có root thì chạy bằng root, nên dùng được mọi cờ của `pm`), **chạy lại mỗi lần mở danh sách** nên danh sách luôn mới, và dùng được biến của các item khác như `$user_id`. Khác với `get` của `switch` / `checkbox` / `progress` (chạy khi item hiện, thay giá trị đã lưu): ở `applist`, `get` chỉ tạo danh sách để chọn, còn `$id` vẫn là các package đã chọn và vẫn lưu như thường.
+- Đầu ra của `options-sh`: mỗi dòng một package. Chấp nhận cả dạng của `pm list packages`: `package:com.x`, `package:/đường/dẫn.apk=com.x` (`-f`), kèm phần phụ như ` uid:1000` (`-U`). Dòng không ra tên package hợp lệ (chữ, số, `_`, `.`) bị bỏ qua; chính Tool Script và package trùng bị bỏ. stderr của lệnh bị bỏ, không lẫn vào danh sách.
 - Lệnh thoát khác 0, chạy quá giờ (mặc định 20 giây, đổi bằng `timeout`) hoặc không có package nào thì hiện snackbar báo và không mở danh sách. Trong lúc chạy `get`, hàng hiện "Đang tải danh sách…".
 - Có package thì màn hình chọn **mở ngay**: mỗi app là một dòng khung xương (dải sáng chạy ngang, kiểu Facebook); tên app đọc dần theo nhóm và thay đúng vị trí khung xương của nó, đọc xong thì sắp theo tên. Góc phải trên hiện "Đang tải danh sách…"; xong thì `multi = true` hiện "Đã chọn x/y", `multi = false` không hiện gì. Lúc đang tải, **Xác nhận** và **Chọn tất cả** mờ, ô tìm chỉ lọc các dòng đã đọc xong, **Hủy** dùng được và hủy việc tải.
 - Tên và icon lấy từ PackageManager (kể cả app đã gỡ còn dữ liệu); PackageManager không thấy thì hiện tên package và không có icon. Danh sách sắp theo tên, không phân biệt hoa thường.
 - `multi`: `true` (mặc định) chọn nhiều, `$id` là các package nối bằng `separator` (mặc định mỗi package một dòng), theo thứ tự danh sách app; `false` chọn một, `$id` là một package, chưa chọn thì rỗng. Giá trị khác `true` / `false` bị báo cảnh báo và dùng `true`.
-- Hàng hiện `Đã chọn N` (`multi = true`) hoặc tên app đang chọn (`multi = false`; app đã gỡ thì hiện package). Bấm hàng mở **toàn màn hình** (không có hộp thoại nhỏ, `columns` không dùng): mỗi dòng có icon, tên app và package name; ô tìm lọc theo tên (không phân biệt hoa thường và dấu) hoặc package; `multi = true` có ô **Chọn tất cả** như `multiselect`.
-- Cách lưu và chạy `script` y hệt `multiselect` / `singleselect` toàn màn hình: chỉ khi bấm **Xác nhận**, chỉ khi có thay đổi; Hủy hoặc Back thì bỏ thay đổi. Lưu vào `files/state` theo id như các type khác.
+- Hàng hiện `Đã chọn N` (`multi = true`) hoặc tên app đang chọn (`multi = false`; app đã gỡ thì hiện package). Bấm hàng mở **toàn màn hình** (không có hộp thoại nhỏ, `columns` không dùng): mỗi dòng có icon, tên app và package name; ô tìm lọc theo tên (không phân biệt hoa thường và dấu) hoặc package; `multi = true` có ô **Chọn tất cả** như `select` với `multi = true`.
+- Cách lưu và chạy `script` y hệt `select` toàn màn hình: chỉ khi bấm **Xác nhận**, chỉ khi có thay đổi; Hủy hoặc Back thì bỏ thay đổi. Lưu vào `files/state` theo id như các type khác.
 - Package trong `default` hoặc trong file đã lưu mà không còn trong danh sách của `get` vẫn giữ trong `$id` cho tới lần xác nhận kế tiếp (lúc đó bị bỏ).
 - Tương thích Android: `targetSdk = 28` nên không bị lọc tầm nhìn package (Android 11+), không cần quyền `QUERY_ALL_PACKAGES` để lấy tên và icon. Nếu sau này nâng `targetSdk` lên 30 trở lên thì phải khai báo quyền này (hoặc `<queries>`), nếu không tên và icon của nhiều app sẽ không đọc được.
 
@@ -420,11 +421,11 @@ get   = "cat /sys/class/power_supply/battery/capacity"
 
 ### Id dành riêng `app_language` (chọn ngôn ngữ app)
 
-Item `radio`, `dropdown` hoặc `singleselect` có `id = "app_language"` được gắn thẳng vào ngôn ngữ app (không còn mục chọn ngôn ngữ trong dialog Cài đặt):
+Item `radio`, `dropdown` hoặc `select` (`multi = false`) có `id = "app_language"` được gắn thẳng vào ngôn ngữ app (không còn mục chọn ngôn ngữ trong dialog Cài đặt):
 
 ```toml
 [[item]]
-type    = "radio"            # hoặc dropdown / singleselect
+type    = "radio"            # hoặc dropdown / select (multi = false)
 id      = "app_language"
 title   = "Ngôn ngữ"
 options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]
@@ -512,7 +513,7 @@ refresh = "hotspot"          # đổi xong thì hotspot (cùng trang) đọc l�
 
 ## 10. Chế độ hiển thị khi chạy (shell)
 
-Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `multiselect`, `singleselect`, `radio`, `dropdown`, `slider`.
+Áp dụng cho mọi item có chạy lệnh: `button`, `switch`, `checkbox`, `input`, `select`, `radio`, `dropdown`, `slider`.
 
 | `shell` | Hành vi |
 |---|---|

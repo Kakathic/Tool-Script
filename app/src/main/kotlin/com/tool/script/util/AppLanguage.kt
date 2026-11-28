@@ -31,7 +31,7 @@ enum class AppLanguage(val tag: String, @StringRes val labelRes: Int) {
     }
 }
 
-/** id dành riêng cho item radio / dropdown / singleselect gắn thẳng vào ngôn ngữ app (không chạy lệnh, không lưu file). */
+/** id dành riêng cho item radio / dropdown / select (multi = false) gắn thẳng vào ngôn ngữ app (không chạy lệnh, không lưu file). */
 const val APP_LANGUAGE_ID = "app_language"
 
 /**

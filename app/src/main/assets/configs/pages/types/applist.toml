@@ -1,5 +1,5 @@
-# type = "applist": chọn ứng dụng trên máy. Trường riêng: get, multi, default, script, separator.
-# get (bắt buộc): lệnh shell in danh sách app, mỗi dòng một package (thường là `pm list packages ...`). Chạy lại mỗi lần mở danh sách.
+# type = "applist": chọn ứng dụng trên máy. Trường riêng: options-sh, multi, default, script, separator.
+# options-sh (bắt buộc): lệnh shell in danh sách app, mỗi dòng một package (thường là `pm list packages ...`). Chạy lại mỗi lần mở danh sách.
 #   Chấp nhận cả dạng `package:com.x` của pm (kể cả -f, -U, -i). Dùng được biến của item khác (`$id`); `timeout` giới hạn giây (mặc định 20).
 #   Lệnh lỗi, quá giờ hoặc danh sách trống thì hiện snackbar báo và không mở danh sách. Lúc chạy lệnh, hàng hiện "Đang tải danh sách…".
 # Có package thì màn hình mở ngay: mỗi app là một dòng khung xương (shimmer kiểu Facebook), tên app đọc dần và thay đúng vị trí khung xương;
@@ -11,71 +11,71 @@
 # default là package chọn sẵn, cách nhau bằng separator.
 
 [[item]]
-type    = "text"
-title   = "applist"
-desc    = "Hàng hiện số app đã chọn (hoặc tên app, nếu multi = false). Bấm để mở danh sách app, chọn rồi bấm Xác nhận."
+type  = "text"
+title = "applist"
+desc  = "Hàng hiện số app đã chọn (hoặc tên app, nếu multi = false). Bấm để mở danh sách app, chọn rồi bấm Xác nhận."
 
 [[group]]
 title = "Chọn nhiều"
 
 [[group.item]]
-type   = "applist"
-id     = "t_apps_multi"
-title  = "App người dùng"
-desc   = 'get = "pm list packages -3"'
-get    = "pm list packages -3"
-script = 'echo "Đã chọn: $t_apps_multi"'
-shell  = "banner"
+type       = "applist"
+id         = "t_apps_multi"
+title      = "App người dùng"
+desc       = 'options-sh = "pm list packages -3"'
+options-sh = "pm list packages -3"
+script     = 'echo "Đã chọn: $t_apps_multi"'
+shell      = "banner"
 
 [[group.item]]
-type      = "applist"
-id        = "t_apps_sep"
-title     = "Phân tách bằng dấu ,"
-desc      = 'separator = ","; $id là các package cách nhau bằng dấu phẩy'
-get       = "pm list packages -3"
-separator = ","
-script    = 'echo "Đã chọn: $t_apps_sep"'
-shell     = "banner"
+type       = "applist"
+id         = "t_apps_sep"
+title      = "Phân tách bằng dấu ,"
+desc       = 'separator = ","; $id là các package cách nhau bằng dấu phẩy'
+options-sh = "pm list packages -3"
+separator  = ","
+script     = 'echo "Đã chọn: $t_apps_sep"'
+shell      = "banner"
 
 [[group]]
 title = "Chọn một"
 
 [[group.item]]
-type   = "applist"
-id     = "t_apps_single"
-title  = "Một app"
-desc   = "multi = false"
-get    = "pm list packages -3"
-multi  = false
-script = 'echo "Đã chọn: $t_apps_single"'
-shell  = "banner"
+type       = "applist"
+id         = "t_apps_single"
+title      = "Một app"
+desc       = "multi = false"
+options-sh = "pm list packages -3"
+multi      = false
+script     = 'echo "Đã chọn: $t_apps_single"'
+shell      = "banner"
 
 [[group]]
 title = "Định nghĩa danh sách bằng lệnh pm"
 
 [[group.item]]
-type   = "applist"
-id     = "t_apps_system"
-title  = "App hệ thống"
-desc   = 'get = "pm list packages -s"'
-get    = "pm list packages -s"
-script = 'echo "Đã chọn: $t_apps_system"'
-shell  = "banner"
+type       = "applist"
+id         = "t_apps_system"
+title      = "App hệ thống"
+desc       = 'options-sh = "pm list packages -s"'
+options-sh = "pm list packages -s"
+script     = 'echo "Đã chọn: $t_apps_system"'
+shell      = "banner"
 
 [[group.item]]
-type   = "applist"
-id     = "t_apps_disabled"
-title  = "App đã tắt"
-desc   = 'get = "pm list packages -d" (chỉ app đang bị tắt)'
-get    = "pm list packages -d"
-script = 'echo "Đã chọn: $t_apps_disabled"'
-shell  = "banner"
+type       = "applist"
+id         = "t_apps_disabled"
+title      = "App đã tắt"
+desc       = 'options-sh = "pm list packages -d" (chỉ app đang bị tắt)'
+options-sh = "pm list packages -d"
+script     = 'echo "Đã chọn: $t_apps_disabled"'
+shell      = "banner"
 
 [[group.item]]
-type   = "applist"
-id     = "t_apps_store"
-title  = "App cài từ Play Store"
-desc   = 'get = "pm list packages -3 -i com.android.vending | grep -v google" (lọc nơi cài, rồi lọc bằng pipe)'
-get    = "pm list packages -3 -i com.android.vending | grep -v google"
-script = 'echo "Đã chọn: $t_apps_store"'
-shell  = "banner"
+type       = "applist"
+id         = "t_apps_store"
+title      = "App cài từ Play Store"
+desc       = 'options-sh = "pm list packages -3 -i com.android.vending | grep -v google" (lọc nơi cài, rồi lọc bằng pipe)'
+options-sh = "pm list packages -3 -i com.android.vending | grep -v google"
+script     = 'echo "Đã chọn: $t_apps_store"'
+shell      = "banner"

@@ -77,15 +77,9 @@ page  = "pages/types/dropdown.toml"
 
 [[group.item]]
 type  = "link"
-title = "singleselect"
-desc  = "Chọn một có Xác nhận; từ 6 mục thì toàn màn hình"
-page  = "pages/types/singleselect.toml"
-
-[[group.item]]
-type  = "link"
-title = "multiselect"
-desc  = "Chọn nhiều có Xác nhận; từ 6 mục thì toàn màn hình"
-page  = "pages/types/multiselect.toml"
+title = "select"
+desc  = "Chọn một (multi = false) hoặc chọn nhiều (multi = true); từ 6 mục thì toàn màn hình"
+page  = "pages/types/select.toml"
 
 [[group.item]]
 type  = "link"

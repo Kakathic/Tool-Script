@@ -45,7 +45,7 @@ shell = "banner"
 [[group.item]]
 type  = "link"
 title = "Dialog đủ các loại item"
-desc  = "Mọi loại dùng được trong dialog: switch, checkbox, input, slider, radio, dropdown, singleselect, multiselect, progress"
+desc  = "Mọi loại dùng được trong dialog: switch, checkbox, input, slider, radio, dropdown, select, progress"
 page  = "pages/types/link_dialog_all.toml"
 style = "dialog"
 script = 'echo "switch=$t_ldlg_all_switch tick=$t_ldlg_all_check nhập=$t_ldlg_all_input trượt=$t_ldlg_all_slider radio=$t_ldlg_all_radio thả=$t_ldlg_all_dropdown một=$t_ldlg_all_single nhiều=$t_ldlg_all_multi"'

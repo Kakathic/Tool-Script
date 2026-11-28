@@ -152,7 +152,7 @@ Mức 1: dễ, thêm `type` mới, dùng lại khung có sẵn
 - [x] `radio`: chọn một trong `options`, hiện sẵn mọi lựa chọn.
 - [x] `dropdown`: chọn một trong `options` bằng menu thả xuống ngay dưới hàng.
 - [x] `progress`: thanh tiến trình chỉ để xem, đọc giá trị từ `get`.
-- [x] `multiselect` / `singleselect` từ 6 mục trở lên: chọn toàn màn hình, có ô tìm (bỏ dấu tiếng Việt); `multiselect` có ô Chọn tất cả chỉ áp dụng cho kết quả tìm. Dưới 6 mục giữ hộp thoại nhỏ. Cần thử trên máy thật: gõ phím với `imePadding`, ô Chọn tất cả ở trạng thái gạch ngang.
+- [x] `select` (`multi = true` chọn nhiều, `false` chọn một) từ 6 mục trở lên: chọn toàn màn hình, có ô tìm (bỏ dấu tiếng Việt); `multi = true` có ô Chọn tất cả chỉ áp dụng cho kết quả tìm. Dưới 6 mục giữ hộp thoại nhỏ. Cần thử trên máy thật: gõ phím với `imePadding`, ô Chọn tất cả ở trạng thái gạch ngang.
 
 Mức 2: dễ đến vừa, thêm trường mới cho item có sẵn
 

@@ -329,7 +329,7 @@ fun MainScreen(
     val pageBackdrop = rememberBarBackdrop(blurEnabled)
     val fullBackdrop = rememberBarBackdrop(blurEnabled)
     val blurRequests = remember { BlurRequests() }
-    // Màn hình chọn toàn màn hình (singleselect / multiselect từ 6 mục) vẽ ở gốc để dùng chung nền mờ của trang.
+    // Màn hình chọn toàn màn hình (select từ 6 mục) vẽ ở gốc để dùng chung nền mờ của trang.
     val selectHost = remember { SelectHost() }
     CompositionLocalProvider(
         LocalPageWarnings provides pageWarningHost,
@@ -875,7 +875,7 @@ private fun CompactDialog(show: Boolean, page: SubPage, env: RenderEnv, onBack: 
     val pageEnv = remember(env) { env.asVarsOnly() }
     val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
     BlurDialog(show = show, onDismissRequest = onBack, title = page.title, centered = true, fullScreen = true, glassStyle = true) {
-        // Màn hình chọn của singleselect / multiselect: không dùng host ở gốc (bị popup này che), mở bằng cửa sổ riêng nằm trên dialog.
+        // Màn hình chọn của select: không dùng host ở gốc (bị popup này che), mở bằng cửa sổ riêng nằm trên dialog.
         CompositionLocalProvider(LocalSelectHost provides null) {
         val contentScroll = rememberScrollState()
         Column(Modifier.fillMaxWidth()) {

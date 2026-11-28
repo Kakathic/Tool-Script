@@ -296,8 +296,8 @@ fun ItemRenderer(item: Item, env: RenderEnv, inGroup: Boolean = false, parentRea
             ItemType.Button -> ButtonItem(item, env, modifier, enabled, inGroup)
             ItemType.Switch -> SwitchItem(item, env, modifier, enabled, inGroup)
             ItemType.Input -> InputItem(item, env, modifier, enabled, inGroup)
-            ItemType.MultiSelect -> MultiSelectItem(item, env, modifier, enabled, inGroup)
-            ItemType.SingleSelect -> SingleSelectItem(item, env, modifier, enabled, inGroup)
+            ItemType.Select ->
+                if (item.multi) MultiSelectItem(item, env, modifier, enabled, inGroup) else SingleSelectItem(item, env, modifier, enabled, inGroup)
             ItemType.AppList -> AppListItem(item, env, modifier, enabled, inGroup)
             ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
             ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
@@ -719,7 +719,7 @@ private fun MultiSelectItem(item: Item, env: RenderEnv, modifier: Modifier, enab
 }
 
 /**
- * Một lựa chọn dạng thẻ trong hộp thoại `multiselect` / `singleselect`: thẻ bo góc không viền, chữ bên trái,
+ * Một lựa chọn dạng thẻ trong hộp thoại `select`: thẻ bo góc không viền, chữ bên trái,
  * ô tích bên phải. Mục chưa chọn có nền xám nhạt; mục đã chọn có nền màu chủ đạo nhạt và chữ màu chủ đạo.
  * [framed] = false: bỏ nền, chỉ còn chữ và ô tích / nút tròn; dùng khi 1 cột. [radio] = true (chọn một): nút tròn thay ô tích, dòng đã chọn đổi chữ sang màu chủ đạo.
  */
@@ -753,7 +753,7 @@ private fun ChoiceCard(
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            // Mục đã chọn đổi chữ sang màu chủ đạo (thẻ có nền, hoặc chọn một dùng nút tròn). Chỉ multiselect 1 cột không nền giữ nguyên màu chữ.
+            // Mục đã chọn đổi chữ sang màu chủ đạo (thẻ có nền, hoặc chọn một dùng nút tròn). Chỉ select chọn nhiều 1 cột không nền giữ nguyên màu chữ.
             color = if (checked && (framed || radio)) primary else MiuixTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.width(8.dp))
@@ -803,7 +803,7 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
         }
         // Danh sách package do lệnh `get` in ra (mỗi dòng một package); biến của các item (`$id`) dùng được trong lệnh.
         fetching = true
-        val command = ShellText.withEnv(item.get.orEmpty(), env.store.snapshot())
+        val command = ShellText.withEnv(item.optionsSh.orEmpty(), env.store.snapshot())
         val result = InstalledApps.loadPackages(context, command, item.timeoutSec ?: InstalledApps.DEFAULT_TIMEOUT_SEC)
         fetching = false
         if (result.error != null || result.packages.isEmpty()) {
@@ -1002,7 +1002,7 @@ private fun TitleRow(item: Item, title: @Composable () -> Unit) {
     }
 }
 
-// Nút tròn của radio / singleselect: đĩa tròn đặc, chọn rồi thì nền màu chủ đạo và có chấm trắng ở giữa, chưa chọn thì đĩa xám.
+// Nút tròn của radio / select chọn một: đĩa tròn đặc, chọn rồi thì nền màu chủ đạo và có chấm trắng ở giữa, chưa chọn thì đĩa xám.
 private val RADIO_SIZE = 28.dp
 private val RADIO_DOT_SIZE = 12.dp
 
@@ -1033,7 +1033,7 @@ private fun EndIcon(icon: String) {
     )
 }
 
-/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `multiselect`, `singleselect` và `dropdown`. */
+/** Icon mũi tên lên/xuống (icons/bar_updown.svg) ở cuối hàng chọn giá trị: dùng chung cho `select` và `dropdown`. */
 @Composable
 private fun UpDownIcon() = EndIcon(AppIcons.BarUpDown)
 

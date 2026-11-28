@@ -69,7 +69,8 @@ shell = "log"
 
 # columns chỉ nhận 1 hoặc 2: dùng 1
 [[group.item]]
-type    = "singleselect"
+type    = "select"
+multi   = false
 id      = "b_columns"
 title   = "columns sai"
 desc    = "columns = 3, dùng 1"

@@ -21,7 +21,7 @@ enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Slider("slider"), Link("link"),
     Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
-    MultiSelect("multiselect"), SingleSelect("singleselect"), AppList("applist");
+    Select("select"), AppList("applist");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -65,15 +65,17 @@ data class Item(
     val script: String?,
     // switch / checkbox
     val get: String?,
+    // applist: lệnh shell in danh sách app (mỗi dòng một package); chạy lại mỗi lần mở danh sách
+    val optionsSh: String?,
     // input
     val hint: String?,
     val default: String?,
     val numberInput: Boolean,
-    // radio / dropdown / multiselect / singleselect
+    // radio / dropdown / select
     val options: List<SelectOption>,
-    // multiselect / singleselect: số cột lựa chọn trong hộp thoại (1 hoặc 2)
+    // select: số cột lựa chọn trong hộp thoại (1 hoặc 2)
     val columns: Int,
-    // multiselect: dấu phân tách các giá trị đã chọn trong $id
+    // select (multi = true) và applist: dấu phân tách các giá trị đã chọn trong $id
     val separator: String,
     // slider / progress
     val min: Float,
@@ -168,7 +170,7 @@ object TomlParser {
     private val PAGE_KEYS = setOf("item", "group")
     private val ITEM_KEYS = setOf(
         "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "refresh", "confirm", "timeout",
-        "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "separator",
+        "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "options-sh", "separator",
         "columns", "tab", "page", "style", "shell", "divider", "multi",
     )
 
@@ -365,10 +367,19 @@ object TomlParser {
         }
         val title = rawTitle.orEmpty()
         val id = t.str("id")?.takeIf { it.isNotBlank() }
+        // multi: true (mặc định) chọn nhiều, false chọn một; dùng cho `select` và `applist`.
+        val multi = when (val raw = t.str("multi")?.lowercase()) {
+            null, "true" -> true
+            "false" -> false
+            else -> {
+                warnings += AppText.get(R.string.cfg_invalid_multi, label, title, raw)
+                true
+            }
+        }
         val needsId = type == ItemType.Switch || type == ItemType.Input ||
             type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
-            type == ItemType.Dropdown || type == ItemType.MultiSelect || type == ItemType.SingleSelect ||
+            type == ItemType.Dropdown || type == ItemType.Select ||
             type == ItemType.AppList
         if (needsId) {
             if (id == null) {
@@ -379,7 +390,7 @@ object TomlParser {
                 warnings += AppText.get(R.string.cfg_invalid_id, label, title, id)
                 return null
             }
-            val selectType = type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.SingleSelect
+            val selectType = type == ItemType.Radio || type == ItemType.Dropdown || (type == ItemType.Select && !multi)
             if (id in RESERVED_IDS || (id == APP_LANGUAGE_ID && !selectType)) {
                 warnings += AppText.get(R.string.cfg_reserved_id, label, title, id)
                 return null
@@ -399,9 +410,13 @@ object TomlParser {
             if (hasTab && hasPage) warnings += AppText.get(R.string.cfg_link_both, label, title)
         }
 
-        if (type == ItemType.AppList && t.str("get").isNullOrBlank()) {
-            warnings += AppText.get(R.string.cfg_applist_missing_get, label, title)
-            return null
+        if (type == ItemType.AppList) {
+            // `get` của applist đã đổi tên thành `options-sh`: báo khóa cũ, và thiếu `options-sh` thì bỏ item.
+            if (!t.str("get").isNullOrBlank()) warnings += AppText.get(R.string.cfg_applist_get_renamed, label, title)
+            if (t.str("options-sh").isNullOrBlank()) {
+                warnings += AppText.get(R.string.cfg_applist_missing_options_sh, label, title)
+                return null
+            }
         }
 
         val dialog = when (val style = t.str("style")?.lowercase()) {
@@ -461,14 +476,6 @@ object TomlParser {
             }
         }
         val separator = t.str("separator")?.takeIf { it.isNotEmpty() } ?: "\n"
-        val multi = when (val raw = t.str("multi")?.lowercase()) {
-            null, "true" -> true
-            "false" -> false
-            else -> {
-                warnings += AppText.get(R.string.cfg_invalid_multi, label, title, raw)
-                true
-            }
-        }
         // refresh = true (cả trang) hoặc "id1,id2" (các item có id này); false / rỗng = không làm mới.
         val refreshRaw = t.str("refresh")?.trim().orEmpty()
         val refreshAll = refreshRaw.equals("true", ignoreCase = true)
@@ -499,13 +506,10 @@ object TomlParser {
                 }
             }
         }
-        if ((type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.MultiSelect ||
-            type == ItemType.SingleSelect) &&
-            options.isEmpty()
-        ) {
+        if ((type == ItemType.Radio || type == ItemType.Dropdown || type == ItemType.Select) && options.isEmpty()) {
             warnings += AppText.get(R.string.cfg_no_valid_options, label, title, type.key)
         }
-        if (type == ItemType.MultiSelect && options.any { separator in it.value }) {
+        if (type == ItemType.Select && multi && options.any { separator in it.value }) {
             warnings += AppText.get(R.string.cfg_separator_in_value, label, title, separator)
         }
 
@@ -556,7 +560,8 @@ object TomlParser {
             confirm = t.str("confirm")?.takeIf { it.isNotBlank() },
             timeoutSec = t.str("timeout")?.toIntOrNull()?.takeIf { it > 0 },
             script = if (id == APP_LANGUAGE_ID) null else t.str("script"),
-            get = t.str("get"),
+            get = if (type == ItemType.AppList) null else t.str("get"),
+            optionsSh = t.str("options-sh")?.takeIf { it.isNotBlank() },
             hint = t.str("hint"),
             default = t.str("default"),
             numberInput = t.str("input_type")?.lowercase() == "number",
@@ -577,7 +582,7 @@ object TomlParser {
 }
 
 /**
- * multiselect: giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options.
+ * select (multi = true): giữ lại các giá trị hợp lệ trong [raw] (tách bằng `separator`), theo thứ tự khai báo trong options.
  * Tách `raw` chỉ theo [Item.separator] (mặc định xuống dòng), nên option có giá trị chứa dấu phẩy vẫn giữ nguyên.
  */
 fun Item.normalizeMulti(raw: String): String {

@@ -1,4 +1,4 @@
-# Demo đủ các loại item dùng được trong dialog: text, group, switch, checkbox, input, slider, radio, dropdown, singleselect, multiselect, progress.
+# Demo đủ các loại item dùng được trong dialog: text, group, switch, checkbox, input, slider, radio, dropdown, select, progress.
 # Nhiều hơn 4 mục nên mở full màn hình. Item trong dialog chỉ đổi biến, không chạy lệnh; bấm Xác nhận mới chạy script của link.
 # Không dùng được: button và link (đã có Hủy / Xác nhận).
 
@@ -58,14 +58,15 @@ default = "2"
 options = ["Một|1", "Hai|2", "Ba|3"]
 
 [[group.item]]
-type    = "singleselect"
+type    = "select"
+multi   = false
 id      = "t_ldlg_all_single"
 title   = "Chọn một"
 default = "wifi"
 options = ["Wi-Fi|wifi", "Dữ liệu di động|mobile", "Bluetooth|bt"]
 
 [[group.item]]
-type    = "multiselect"
+type    = "select"
 id      = "t_ldlg_all_multi"
 title   = "Chọn nhiều"
 default = "a\nc"

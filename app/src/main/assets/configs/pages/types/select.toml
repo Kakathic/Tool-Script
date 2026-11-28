@@ -1,0 +1,97 @@
+# type = "select": chọn trong danh sách options. multi = true (mặc định) chọn nhiều, multi = false chọn một.
+# Trường riêng: options, default, script, columns (1 hoặc 2), multi, separator (chỉ khi multi = true).
+# multi = true: có Xác nhận. $id = các giá trị đã chọn nối bằng separator (mặc định mỗi giá trị một dòng), theo thứ tự khai báo trong options.
+#   default là các giá trị chọn sẵn, cách nhau bằng separator ("a\nc" = chọn a và c). Từ 6 mục: toàn màn hình, có ô tìm và Chọn tất cả (chỉ tác động lên mục đang hiện trong kết quả tìm).
+# multi = false: hộp nhỏ (dưới 6 mục) chạm mục là lưu và chạy script luôn, không có nút; chạm ra ngoài hoặc Back để thoát.
+#   Toàn màn hình (từ 6 mục): chọn rồi bấm Xác nhận mới lưu và chạy script một lần; Hủy hoặc Back thì bỏ thay đổi. Có ô tìm không phân biệt hoa thường và dấu tiếng Việt.
+
+[[item]]
+type    = "text"
+title   = "select"
+desc    = "multi = true: hàng hiện số mục đã chọn, chọn thoải mái rồi bấm Xác nhận. multi = false: hàng hiện nhãn đang chọn, chạm một mục là chọn luôn (từ 6 mục thì toàn màn hình và bấm Xác nhận)."
+
+[[group]]
+title = "Chọn nhiều (multi = true): hộp thoại nhỏ (dưới 6 mục)"
+
+[[group.item]]
+type    = "select"
+id      = "t_multi_2col"
+title   = "Hai cột, chọn sẵn A và C"
+desc    = 'default = "a\nc", columns = 2'
+default = "a\nc"
+columns = 2
+script  = 'echo "Đã chọn: $t_multi_2col"'
+shell   = "banner"
+options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
+
+[[group.item]]
+type      = "select"
+id        = "t_multi_sep"
+title     = "Phân tách bằng dấu |"
+desc      = 'separator = "|"'
+default   = "net"
+separator = "|"
+script    = 'echo "Đã chọn: $t_multi_sep"'
+shell     = "banner"
+options   = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen"]
+
+[[group]]
+title = "Chọn nhiều (multi = true): toàn màn hình (từ 6 mục)"
+
+[[group.item]]
+type    = "select"
+id      = "t_multi_full"
+title   = "Tính năng bật"
+desc    = 'Thử gõ "m" rồi bấm Chọn tất cả'
+default = "audio\nnet"
+script  = 'echo "Đã chọn: $t_multi_full"'
+shell   = "banner"
+options = ["Âm thanh|audio", "Mạng|net", "Màn hình|screen", "Pin|battery", "Camera|camera", "Cảm biến|sensor", "Bluetooth|bt", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage", "Bộ nhớ|storage"]
+
+[[group]]
+title = "Chọn một (multi = false): hộp thoại nhỏ (dưới 6 mục)"
+
+[[group.item]]
+type    = "select"
+multi   = false
+id      = "t_single_1col"
+title   = "Một cột"
+desc    = "columns mặc định là 1"
+default = "wifi"
+script  = 'echo "Đã chọn: $t_single_1col"'
+shell   = "banner"
+options = ["Wi-Fi|wifi", "Dữ liệu di động|mobile", "Bluetooth|bt"]
+
+[[group.item]]
+type    = "select"
+multi   = false
+id      = "t_single_2col"
+title   = "Hai cột"
+desc    = "columns = 2"
+default = "b"
+columns = 2
+script  = 'echo "Đã chọn: $t_single_2col"'
+shell   = "banner"
+options = ["Mục A|a", "Mục B|b", "Mục C|c", "Mục D|d"]
+
+[[group]]
+title = "Chọn một (multi = false): toàn màn hình (từ 6 mục)"
+
+[[group.item]]
+type    = "select"
+multi   = false
+id      = "t_single_full"
+title   = "Tỉnh thành"
+desc    = "30 mục nên mở toàn màn hình, danh sách cuộn được, thử gõ da lat"
+default = "danang"
+script  = 'echo "Đã chọn: $t_single_full"'
+shell   = "banner"
+options = ["Hà Nội|hanoi", "Hải Phòng|haiphong", "Huế|hue", "Đà Nẵng|danang", "Nha Trang|nhatrang", "Đà Lạt|dalat", "TP. Hồ Chí Minh|hcm", "Cần Thơ|cantho", "Hạ Long|halong", "Lào Cai|laocai", "Điện Biên Phủ|dienbien", "Sơn La|sonla", "Thái Nguyên|thainguyen", "Bắc Ninh|bacninh", "Nam Định|namdinh", "Ninh Bình|ninhbinh", "Thanh Hóa|thanhhoa", "Vinh|vinh", "Đồng Hới|donghoi", "Quảng Ngãi|quangngai", "Quy Nhơn|quynhon", "Tuy Hòa|tuyhoa", "Pleiku|pleiku", "Buôn Ma Thuột|buonmathuot", "Phan Thiết|phanthiet", "Biên Hòa|bienhoa", "Vũng Tàu|vungtau", "Mỹ Tho|mytho", "Cà Mau|camau", "Phú Quốc|phuquoc"]
+
+[[item]]
+type    = "select"
+multi   = false
+id      = "app_language"
+title   = "Ngôn ngữ"
+desc    = "id app_language gắn thẳng vào ngôn ngữ app (giá trị: system, en, vi)"
+options = ["Hệ thống|system", "English|en", "Tiếng Việt|vi"]

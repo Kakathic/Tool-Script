@@ -77,7 +77,7 @@ import com.tool.script.ui.theme.DialogButton
 import com.tool.script.ui.theme.AppTextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Chọn toàn màn hình cho `singleselect` / `multiselect` khi có từ FULLSCREEN_MIN_OPTIONS mục trở lên.
+// Chọn toàn màn hình cho `select` khi có từ FULLSCREEN_MIN_OPTIONS mục trở lên.
 // Dưới ngưỡng này vẫn dùng hộp thoại nhỏ như cũ (xem Render.kt). docs/schema.md, mục 7.
 
 /** Chiều cao chung của ô tìm kiếm và các nút Hủy / Xác nhận ở màn hình chọn (ép cả hai về cùng một giá trị để luôn bằng nhau). */
@@ -144,7 +144,7 @@ class SelectHost {
 val LocalSelectHost = staticCompositionLocalOf<SelectHost?> { null }
 
 /**
- * Chỗ item `singleselect` / `multiselect` gọi: [show] = true thì mở màn hình chọn toàn màn hình (qua [LocalSelectHost], không có thì mở cửa sổ riêng),
+ * Chỗ item `select` gọi: [show] = true thì mở màn hình chọn toàn màn hình (qua [LocalSelectHost], không có thì mở cửa sổ riêng),
  * false hoặc item rời khỏi cây thì đóng. Mỗi lần mở bắt đầu lại từ [selected].
  */
 @Composable
@@ -196,7 +196,7 @@ fun SelectFullScreenHost(host: SelectHost) {
 }
 
 /**
- * Màn hình chọn toàn màn hình: tiêu đề, ô tìm kiếm, (multiselect) ô Chọn tất cả, danh sách, rồi Hủy / Xác nhận.
+ * Màn hình chọn toàn màn hình: tiêu đề, ô tìm kiếm, (multi = true) ô Chọn tất cả, danh sách, rồi Hủy / Xác nhận.
  *
  * - Ô tìm lọc theo nhãn (không phân biệt hoa thường và dấu).
  * - Chọn tất cả chỉ tác động lên các mục đang hiện trong kết quả tìm; mục ngoài kết quả giữ nguyên.

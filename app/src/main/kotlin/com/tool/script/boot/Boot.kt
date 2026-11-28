@@ -199,9 +199,11 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox -> if (id != null) out[id] = "0"
                 ItemType.Input -> if (id != null) out[id] = item.default.orEmpty()
-                ItemType.Radio, ItemType.Dropdown, ItemType.SingleSelect ->
+                ItemType.Radio, ItemType.Dropdown ->
                     if (id != null) out[id] = item.default ?: item.options.firstOrNull()?.value.orEmpty()
-                ItemType.MultiSelect -> if (id != null) out[id] = item.normalizeMulti(item.default.orEmpty())
+                ItemType.Select -> if (id != null) {
+                    out[id] = if (item.multi) item.normalizeMulti(item.default.orEmpty()) else item.default ?: item.options.firstOrNull()?.value.orEmpty()
+                }
                 ItemType.AppList -> if (id != null) out[id] = item.normalizeApps(item.default.orEmpty())
                 ItemType.Slider, ItemType.Progress ->
                     if (id != null) out[id] = formatNumber(item.default?.toFloatOrNull()?.takeIf { it.isFinite() } ?: item.min)
@@ -217,7 +219,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val id = item.id
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Radio, ItemType.Dropdown,
-                ItemType.MultiSelect, ItemType.SingleSelect, ItemType.AppList, ItemType.Slider, ItemType.Progress -> if (id != null && id != APP_LANGUAGE_ID && StateFiles.isValidId(id)) {
+                ItemType.Select, ItemType.AppList, ItemType.Slider, ItemType.Progress -> if (id != null && id != APP_LANGUAGE_ID && StateFiles.isValidId(id)) {
                     if (out.put(id, item) != null) duplicates += id
                 }
                 ItemType.Group -> collectPersisted(item.children, out, duplicates)
@@ -234,8 +236,9 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             else -> null
         }
         ItemType.Input -> saved
-        ItemType.Radio, ItemType.Dropdown, ItemType.SingleSelect -> saved.takeIf { v -> item.options.any { it.value == v } }
-        ItemType.MultiSelect -> item.normalizeMulti(saved)
+        ItemType.Radio, ItemType.Dropdown -> saved.takeIf { v -> item.options.any { it.value == v } }
+        ItemType.Select ->
+            if (item.multi) item.normalizeMulti(saved) else saved.takeIf { v -> item.options.any { it.value == v } }
         ItemType.AppList -> item.normalizeApps(saved)
         ItemType.Slider, ItemType.Progress ->
             saved.trim().toFloatOrNull()?.takeIf { it.isFinite() }?.let { formatNumber(it.coerceIn(item.min, item.max)) }

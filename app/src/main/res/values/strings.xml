@@ -188,7 +188,8 @@
     <string name="cfg_invalid_shell">%1$s \"%2$s\": shell = \"%3$s\" is invalid, using live</string>
     <string name="cfg_invalid_columns">%1$s \"%2$s\": columns = \"%3$s\" is invalid (1 or 2), using 1</string>
     <string name="cfg_invalid_multi">%1$s \"%2$s\": multi = \"%3$s\" is invalid (true or false), using true</string>
-    <string name="cfg_applist_missing_get">%1$s \"%2$s\" (applist) is missing get (the command that prints the app list), item skipped</string>
+    <string name="cfg_applist_missing_options_sh">%1$s \"%2$s\" (applist) is missing options-sh (the command that prints the app list), item skipped</string>
+    <string name="cfg_applist_get_renamed">%1$s \"%2$s\" (applist): get was renamed to options-sh, get ignored</string>
     <string name="cfg_invalid_icon_size">%1$s \"%2$s\": icon_size = \"%3$s\" is invalid (positive number), using 24</string>
     <string name="cfg_invalid_icon_tint">%1$s \"%2$s\": icon_tint = \"%3$s\" is invalid (true or false), using true</string>
     <string name="cfg_invalid_divider">%1$s \"%2$s\": divider = \"%3$s\" is invalid (true or false), using false</string>
