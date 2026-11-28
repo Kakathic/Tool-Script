@@ -159,6 +159,9 @@ private val FloatingBarBandExtra = 28.dp
 /** Lề trái / phải của đảo kính (thanh tab nổi), bằng lề thẻ 16dp để đảo rộng ngang hàng với thẻ. */
 private val FloatingBarSideMargin = 16.dp
 
+/** Khoảng trống giữa mép dưới thanh trên và thẻ đầu tiên của danh sách (màn hình chính). */
+private val ListTopGap = 8.dp
+
 /**
  * @param themeMode chế độ chủ đề hiện tại; [onThemeChange] được gọi khi người dùng chọn chế độ khác.
  * @param language ngôn ngữ app đang chọn; [onLanguageChange] được gọi khi item `app_language` trong TOML đổi giá trị.
@@ -969,7 +972,7 @@ private fun PageList(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().then(if (imePadding) Modifier.imePadding() else Modifier).then(if (fadeEdges) Modifier.fadingEdges(listState) else Modifier),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + topInset, bottom = 16.dp + bottomInset),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = ListTopGap + topInset, bottom = 16.dp + bottomInset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Thẻ cảnh báo chung của app (script khởi động, main.toml) nằm đầu danh sách như một mục: cuộn cùng nội dung, không dính thanh trên.
