@@ -4,7 +4,7 @@ Mỗi lần có cập nhật hoặc sửa lỗi đều ghi vào đây: thêm dò
 Workflow ghép file này vào mô tả của release; app đọc 3 mục đầu để hiện trong phần Nhật ký khi có bản cập nhật.
 
 ## 0.1.0 · 2026-11-27
-- Sửa: màn hình chính ở chế độ kính: nút chuyển sang viên kính tròn và dải mờ bật muộn hơn, hạ theo đúng độ ngắn đi của dải mờ (`GlassBarActivateScroll` = 32dp - `GlassBarBandOverhang`, vd. overhang 20dp thì bật sau khi cuộn 12dp) thay vì ngay từ lần cuộn đầu tiên.
+- Sửa: màn hình chính ở chế độ kính: nút chuyển sang viên kính tròn và dải mờ bật muộn hơn, sau khi cuộn quá `GlassBarBandOverhang` (dùng chung biến với chiều cao dải mờ, hiện 20dp) thay vì ngay từ lần cuộn đầu tiên.
 - Đổi: đảo kính (thanh tab nổi) rộng hơn: lề trái / phải từ 24dp xuống 16dp, ngang lề thẻ (chỉnh ở `FloatingBarSideMargin` trong Main.kt).
 - Đổi: thanh tab hiện tối đa 5 tab cùng lúc (trước là 4); từ 6 tab trở lên mới trượt cửa sổ. Cập nhật README và docs/schema.md cho khớp.
 - Sửa: Cài đặt bật làm mờ nền: dải mờ của thanh trên không còn ra màu đen (giao diện tối) khi cuộn qua phần đầu; nền động giữ lại độ đục tối thiểu 0.3 thay vì mờ về 0 (chỉnh ở `BgMinAlphaWhenBlur` trong SettingsScreen.kt).

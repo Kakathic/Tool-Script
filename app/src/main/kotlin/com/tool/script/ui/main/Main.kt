@@ -378,8 +378,8 @@ fun MainScreen(
                                 val density = LocalDensity.current
                                 // Thanh trên kính chỉ hiện chất liệu khi trang hiện tại đã cuộn khỏi đầu.
                                 val currentFile = pages.getOrNull(pagerState.currentPage)?.ref?.file
-                                // Nút chuyển sang viên kính tròn và dải mờ bật khi đã cuộn quá [GlassBarActivateScroll] (BarBlur.kt), không phải từ pixel đầu tiên.
-                                val activatePx = with(density) { GlassBarActivateScroll.roundToPx() }
+                                // Nút chuyển sang viên kính tròn và dải mờ bật khi đã cuộn quá [GlassBarBandOverhang] (BarBlur.kt, dùng chung với chiều cao dải mờ), không phải từ pixel đầu tiên.
+                                val activatePx = with(density) { GlassBarBandOverhang.roundToPx() }
                                 val pageScrolled by remember(currentFile, activatePx) {
                                     derivedStateOf {
                                         currentFile?.let { file ->
