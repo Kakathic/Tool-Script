@@ -208,6 +208,7 @@ readonly = "ROOT_MODE != root"
 | `radio` | `options`, `default`, `script` (hiện sẵn mọi lựa chọn, mỗi dòng một nút tròn) |
 | `dropdown` | `options`, `default`, `script` (chọn bằng menu thả xuống) |
 | `select` | `options`, `multi`, `default`, `script`, `columns`, `separator` (chọn trong danh sách: `multi = true` mặc định chọn nhiều, `multi = false` chọn một; xem bên dưới) |
+| `file` / `folder` | `start`, `ext` (chỉ `file`), `multi` (mặc định `false`), `hint`, `default`, `script`, `separator` (ô đường dẫn và trình quản lý tệp, xem bên dưới) |
 | `applist` | `options-sh` (bắt buộc, lệnh in danh sách app), `multi`, `default`, `script`, `separator` (chọn app trên máy, xem bên dưới) |
 | `progress` | `min`, `max`, `default`, `get` (chỉ để xem, không có lệnh chạy) |
 
@@ -240,7 +241,7 @@ title = "Chế độ game"
 
 ### Lưu giá trị theo id
 
-Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `select`, `applist`, `slider`, `progress`) được lưu tự động:
+Mọi item có `id` và có giá trị (`switch`, `checkbox`, `input`, `radio`, `dropdown`, `select`, `applist`, `file`, `folder`, `slider`, `progress`) được lưu tự động:
 
 - Mỗi `id` một file, **tên file = id**, nằm trong `$STATE_DIR` (`files/state`). Nội dung là giá trị kèm xuống dòng, cùng định dạng với `slog`
   (`switch` / `checkbox` lưu `1` hoặc `0`).
@@ -389,6 +390,24 @@ options-sh = "pm list packages -3 | grep -v google"             # lọc bằng p
 - `multi`: `true` (mặc định) chọn nhiều, `$id` là các package nối bằng `separator` (mặc định mỗi package một dòng), theo thứ tự danh sách app; `false` chọn một, `$id` là một package, chưa chọn thì rỗng. Giá trị khác `true` / `false` bị báo cảnh báo và dùng `true`.
 - Hàng hiện `Đã chọn N` (`multi = true`) hoặc tên app đang chọn (`multi = false`; app đã gỡ thì hiện package). Bấm hàng mở **toàn màn hình** (không có hộp thoại nhỏ, `columns` không dùng): mỗi dòng có icon, tên app và package name; ô tìm lọc theo tên (không phân biệt hoa thường và dấu) hoặc package; `multi = true` có ô **Chọn tất cả** như `select` với `multi = true`.
 - Cách lưu và chạy `script` y hệt `select` toàn màn hình: chỉ khi bấm **Xác nhận**, chỉ khi có thay đổi; Hủy hoặc Back thì bỏ thay đổi. Lưu vào `files/state` theo id như các type khác.
+`file` / `folder` – ô đường dẫn và trình quản lý tệp. Cần `id`.
+
+```toml
+[[item]]
+type   = "file"
+id     = "firmware"
+title  = "Chọn tệp"
+ext    = "zip,apk"
+start  = "/sdcard/Download"
+confirm = "Chạy với tệp đã chọn?"
+script = 'unzip -l "$firmware"'
+```
+
+- Thẻ có ô văn bản (gõ tay được, chỉ lưu giá trị) và **một nút** ở cuối ô để mở trình quản lý tệp toàn màn hình. Không có nút Chạy.
+- Trình quản lý duyệt bằng `ls` qua backend shell, nên có root thì xem được cả `/`; đường dẫn trả về là đường dẫn thật. Mở ở thư mục chứa mục đang lưu, chưa có thì ở `start` (mặc định `/sdcard`). Có ô tìm, dòng `..` để lên thư mục cha, thư mục xếp trước tệp.
+- `file`: bấm thư mục để mở, bấm tệp để chọn. `ext = "zip,apk"` chỉ hiện tệp đúng đuôi (thư mục luôn hiện). `folder`: bấm thư mục để mở, ô chọn ở cuối dòng để chọn thư mục đó; không chọn gì mà bấm nút dưới ("Chọn thư mục này") thì lấy thư mục đang mở.
+- `multi`: mặc định `false` (chọn một). `true` thì chọn nhiều (cả ở nhiều thư mục khác nhau), `$id` là các đường dẫn nối bằng `separator` (mặc định xuống dòng).
+- Chọn xong và bấm **Xác nhận** thì chạy `script` luôn với `$id` là đường dẫn đã chọn; có `confirm` thì hỏi xác nhận trước khi chạy. Trong trang dialog chỉ truyền biến, không chạy lệnh.
 - Package trong `default` hoặc trong file đã lưu mà không còn trong danh sách của `get` vẫn giữ trong `$id` cho tới lần xác nhận kế tiếp (lúc đó bị bỏ).
 - Tương thích Android: `targetSdk = 28` nên không bị lọc tầm nhìn package (Android 11+), không cần quyền `QUERY_ALL_PACKAGES` để lấy tên và icon. Nếu sau này nâng `targetSdk` lên 30 trở lên thì phải khai báo quyền này (hoặc `<queries>`), nếu không tên và icon của nhiều app sẽ không đọc được.
 

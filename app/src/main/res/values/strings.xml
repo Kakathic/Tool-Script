@@ -241,4 +241,13 @@
     <string name="crash_demo_background">Demo crash: error thrown from a background thread (script = \"%1$s\")</string>
     <string name="asset_rename_failed">couldn\'t rename the temp file</string>
     <string name="log_write_stopped">[Stopped writing: log exceeds %1$sMB]</string>
+    <string name="path_hint_file">Path to a file</string>
+    <string name="path_hint_folder">Path to a folder</string>
+    <string name="path_loading">Loading…</string>
+    <string name="path_read_failed">Cannot read this folder</string>
+    <string name="path_up">Up one level</string>
+    <string name="path_selected">%1$d selected</string>
+    <string name="path_pick_here">Select this folder</string>
+    <string name="path_empty">This folder is empty</string>
+    <string name="path_current">Current folder</string>
 </resources>

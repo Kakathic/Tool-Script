@@ -198,7 +198,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             val id = item.id
             when (item.type) {
                 ItemType.Switch, ItemType.Checkbox -> if (id != null) out[id] = "0"
-                ItemType.Input -> if (id != null) out[id] = item.default.orEmpty()
+                ItemType.Input, ItemType.File, ItemType.Folder -> if (id != null) out[id] = item.default.orEmpty()
                 ItemType.Radio, ItemType.Dropdown ->
                     if (id != null) out[id] = item.default ?: item.options.firstOrNull()?.value.orEmpty()
                 ItemType.Select -> if (id != null) {
@@ -218,7 +218,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
         for (item in items) {
             val id = item.id
             when (item.type) {
-                ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Radio, ItemType.Dropdown,
+                ItemType.Switch, ItemType.Checkbox, ItemType.Input, ItemType.Radio, ItemType.Dropdown, ItemType.File, ItemType.Folder,
                 ItemType.Select, ItemType.AppList, ItemType.Slider, ItemType.Progress -> if (id != null && id != APP_LANGUAGE_ID && StateFiles.isValidId(id)) {
                     if (out.put(id, item) != null) duplicates += id
                 }
@@ -235,7 +235,7 @@ class BootViewModel(application: Application) : AndroidViewModel(application) {
             "0", "false", "off" -> "0"
             else -> null
         }
-        ItemType.Input -> saved
+        ItemType.Input, ItemType.File, ItemType.Folder -> saved
         ItemType.Radio, ItemType.Dropdown -> saved.takeIf { v -> item.options.any { it.value == v } }
         ItemType.Select ->
             if (item.multi) item.normalizeMulti(saved) else saved.takeIf { v -> item.options.any { it.value == v } }

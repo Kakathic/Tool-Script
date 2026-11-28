@@ -236,4 +236,13 @@
     <string name="crash_demo_background">Demo crash: lỗi ném từ luồng nền (script = \"%1$s\")</string>
     <string name="asset_rename_failed">không đổi tên được tệp tạm</string>
     <string name="log_write_stopped">[Đã ngừng ghi: log vượt %1$sMB]</string>
+    <string name="path_hint_file">Đường dẫn tệp</string>
+    <string name="path_hint_folder">Đường dẫn thư mục</string>
+    <string name="path_loading">Đang tải…</string>
+    <string name="path_read_failed">Không đọc được thư mục này</string>
+    <string name="path_up">Lên thư mục cha</string>
+    <string name="path_selected">Đã chọn %1$d</string>
+    <string name="path_pick_here">Chọn thư mục này</string>
+    <string name="path_empty">Thư mục trống</string>
+    <string name="path_current">Thư mục hiện tại</string>
 </resources>

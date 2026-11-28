@@ -1,0 +1,58 @@
+# type = "file" / "folder": ô đường dẫn với một nút mở trình quản lý tệp. Cần id.
+# Trường riêng: start (thư mục mở đầu, mặc định /sdcard), ext (chỉ file: đuôi tệp được hiện), multi (mặc định false), hint, default, script, separator.
+# Chọn xong (Xác nhận) thì chạy script luôn, $id là đường dẫn. Có confirm thì hỏi xác nhận trước khi chạy.
+
+[[item]]
+type    = "text"
+title   = "file / folder"
+desc    = "Bấm nút ở cuối ô để duyệt tệp (xem được cả thư mục gốc /). Chọn xong thì chạy script với $id là đường dẫn đã chọn."
+
+[[group]]
+title = "Chọn tệp"
+
+[[group.item]]
+type   = "file"
+id     = "t_file_one"
+title  = "Một tệp"
+script = 'echo "Đã chọn: $t_file_one"'
+shell  = "banner"
+
+[[group.item]]
+type   = "file"
+id     = "t_file_zip"
+title  = "Tệp zip hoặc apk"
+desc   = "ext = zip,apk; có confirm nên chọn xong sẽ hỏi trước khi chạy"
+ext    = "zip,apk"
+start  = "/sdcard/Download"
+confirm = "Chạy với tệp đã chọn?"
+script = 'ls -l "$t_file_zip"'
+shell  = "live"
+
+[[group.item]]
+type   = "file"
+id     = "t_file_many"
+title  = "Nhiều tệp"
+desc   = "multi = true, các đường dẫn cách nhau một dòng"
+multi  = true
+script = 'echo "$t_file_many" | while read -r f; do echo "- $f"; done'
+shell  = "live"
+
+[[group]]
+title = "Chọn thư mục"
+
+[[group.item]]
+type   = "folder"
+id     = "t_folder_one"
+title  = "Một thư mục"
+desc   = "Bấm vào thư mục để mở, ô cuối dòng để chọn; không chọn gì thì lấy thư mục đang mở"
+start  = "/"
+script = 'echo "Thư mục: $t_folder_one"'
+shell  = "banner"
+
+[[group.item]]
+type   = "folder"
+id     = "t_folder_many"
+title  = "Nhiều thư mục"
+multi  = true
+script = 'echo "$t_folder_many" | while read -r d; do echo "- $d"; done'
+shell  = "live"

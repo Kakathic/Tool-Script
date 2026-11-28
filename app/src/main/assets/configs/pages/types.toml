@@ -87,6 +87,12 @@ title = "applist"
 desc  = "Chọn app đã cài: icon, tên, package; chọn một hoặc nhiều"
 page  = "pages/types/applist.toml"
 
+[[group.item]]
+type  = "link"
+title = "file / folder"
+desc  = "Ô đường dẫn và trình quản lý tệp: chọn tệp, thư mục, chọn nhiều"
+page  = "pages/types/file.toml"
+
 [[group]]
 title = "Điều hướng và bố cục"
 

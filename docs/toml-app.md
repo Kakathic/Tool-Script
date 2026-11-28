@@ -40,7 +40,7 @@ Trang gồm `[[item]]` (mỗi item một thẻ) và `[[group]]` có `[[group.ite
 
 | Nhóm | Nội dung |
 |---|---|
-| Type | `text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `select` (`multi = true` / `false`), `applist`, `progress`, `link`; `[[group]]` để gom nhóm |
+| Type | `text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `select` (`multi = true` / `false`), `applist`, `file`, `folder`, `progress`, `link`; `[[group]]` để gom nhóm |
 | Lưu giá trị | Item có `id` tự lưu vào file tên = id trong `$STATE_DIR`, mở lại app vẫn giữ; lệnh dùng giá trị qua `$id` |
 | Làm mới | `refresh = true` (cả trang) hoặc `refresh = "id1,id2"` (chỉ trong cùng trang): sau khi lệnh của item thành công thì đọc lại `get` và chạy lại `-sh` |
 | Chữ động | `title-sh` / `desc-sh`: lệnh shell in tiêu đề (dòng đầu) / mô tả (cả đầu ra); `title` / `desc` là giá trị tạm và dự phòng |
@@ -50,6 +50,7 @@ Trang gồm `[[item]]` (mỗi item một thẻ) và `[[group]]` có `[[group.ite
 | Chạy nền | Bảng log có nút Ẩn: lệnh chạy tiếp, log đi vào thông báo Android; nút Hủy chạy `killtree` giết cả cây tiến trình |
 | Điều hướng | `link` chuyển tab, mở trang con, hoặc mở dialog (Xác nhận mới chạy `script`) |
 | Chọn nhiều mục | `select` từ 6 mục thì toàn màn hình, có ô tìm không phân biệt dấu; `multi = true` có Chọn tất cả |
+| Chọn tệp | `file` / `folder`: ô đường dẫn + nút mở trình quản lý tệp (xem được `/`); `ext`, `start`, `multi`; chọn xong chạy `script` luôn, `$id` là đường dẫn |
 | Chọn app | `applist`: chọn app trên máy (icon, tên, package); danh sách do lệnh `options-sh` in ra, thường là `pm list packages ...` (app đã tắt, hệ thống, theo nơi cài...); `multi = true / false`; `$id` là package name |
 | Icon | `icon`, `icon_size`, `icon_tint` cho mọi item trừ `text` |
 | Môi trường shell | `env.sh` (biến đường dẫn), `[app] env`, lệnh dựng sẵn `busybox`, `slog`, `glog`, `killtree` |
@@ -62,7 +63,7 @@ Mọi lệnh demo chỉ là `echo` / `sleep` / `ls`, không đổi thông số t
 
 | Tab | File | Nội dung |
 |---|---|---|
-| Các type | `pages/types.toml` | Danh sách link; mỗi type một trang demo trong `pages/types/` (`text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `select`, `applist`, `progress`, `link`, `group`). Trang `link` còn dùng `link_sub`, `link_sub2`, `link_dialog` |
+| Các type | `pages/types.toml` | Danh sách link; mỗi type một trang demo trong `pages/types/` (`text`, `button`, `switch`, `checkbox`, `input`, `slider`, `radio`, `dropdown`, `select`, `applist`, `file`, `progress`, `link`, `group`). Trang `link` còn dùng `link_sub`, `link_sub2`, `link_dialog` |
 | Tính năng mới | `pages/news.toml` | Các tính năng thêm gần đây, mỗi nhóm có nút bấm thử: snackbar, notice, `@progress`, Ẩn log, Hủy bằng killtree, chọn toàn màn hình, dialog nhỏ gọn / full màn hình, icon, env.sh, slog/glog, busybox, trang đa ngôn ngữ (`@khóa`) |
 | Giới thiệu | `pages/about.toml` | Tác giả (chủ dự án), người viết code (Claude), phân công, công nghệ, thông tin máy |
 | Lỗi code | `pages/crash.toml` | Crash app (`@crash`, `@crash-thread`), lỗi lệnh shell (exit 1, not found, sai cú pháp, permission denied, SIGKILL, hết giờ), lỗi ở mọi kiểu hiển thị, công tắc có lệnh lỗi |

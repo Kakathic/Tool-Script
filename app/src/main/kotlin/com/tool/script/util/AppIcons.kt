@@ -17,4 +17,6 @@ object AppIcons {
     const val BarSettings = "icons/bar_settings.svg"
     const val BarUpDown = "icons/bar_updown.svg"
     const val BarRun = "icons/bar_run.svg"
+    const val BarFolder = "icons/bar_folder.svg"
+    const val BarFile = "icons/bar_file.svg"
 }

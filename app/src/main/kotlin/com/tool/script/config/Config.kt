@@ -21,7 +21,7 @@ enum class ItemType(val key: String) {
     Text("text"), Group("group"), Button("button"), Switch("switch"),
     Input("input"), Slider("slider"), Link("link"),
     Checkbox("checkbox"), Radio("radio"), Progress("progress"), Dropdown("dropdown"),
-    Select("select"), AppList("applist");
+    Select("select"), AppList("applist"), File("file"), Folder("folder");
 
     companion object {
         fun from(key: String?): ItemType? = entries.firstOrNull { it.key == key }
@@ -95,6 +95,9 @@ data class Item(
     val divider: Boolean = false,
     // applist: true (mặc định) = chọn nhiều app, false = chọn một app. Danh sách app do lệnh `get` in ra.
     val multi: Boolean = true,
+    // file / folder: thư mục mở đầu của trình quản lý tệp, và (file) các đuôi tệp được hiện, rỗng = mọi tệp
+    val start: String? = null,
+    val ext: List<String> = emptyList(),
 )
 
 /** [env]: đoạn shell chạy đầu tiên trước mọi lệnh (`[app] env`), null nếu không khai báo. */
@@ -164,7 +167,7 @@ object TomlParser {
     private val RAW_KEYS = setOf(
         "id", "type", "icon", "icon_size", "icon_tint", "divider", "shell", "columns", "input_type", "style",
         "tab", "page", "file", "visible", "readonly", "lock", "refresh", "timeout", "min", "max", "step", "default", "separator",
-        "lang", "lang-sh", "load-string", "load-string-sh", "multi",
+        "lang", "lang-sh", "load-string", "load-string-sh", "multi", "start", "ext",
     )
 
     private val APP_KEYS = setOf("name", "env", "lang", "lang-sh", "load-string", "load-string-sh")
@@ -174,7 +177,7 @@ object TomlParser {
     private val ITEM_KEYS = setOf(
         "type", "id", "title", "desc", "icon", "icon_size", "icon_tint", "visible", "visible-sh", "readonly", "readonly-sh", "lock", "lock-sh", "refresh", "title-sh", "desc-sh", "confirm", "timeout",
         "script", "get", "hint", "default", "input_type", "min", "max", "step", "options", "options-sh", "separator",
-        "columns", "tab", "page", "style", "shell", "divider", "multi",
+        "columns", "tab", "page", "style", "shell", "divider", "multi", "start", "ext",
     )
 
     /** Khóa không có trong code (thường là gõ sai) đều báo cáo. Bảng vẫn được đọc, chỉ riêng khóa lạ bị bỏ qua. */
@@ -372,9 +375,10 @@ object TomlParser {
         }
         val title = rawTitle.orEmpty()
         val id = t.str("id")?.takeIf { it.isNotBlank() }
-        // multi: true (mặc định) chọn nhiều, false chọn một; dùng cho `select` và `applist`.
+        // multi: true chọn nhiều, false chọn một; dùng cho `select`, `applist` (mặc định true) và `file`, `folder` (mặc định false).
         val multi = when (val raw = t.str("multi")?.lowercase()) {
-            null, "true" -> true
+            null -> type != ItemType.File && type != ItemType.Folder
+            "true" -> true
             "false" -> false
             else -> {
                 warnings += AppText.get(R.string.cfg_invalid_multi, label, title, raw)
@@ -385,7 +389,7 @@ object TomlParser {
             type == ItemType.Slider ||
             type == ItemType.Checkbox || type == ItemType.Radio || type == ItemType.Progress ||
             type == ItemType.Dropdown || type == ItemType.Select ||
-            type == ItemType.AppList
+            type == ItemType.AppList || type == ItemType.File || type == ItemType.Folder
         if (needsId) {
             if (id == null) {
                 warnings += AppText.get(R.string.cfg_item_missing_id, label, title, type.key)
@@ -584,6 +588,8 @@ object TomlParser {
             children = children,
             divider = divider,
             multi = multi,
+            start = t.str("start")?.trim()?.takeIf { it.startsWith("/") },
+            ext = t.str("ext")?.split(",", ";", " ")?.map { it.trim().removePrefix(".").lowercase() }?.filter { it.isNotEmpty() }.orEmpty(),
         )
     }
 }

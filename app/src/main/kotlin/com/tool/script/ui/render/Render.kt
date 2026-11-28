@@ -313,6 +313,7 @@ fun ItemRenderer(rawItem: Item, env: RenderEnv, inGroup: Boolean = false, parent
             ItemType.Select ->
                 if (item.multi) MultiSelectItem(item, env, modifier, enabled, inGroup) else SingleSelectItem(item, env, modifier, enabled, inGroup)
             ItemType.AppList -> AppListItem(item, env, modifier, enabled, inGroup)
+            ItemType.File, ItemType.Folder -> PathItem(item, env, modifier, enabled, inGroup)
             ItemType.Dropdown -> DropdownItem(item, env, modifier, enabled, inGroup)
             ItemType.Slider -> SliderItem(item, env, modifier, enabled, inGroup)
             ItemType.Link -> LinkItem(item, env, modifier, enabled, inGroup)
@@ -884,6 +885,72 @@ private fun AppListItem(item: Item, env: RenderEnv, modifier: Modifier, enabled:
             }
         },
     )
+}
+
+// file / folder: ô nhập đường dẫn với một nút mở trình quản lý tệp (FilePicker.kt). Chọn xong (Xác nhận) thì chạy `script` luôn,
+// $id là đường dẫn (nhiều mục nối bằng separator); có `confirm` thì hỏi xác nhận trước khi chạy. Gõ tay vào ô chỉ lưu giá trị.
+@Composable
+private fun PathItem(item: Item, env: RenderEnv, modifier: Modifier, enabled: Boolean, inGroup: Boolean) {
+    val id = item.id ?: return
+    var showPicker by remember { mutableStateOf(false) }
+    val current = env.store[id]
+    ItemSurface(modifier, inGroup) {
+        Column(Modifier.padding(CardInsideMargin)) {
+            TitleRow(item) { Text(item.title, style = MiuixTheme.textStyles.headline1) }
+            item.desc?.let {
+                Text(it, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
+            }
+            Spacer(Modifier.height(12.dp))
+            AppTextField(
+                value = current,
+                onValueChange = { env.store[id] = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = item.hint ?: stringResource(if (item.type == ItemType.Folder) R.string.path_hint_folder else R.string.path_hint_file),
+                enabled = enabled,
+                singleLine = !item.multi,
+                insideMargin = TEXT_FIELD_MARGIN,
+                trailingIcon = {
+                    val open = withTapHaptic { showPicker = true }
+                    Box(
+                        modifier = Modifier
+                            .padding(start = RUN_BUTTON_GAP_START, end = RUN_BUTTON_GAP)
+                            .size(RUN_BUTTON_HEIGHT)
+                            .alpha(if (enabled) 1f else 0.4f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = RUN_BUTTON_ALPHA))
+                            .clickable(enabled = enabled, onClick = open),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AsyncImage(
+                            model = Util.iconModel(if (item.type == ItemType.Folder) AppIcons.BarFolder else AppIcons.BarFile),
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                        )
+                    }
+                },
+            )
+        }
+    }
+    if (showPicker) {
+        FilePicker(
+            title = item.title,
+            desc = item.desc,
+            folder = item.type == ItemType.Folder,
+            multi = item.multi,
+            ext = item.ext,
+            start = item.start ?: "/sdcard",
+            separator = item.separator,
+            current = current,
+            onDismiss = { showPicker = false },
+            onConfirm = { newValue ->
+                showPicker = false
+                env.run(item, item.script, mapOf(id to newValue)) { result ->
+                    if (result.ok) env.store[id] = newValue
+                }
+            },
+        )
+    }
 }
 
 // Chọn một: hàng hiện mục đang chọn. Hộp nhỏ (dưới 6 mục): chạm mục là lưu và chạy `script` luôn (chỉ khi có thay đổi), không có nút. Toàn màn hình (từ 6 mục, có ô tìm): chọn rồi bấm Xác nhận mới lưu và chạy.
